@@ -1,0 +1,81 @@
+[S|LB]
+ del
+
+[SeqUnit|Replicand|ParenthExpr|AtomicExpr]
+ elide
+
+;
+
+[CharSetExpr|CharSet|CodePointExpr|CodePoint|UnicodePropSpec]
+ elide
+
+;
+
+[RuleSet]
+ match_code ≔ ruleset_cg children
+
+[Rule] D [NonTerminal] BD [OrdChoice]
+ match_code ≔ rule_cg D.match BD.match_code
+
+[OrdChoice]
+ match_code ≔ ordchoice_cg children
+
+[Sequence]
+ match_code ≔ sequence_cg children
+
+[NonTerminal] U [Sequence|MNRep|PosRep|Optional|Repetition]
+ match_code ≔ nonterminal_cg .match
+
+[Repetition] D
+ match_code ≔ anyrep_cg D.match_code
+
+[PosRep] D
+ match_code ≔ posrep_cg D.match_code
+
+[MNRep] D[M] BD[N] BD[NonTerminal]
+ match_code ≔ mnrep_cg D.match BD.match BDBD.match_code
+
+[Optional] D
+ match_code ≔ optional_cg D.match_code
+
+[Empty]
+ match_code ≔ empty_cg .match
+
+[StrLit]
+ match_code ≔ strlit_cg .match
+
+[NegCharSet] D[CharSetDifference]
+ match_code ≔ negcharset_cg D.cset
+
+[PosCharSet] D
+ match_code ≔ poscharset_cg D.cset
+
+[CharSetDifference]
+ cset ≔ charsetdifference_cg children
+
+[CharSetIntersection]
+ cset ≔ charsetintersection_cg children
+
+[CharSetUnion]
+ cset ≔ charsetunion_cg children
+
+[CodePointRange] D[CodePointFrom]D BBD[CodePointTo]D
+ cset ≔ codepointrange_cg DD.cpoint BDD.cpoint
+
+[UPlusCodePoint] U[CharSetUnion]
+ cset ≔ upluscodepoint_cg .match
+
+[CodePointLit] U[CharSetUnion]
+ cset ≔ codepointlit_cg .match
+
+[UPlusCodePoint] U[CodePointForm|CodePointTo]
+ cpoint ≔ upluscodepoint_cg_cp .match
+
+[CodePointLit] U[CodePointFrom|CodePointTo]
+ cpoint ≔ codepointlit_cg_cp .match
+
+[NegativeSpec] D[PropSpec]
+ cset ≔ negativespec_cg D.match
+
+[PositiveSpec] D[PropSpec]
+ cset ≔ positivespec_cg D.match

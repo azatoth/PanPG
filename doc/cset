@@ -1,0 +1,35 @@
+cset:
+
+ctors:
+
+O(1)
+
+from char
+from int
+cpoint fromChar and fromInt (internal)
+universe
+empty
+range
+
+O(n)
+
+from list
+from string
+
+tests:
+
+null
+singleton
+cardinality perhaps for completeness?
+
+set operations:
+
+member (cset, codepoint)
+difference
+union
+intersection
+
+Unicode:
+
+toREcclass
+fromPropSpec

@@ -1,0 +1,38 @@
+2009-11-23
+
+Primary API
+-----------
+
+The main API is in API.js
+
+
+peg.peg is the initial idea of what the PEG grammar should be like.
+peg_minimal.peg is the minimal version of the PEG grammar, written in itself, which the hand-written parser in peg.js and the code generator in _n2 and _n2_cg.js accepts and generates a parser for.
+PEG.peg is the currently supported version of the grammar.
+It is written in the minimal subset, parsed by the hand-written parser, and generates code which is then used to parse other grammars.
+
+The current code generator is in _n2 and _n2_cg.js.
+It is a TMProg, written in the language which is interpreted by the TMProg_* files.
+
+Users of the PEG parser generator will want to use the functions in API.js.
+
+If the TMProg tree mutation programs are used to mutate the resulting parse tree, the functions in TMProg_API.js should be used.
+
+
+*** Bootstrapping ***
+
+The full bootstrapping procedure is as follows:
+- peg.js is used to parse peg_minimal.peg
+- _n2 and _n2_cg.js are a tree mutation program which act on this parse tree to produce peg_generated.js
+
+The code that controls this is in peg_generator.js.
+All of peg.js, _n2*, and peg_generator.js are handwritten.
+
+- the parser in peg_generated.js is used to parse PEG.peg.
+PEG.peg describes the full supported PEG, but only uses the minimal PEG described in peg_minimal.peg (of which it is a superset).
+- the tree mutation program in PEG_codegen and PEG_codegen.js is run over the parse tree provided by the previous step.
+The result of this is the final optimized parser for PEGs.
+
+PEG_codegen and PEG_codegen.js are the same code generator used for any other grammar.
+
+PEG_codegen will eventually replace _n2 entirely.

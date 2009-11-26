@@ -1,0 +1,38 @@
+[.*]
+ tags ≔ esh_tags children .elem .class .id .start .end
+ elem ≔ esh_empty children
+ class ≔ esh_empty children
+ id ≔ esh_empty children
+
+[Program]
+ elem ≔ esh_code children
+ class ≔ esh_es5 children
+
+[FunctionDeclaration] D[Identifier]
+ elem ≔ esh_span children
+ class ≔ esh_fundecl_class children
+ id ≔ esh_fundecl_id D.match
+
+[FunctionTok]
+ elem ≔ esh_span children
+ class ≔ esh_structural children
+
+[FunctionBody]
+ elem ≔ esh_span children
+ class ≔ esh_funbody_class children
+
+[ReturnTok]
+ elem ≔ esh_span children
+ class ≔ esh_structural children
+
+[BooleanLiteral]
+ elem ≔ esh_span children
+ class ≔ esh_literal children
+
+[VariableStatement]
+ elem ≔ esh_span children
+ class ≔ esh_varstmt children
+
+[ReturnStatement]
+ elem ≔ esh_span children
+ class ≔ esh_retstmt children

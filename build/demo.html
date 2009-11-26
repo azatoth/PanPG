@@ -1,0 +1,83 @@
+<!doctype html>
+
+<title>PEG demo</title>
+
+<style>
+body,html {margin:0,padding:0}
+fieldset {width:100%;border:0;padding:0;margin:0;background:#888;position:relative}
+label {display:inline-block;border:2px solid black;width:45%;margin:1em 2%;position:relative;background:#AAA}
+textarea {width:100%;height:24em;border:0}
+</style>
+
+<!--
+<script src=../PEG_codegen_5.js></script>
+<script src=../re.js></script>
+<script src=../../3box/lists.js></script>
+<script src=../cset_prod.js></script>
+<script>CSET.import('',CSET)</script>
+<script src=../PTNode.js></script>
+<script src=../../3box/util.js></script>
+-->
+<script src=build_output.js></script>
+
+<h1>PEG demo 2009-11-26</h1>
+
+<p>This is a very simple demo that demonstrates the PEG API.
+We load a PEG grammar from a file, construct a JavaScript parser from it, and use that parser to parse some input and display the resulting parse tree.
+
+<p id=status></p>
+
+<fieldset>
+<label>Grammar: <br><textarea id=PEG></textarea></label>
+<label>Input: <br><textarea id=text></textarea></label>
+<label>Generated parser: <br><textarea readonly id=parser></textarea></label>
+<label>Parse tree: <br><textarea readonly id=parse_tree></textarea></label>
+</fieldset>
+
+<script>
+var inputPEG_el=document.getElementById('PEG')
+  , inputText_el=document.getElementById('text')
+  , parser_el=document.getElementById('parser')
+  , parseTree_el=document.getElementById('parse_tree')
+  , status_el=document.getElementById('status')
+  , compilerOpts
+
+function status(s){status_el.innerHTML=s}
+
+function xhr(method,uri,body,callback){var headers,p
+  // instead of a method string, the first argument can be an object with method and headers properties
+  if(typeof method==='object'){headers=method.headers;method=method.method}
+  var x=new XMLHttpRequest()
+  x.onreadystatechange=function(){if (x.readyState==4){callback(x)}}
+  x.open(method,uri,true)
+  if(headers) for(p in headers){x.setRequestHeader(p,headers[p])}
+  x.send(body)}
+
+status('fetching grammar...')
+xhr('GET','../PEG_arith.peg',null,function(x){
+ inputPEG_el.value=x.responseText
+ status('generating parser...')
+ compilerOpts=
+ {}
+ parser_el.value=generateCode(inputPEG_el.value,compilerOpts)
+ status('loading the parser...')
+ eval(parser_el.value)
+ window.Expr=Expr
+ // now Expr, the generated parser, is in scope
+ xhr('GET','arith_test_expr',null,function(x){
+  inputText_el.value=x.responseText
+  status('parsing...')
+  parseTree_el.value=parseAndShowArithExpr(inputText_el.value)
+  status('done')})})
+
+function generateCode(s,opts){var pt
+  pt=p_PEG_v5_RuleSet(s)[1]
+  PEG_codegen_5(pt)
+  return pt.code_v5()(opts)}
+
+function parseAndShowArithExpr(s){var pt
+  pt=Expr(s) // TODO: display parse errors
+  //return s+'\n\n'+pp(pt)
+  return showTree(pt[1],Expr.names)}
+
+</script>
