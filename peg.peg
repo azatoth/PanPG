@@ -1,0 +1,90 @@
+Empty             ← "ϵ"
+
+CharSet           ← "[" S? ( CharSetExpr / ϵ ) "]"
+
+CharSetExpr       ← CharSetDifference S?
+
+CharSetDifference ← CharSetIntersection (S 'U+2212 MINUS SIGN' S CharSetIntersection)*
+
+CharSetIntersection ← CharSetUnion (S? "∩" S? CharSetUnion)*
+
+CharSetUnion      ← ( CodePointExpr S? )+
+
+CodePointExpr     ← UnicodePropSpec
+                  / CodePointRange
+                  / CodePoint
+
+CodePoint         ← UPlusCodePoint
+                  / [ [:Any:] − [:space:] − U+005D ]
+
+UPlusCodePoint    ← "U+" HEXDIG{4,6}
+
+CodePointRange    ← CodePoint "-" CodePoint
+
+UnicodePropSpec   ← PositiveSpec / NegativeSpec
+
+PositiveSpec      ← "[:"  PropSpec ":]"
+NegativeSpec      ← "[:^" PropSpec ":]"
+
+PropSpec          ← BinaryUnicodeProperty
+                  / UnicodeProperty ("=" / "≠") PropVal
+                  / ScriptOrCatPropVal ("|" ScriptOrCatPropVal)*
+
+PropVal           ← UnicodePropVal ("|" UnicodePropVal)*
+
+SingleChar        ← NamedCharacter
+                  / CharacterLiteral
+
+NamedCharacter    ← "'" (UPlusCodePoint / ϵ) UnicodeName "'"
+
+NonTerminal       ← IdentStartChar IdentChar*
+
+IdentStartChar    ← [ [:letter:] − [:lowercase:] ]
+
+IdentChar         ← [ [:letter:] [:digit:] _ ]
+
+AnyRep            ← Replicand "*"
+
+PosRep            ← Replicand "+"
+
+MNRep             ← Replicand "{" [0-9]* "," [0-9]* "}"
+
+Optional          ← Replicand "?"
+
+Replicand         ← ParenthExpr
+                  / AtomicExpr
+
+ParenthExpr       ← "(" OrdChoice ")"
+
+AtomicExpr        ← Empty / CharSet / NonTerminal / StrLit
+
+StrLit            ← '"' ( CharEscape / [^"\] )* '"'
+
+CharacterLiteral  ← "'" ( CharEscape / [^'\] ) "'"
+
+CharEscape        ← "\\u" HEXDIG{4}
+                  / '\\' [ f n r t v U+005D ]
+
+OrdChoice         ← S? Sequence S? ("/" S? Sequence S?)*
+
+Sequence          ← (SeqUnit S?)+
+
+SeqUnit           ← AnyRep
+                  / PosRep
+                  / MNRep
+                  / Optional
+                  / ParenthExpr
+                  / AtomicExpr
+
+PosLookahead      ← "&(" OrdChoice ")"
+
+NegLookahead      ← "!(" OrdChoice ")"
+
+S                 ← SpaceAtom+
+SpaceAtom         ← [[:Zs:]] / LB [[:Zs:]]
+LB                ← CRLF / CR / LF
+
+Rule              ← NonTerminal S "←" S OrdChoice
+
+RuleSet           ← Rule (LB+ Rule)*
+                  / ϵ

@@ -1,0 +1,161 @@
+Given a parser rule S ← ... α ..., where α is a non-terminal, we can ask, if the application of α fails in this position, will it be tried again by this or any other rule in the grammar?
+If we can prove that the answer is no, then there is no reason to store a failure result of α in this position in the result table.
+
+--------------
+No-retry rules
+--------------
+
+When adding results to the result table, there are three categories of rules: normal rules, which are added to the result table on failure or success, no-retry rules, which are added to the result table only if they succeed (so that they will appear in the parse tree), and drop rules, which do not need to appear in the parse tree and are not added to the result table at all.
+
+Drop rules are provided by the user, but no-retry rules affect only performance, not output, and can be derived automatically from the grammar.
+
+To find a set of no-retry rules for a grammar we consider each rule use in turn.
+A rule use is any occurrence of a nonterminal, i.e. a rule name, on the RHS of a rule.
+For each rule use, we define a retry set.
+A retry set is the set of rules that can be tried, at that position, if that rule application fails.
+If the retry set does not include the rule itself, then it is a no-retry rule.
+In other words, if the rule will never be tested again at that input position, there is no point in caching the fact that it failed.
+
+Given that a rule use fails, we can ask "what happens next".
+The answer first of all depends on the rest of the RHS of the rule.
+We first determine whether the rule can be called again by the execution of the rest of the rule that used it.
+
+If the rule is not used again directly, we then consider other rules that may have called the rule that contains this rule use.
+
+It may be that a rule use failure implies the failure of the rule, implies success, or permits either success or failure.
+E.g. if A fails in the rule S ← A, then S must fail, while in S ← !(A), S must succeed, and in S ← A / B, S may succeed or fail according to B.
+
+We can determine the outcome set, which is in {{succeed}, {fail}, {succeed, fail}}.
+Then on the basis of the outcome set we can substitute outcomes of this rule into rules that call this rule, and continue to look for positions at which the cached rule result may be used.
+
+Determining the retry-set for the local rule.
+We have a position and a result, which in the initial case happens to be false.
+Given a position and a result, we find a new position, or a success or failure result for the entire rule.
+
+A position is written as a rule or a fragment of a rule, with a dot indicating what will be tried next.
+A position result is a position and a result ∈ {succeed, fail} which tells what the result of that next expression was.
+So a position · α means that the expression α is about to be tried, while a position result ( · α , false ) means that the result of parsing α at this position is now known and is false.
+A successful position result also includes an offset range.
+An offset range represents the upper and lower bounds on the input consumed by the success of the expression.
+
+For any position, there is always an expression to be tried.
+I.e. a position within a rule implies that the outcome of that rule is not yet known.
+A position result implies that we know something, and what happens next can be determined to be either a new position or a result for the rule.
+
+So to construct a retry set, we define rules that we can apply to position results to generate new positions or rule results.
+We supply a set of these rules that will cover any position.
+We define a simple rule to generate, from positions, new position results.
+We then apply these rules recursively to generate all possible positions and position results which can arise from the initial result (which is failure of the given rule use).
+As we do so we generate rules which may be tested at the same position, and this is the retry set for that rule use.
+
+Now we can define a "rule use" as simply any position · α : α ∈ N, where N is the set of non-terminals.
+
+Now we define the transitions for position results:
+
+A position result consists of a position, a Boolean result, an offset range from some position of interest, and a backtrack range.
+In this case the position of interest is the location in the input of the failure of the rule use which is under examination.
+We define transitions between a position result and either a rule result or a position according to the table following.
+The first entry in this table which is matched by a position result determines the transition.
+For brevity, some transitions are to a new position result, in this case the new position result should be matched against the table again until a rule result or new position is reached.
+New positions are also given an offset range.
+In this table, α, β, and γ range over all PEG expressions.
+A 
+N is the set of all rule names in the grammar.
+
+sequences:
+
+( · α β, true, range )   →  position ( α · β, range )
+( α · β, true, range )   →  position result ( · ( α β ), true, range, offsetRange(α) )
+( α · β, false, range )  →  position result ( · ( α β ), false, range - offsetRange(α) )
+
+ordered choices:
+
+( · α / β , true, range )  →  position result ( · ( α / β ), true, range )
+( · α / β , false, range ) →  position ( α / · β, range )
+
+options:
+
+( ( · α )?, true, range )  →  position result ( · ( α? ), true, range )
+( ( · α )?, false, range ) →  position result ( · ( α? ), true, range )
+
+repetitions:
+
+( ( · α )*, true, range )  →  position ( ( · α ) *, range )
+( ( · α )*, false, range ) →  position result ( · ( α * ), true, range )
+
+positive lookahead:
+
+( &( · α ), true, range )  →  position result ( · &α, true, range )
+( &( · α ), false, range ) →  position result ( · &α, false, range )
+
+negative lookahead:
+
+( !( · α ), true, range )  →  position result ( · !α, false, range )
+( !( · α ), false, range ) →  position result ( · !α, true, range )
+
+rule results:
+
+( A → · α, true, range )  →  rule result (A, true, range)
+
+From these, we can generate a position or a rule result from any position result.
+
+We define the retry set of a position P of the form · α : α ∈ N as follows:
+The position result ( P, false ) is part of the 
+For each new non-terminal position ( · N ) generated, N is a member of the retry set.
+For each rule result generated, find each use of that rule in the grammar, and substitute that result into that use, generating a new position result.
+For each position result, generate a set of rule results and positions.
+For each position · α, (if the outcome of α cannot be determined in some obvious way), generate both ( · α, false) and ( · α, true) as new position results.
+When all the positions that can be generated have been generated, then we have the full retry set.
+
+So in the above we are actually testing whether or not α can appear again anywhere in the grammar, not at the same position, which is comparatively useless.
+What we need to do is determine which of the position transitions necessarily consume input, such that positions which will necessarily occur later in the source input can be excluded from consideration when generating the retry set.
+
+So what we have is a position offset.
+At a given position, an expression is tested.
+If it fails, the input position remains the same.
+If it succeeds, the input position is dependent on the expression itself and on the input, but we can set certain constraints on it based on the expression alone.
+
+Here we regard strings as sequences of singleton character sets, and a character set as a function from terminals to {accept, reject}.
+The only way terminals are consumed, then, is by primitive expressions that either consume a single terminal or fail.
+We can then calculate position offset bounds for every PEG expression.
+
+For a character set, the offset is 1.
+For a repetition e*, the offset is bounded by (0,∞), unless e is an ϵ-expression, in which case e* is always an error.
+More specifically, the offset of a repetition e* is e-offset × ℕ.
+When the offset of e is fixed, this may be used to show that subsequent positions will never occur at certain input positions.
+For a sequence e₁e₂, the offset is the sum of the offsets of e₁ and e₂.
+For an ordered choice, the offset is the union of the offsets of the sub-expressions.
+For a lookahead or for ϵ the offset is 0.
+
+Now, with definitions of both expression offsets and position result transitions, we can define position result transitions which include offsets very simply.
+When generating a successful position result from a position, we use the offset bounds of the expression which succeeded.
+When generating a failure position result from a position, we let the offset be zero.
+
+Here we simplify things by disregarding all aspects of the offset bounds except one: whether the lower bound is zero or greater than zero.
+In other words we only care to distinguish between ϵ-expressions and all others.
+
+We now have the following process for determining a retry set for a position P:
+Begin with (P, false)
+For each position result, follow the position result transition table to generate a new position or rule result.
+For each position, generate each ϵ-result and add these position results.
+For each position of the form · N where N is a nonterminal, add N to the result set.
+For each rule result, substitute the result into each use of that rule in the grammar, and add each of these positions.
+The repeated application of these rules to the entire grammar gives the complete retry set.
+
+For any position P of the form · α, an ϵ-result is a result which may occur while not consuming any input.
+If α is an ϵ-expression, then both (P, true, 0) and (P, false) are ϵ-results.
+Otherwise, α is a consuming expression; any consuming expression may fail (e.g. at EOF); in this case (P, false) is the only ϵ-result.
+If P is inside a lookahead, then we may be backtracking in the input.
+This can give a negative offset for a position result.
+
+---------------------
+Retry set calculation
+---------------------
+
+We have a working definition of a retry set, but the definition is based on recursively defined sets of positions and position results which are likely to be extremely large.
+In practice, at the moment we only care if the retry set for a position contains the rule at that position.
+If not we will generate code which avoids storing failure results for that rule (possibly splitting a rule into two generated rules, in case only some uses of a rule are no-retry).
+
+To determine this, we can stop as soon as we reach any retry of a rule.
+We can also prune the growing set any time a consuming production is reached.
+However, if we have a rule which is used frequently throughout a grammar, and which can be proved to be a no-retry rule, then proving this may take some time.
