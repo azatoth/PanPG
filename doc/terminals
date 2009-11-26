@@ -1,0 +1,282 @@
+Terminal symbols may be Unicode code points, code units, bytes, or tokens or symbols produced by a tokenizer or other stream.
+
+In all cases, certain primitive operations are required.
+
+The parser must be able to maintain a position within the input symbol stream, retrieve a symbol at a given position, and backtrack to a previous position in the input.
+
+A parse rule must be able to name terminal symbols, and the generated parser must be able to compare incoming terminals for equality with those specified by the rule.
+Where terminal symbols are individual characters, we also allow string literals as a shorthand for an explicit sequence of terminals.
+
+In the ECMAScript case, the spec defines two lexical grammars, but refers to them as a single lexical grammar (which can be regarded as the ambiguous union of the two grammars given in the specification).
+The syntactic parser then deals with tokens, and must guide the lexer to produce the correct token stream for the given context within the semantic grammar.
+The only lexical ambiguity is between a leading "/" which may introduce a regex literal or a "/" or "/=" operator.
+
+A straightforward solution that maintains a close correspondence to the grammar productions of ES5 is to have two lexical grammars, and a function used by the parser to get the next token which takes a parser rule as an argument.
+
+So, when expecting a "/" or "/=" operator, the parser would call a function like getToken(p_ES_InputElementDiv), and otherwise would call getToken(p_ES_InputElementRegExp).
+In either case, getToken would return a single token, but when the token begins with "/" the token would (typically) differ.
+
+The challenge in this case is how to get the state of the parser to feed into the tokenizer.
+Ideally one has a deterministic, context-free tokenizer, and the parser can be built above this with a simple function to get the next token.
+Here we may have to have a flag that the parser sets which affects tokenization.
+Where and how does this flag get set?
+
+How do we declare what type of terminals a parser accepts?
+Previously this was not an issue since there was only one answer, Unicode characters.
+
+In parsing strings, the parser primitives strLit() and re() assume strings.
+The parser state object maintains a reference to the input string, and a current position as a character count (actually a count of UTF-16 code units) within that string.
+The strLit() and re() primitives are the only things that increment this count.
+
+In an ECMAScript token stream we have different state.
+The state includes the underlying input stream of code units and the position within that stream.
+This is actually the same.
+Rather than storing a parse result as a start and end position, we also need to somehow generate a token type.
+
+We could represent tokens as an Array, with the first element being a string (or an integer) defining a token type, and the other elements being further data as necessary for that token type.
+
+Operators and punctuators would be stored as themselves: ["<="], ["==="], ["."], and would not have any additional data.
+Literals would be stored as ["string literal", "...the string data..."], ["regex literal", "...the regex literal..."], etc.
+Of course these tag strings could be replaced later with integers for efficiency.
+
+The parser needs to be able to set a flag when parsing certain rules.
+This can be accomplished by passing a set of rule names to the code generator.
+Other options will have to be passed to the code generator, or provided at runtime, to define the tokenization function and the state that the tokenizer maintains.
+
+The current State() constructor is used for managing parser state in a string parser.
+A token-oriented state constructor would be needed.
+The parser may set flags on the state object, in this case the only flag would be one that indicates when a division operator is accepted.
+The parser then calls getToken()
+A token has a type, so the parser needs to be written, not in terms of strings but in terms of tokens of given types.
+So we would have something like:
+
+PrimaryExpression ← "this" / Identifier / Literal / ArrayLiteral / ObjectLiteral / "(" Expression ")"
+
+where "this", "(", and ")" are taken as literal tokens, not literal strings.
+This requires that these must be matched literally to the matching token, without having to specify in the grammar the token type of these literals.
+For example, "(" is a punctuator token, but "this" is a keyword token, it would be unpleasant however for the grammar to have to include notation to this effect.
+
+One way to handle this is to apply the tokenizer itself to these literals and see what type they have.
+This can be done at PEG codegen time, at least if we have access to the data about which tokenizer flags are relevant in which syntactic contexts.
+
+The primary benefit of parsing a token stream is that the tokenizer can deal with the issues of comments, whitespace, and finding the end of tokens, and the parser can be written more simply.
+On the other hand, in ECMAScript, line endings can be significant, and are not allowed after some tokens, and ASI already muddles somewhat the clear boundary between tokenizing and parsing, as well as of course the lexical ambiguity regarding division operators.
+
+The alternative is to use one PEG that goes all the way down to the individual characters.
+This keeps the parser generator cleaner, but makes the PEG itself more complicated and harder to write.
+Put that way it is clear that this is the wrong solution.
+
+In the PrimaryExpression above, "this" would have to be replaced by a ThisToken production, which would match any token so long as it is "this".
+This could lead to a lot of boilerplate tokenization rules.
+On the other hand... this does seem like it might be simpler than writing half the PEG code again to handle token streams.
+
+The code generation can do more optimizations if it is one PEG.
+However, tokenizing just once per token and then parsing over those is probably faster than anything codegen would produce.
+
+Simple test program:
+
+function test(p_,str){
+ var s=new State(str)
+ return (p_(s) && s.str()=='')}
+
+function tree(p_,str){
+ var s=new State(str)
+ if(p_(s) && s.str()=='') return [true, buildTree(s)]
+ return [false, s]}
+
+Parsing the first function with a tokenizer, we have:
+
+function
+test
+(
+p_
+,
+str
+)
+{
+NL
+var
+s
+=
+new
+State
+(
+str
+)
+NL
+return
+(
+p_
+(
+s
+)
+&&
+s
+.
+str
+(
+)
+==
+'
+'
+)
+}
+EOF
+
+Application of Program to this stream:
+ try SourceElement
+  try Statement
+   try Block
+    Block needs to read a token, so it calls the tokenizer (in InputElementRegExp mode), and gets a token which is "function"
+    Block fails since "function" != "{"
+   try VariableStatement, fails
+   try EmptyStatement, fails
+   try ExpressionStatement, it fails because of the negative "function" lookahead
+   try IfStatement, fails to find "if"
+   try IterationStatement, fails
+   LabelledStatement fails because "function" is not an identifier (though it would fail anyway on the next token)
+   all other statement parsers fail
+ try FunctionDeclaration
+  match "function"
+  get a new token
+  match Identifier
+  get a new token
+  match "("
+  try FormalParameterList
+   get a new token
+   match Identifier ("p_")
+   get a new token
+   match ","
+   get a new token
+   match Identifier ("str")
+   get a new token
+   look for ",", there isn't one, succeed
+  match ")"
+  match "{"
+  now there is a newline, what happens to it?  Since it is not significant here we want it to be ignored
+  try FunctionBody
+   try SourceElement
+    try Statement
+     Block fails
+     try VariableStatement
+      here we try to match "var" but the first token is still the line break
+      skip the linebreak
+      match "var"
+       try VariableDeclaration
+        match Identifier
+        try Initializer
+         match "="
+         then we match down through the whole operator precedence chain to MemberExpression, which matches the rest of the line:
+         AssignmentExpression
+          ...
+           ...
+            MemberExpression
+
+It is perfectly obvious to me now (I wonder that it took so long) that not making full use of the power of the PEG here is absurd.
+There is no reason for a separate tokenization step, and eliminating it simplifies everything else considerably.
+So decided.
+
+The one exception to this of course is that the grammar itself may be slightly less attractive, e.g. with S* whitespace symbols sprinkled about liberally in the syntactic grammar and so forth.
+This is easily solved later by writing transformation rules for the syntactic grammar itself.
+These can also generate the entire (now quite ugly) stack of binary operators from a simple list of operators sorted by preference.
+
+The other seeming awkwardness surrounds the generated parse tree itself, work on solving this has already begun and to add tokenization would be a duplication of effort at best.
+
+Another issue as ever is ASI.
+
+Another potential difference is in parsing any construct which would parse according to the syntactic grammar but does not because of the way it is tokenized.
+I don't know if there is any such example.
+One example could be with the "++" and "+" operators.
+If there are any strings A and B such that "A++ +B" is not a valid parse, but "A + ++B" is, then "A+++B" might be parsed by a PEG where a separate tokenizer step would give the expected error.
+This is easily solved, if necessary, however, by matching the + operator as "+" !("+").
+This is probably unnecessary, however.
+There are such cases in the grammar, e.g. if a === 0, "0+ ++a" has the value 1, but "0++ +a", and hence "0+++a", is a syntax error.
+If the parser tries "0+++a" as "0++ + a" and after that fails tries it again as "0 + ++a", then the parse would succeed incorrectly.
+This actually seems quite possible.
+"0++" will probably never be tried, since ++ cannot follow a numeric literal (I assume).
+However a numeric literal followed by plus followed by "++a" will all parse as an additive expression.
+So we may need to add some special cases in the grammar to prevent matching too-short tokens, such as PlusOp ← "+" !("+").
+
+Once the basic PEG is finished, enhancements to code gen, pre-processing of the PEG, and post-processing of the parse tree can give all the benefits of the token-based parser approach with much greater elegance.
+
+The only remaining loss is the direct mapping from the ECMAScript specification onto the PEG grammar.
+If this is desired, at some future time we could consider tools to help automate the generation of a clean PEG from a CFG such as that in the ECMAScript specification.
+
+
+---
+ASI
+---
+
+Automatic semicolon insertion adds a small set of interesting scenarios to the grammar:
+
+- at the end of a line when a semicolon is inserted.
+- before "}" when a semicolon is inserted.
+- after a keyword such as "return" where a linebreak terminates the statement
+- before an operator such as postfix increment where a linebreak prevents 'a \n ++' from parsing as "a++".
+- in a case such as "a \n /b/i" which parses as "a/b/i" (division) not as "a; /b/i" (regex literal).
+- in any other case where \n appears in an ordinary expression and is ignored.
+- the empty statement, ";" appearing on a line alone or after another semicolon.
+- for(;;) statements and empty statements following an iteration statement: "{while(1)}" is a syntax error, ASI does not apply
+
+The parsing of linebreaks, semicolons, and closing braces is affected.
+
+There are tokens after which a line break may not appear (such as return) and those before which it may not appear (such as postfix increment).
+
+When parsing a linebreak we often cannot know what to do with it until we also parse the next token.
+
+We solve this by putting the whitespace, if any, at the beginning of the parse rule or branch, so that if the rule fails the whitespace remains unconsumed.
+
+Any solution which handles these cases correctly should be sufficient for the rest of the language:
+
+a
+b
+
+a
+;
+
+return a}
+
+return
+a
+
+a
+++ c
+
+a
+/b/i
+
+a
++ b
+
+for(a
+b
+c){
+
+To parse the above examples correctly:
+
+Start ← (Statement / S)*
+Statement ← RetStmt / ForStmt / ExprStmt
+ExprStmt ← Expr EOS
+RetStmt ← ReturnToken SnoLB? Expr? EOSnoLB
+ReturnToken ← "return" !(IdentifierPart)
+ForToken ← "for" !(IdentifierPart)
+Expr ← DivExpr (S? '+' S? DivExpr)*
+DivExpr ← IncExpr (S? '/' S? IncExpr)*
+IncExpr ← PreInc / PostInc / PrimExpr
+PreInc ← "++" S? PrimExpr
+PostInc ← PrimExpr SnoLB? "++"
+PrimExpr ← "a" / "b" / "c"
+S ← (WhiteSpace / LineTerminator)+
+SnoLB ← WhiteSpace+
+EOS ← SnoLB? ( S? ";" / LB / &("}") ) ; end of statement is either a semicolon, a linebreak if a semicolon is absent, or implied by a following closing brace (which is not consumed)
+EOSnoLB ← SnoLB? ( ";" / LB / &("}") )
+ForStmt ← ForToken S? "(" S? Expr S? ";" S? Expr S? ";" S? Expr S? ")" Statement
+
+Can we minimize this at all?
+
+One way would be to put every token, even "(" and other punctuators, in rules of their own, and then add optional leading whitespace, including linebreaks, to every token, with additional noLB variant rules where necessary.
+Then ForStmt would be written as:
+
+ForStmt ← ForTok OpenParen Expr SC Expr SC Expr CloseParen Statement
+
+S could be made to match the empty string, replacing S? with S everywhere, but I think the clarity, and minimizing the number of rules that match ϵ is worth more.

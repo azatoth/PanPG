@@ -1,66 +1,30 @@
-var reference_url='http://boshi.inimino.org/3box/PanPG/about.html'
-  , current_version='0.0.8'
-
-function build_compiler
- (API_compiling
- ,API_debugging
- ,API_support
- ,PEG_codegen_6_attr_js
- ,PEG_codegen_6_js
- ,             _tree_attribution
- ,             _dfa_generation
- ,             _dfa_output
- ,             _character_equivalence_classes
- ,             _rle
- ,             _expression_flags
- ,parsePEG_js
- ,re_js
- ,lists_js
- ,cset_prod_js
- ,assert_js
- )
- {var comment,requires,exports,body
-
- comment= '/* PanPG '+current_version+'\n'
-        + ' * PEG → JavaScript parser generator, with its dependencies.\n'
-        + ' * built on '+(new Date).toUTCString()+'\n'
-        + ' * See '+reference_url+'\n'
-        + ' * MIT Licensed\n */\n\n'
-
- exports=
-  ['generateParser','explain']
-
- requires=[]
-
- body = API_compiling +'\n'
-      + API_debugging +'\n'
-      + API_support
-      + '\n\n /* parsePEG.js */ \n\n'
-      + parsePEG_js
+function build_PEG_compiler(PEG_codegen_5,PEG_codegen_5_js,TAL_match_js,PEG_v5,re_js,lists_js,cset_prod_js,PTNode_js){var tree,talProg
+ tree=PTNodeTALDict.fnParse(PEG_codegen_5)
+ talProg=PTNodeTALDict.fnCompile(tree,{functionName:'PEG_codegen_5'})
+ return '/* PEG, with its dependencies. */\n\n'
+      + PEG_codegen_5_js
+      + '\n\n /* PEG_v5 */ \n\n'
+      + PEG_v5
+      + '\n\n/* generated code, do not edit */\n'
+      + talProg
+      + '\n\n/* TAL supporting code */\n\n'
+      + TAL_match_js
       + '\n\n/* re.js */\n\n'
       + re_js
       + '\n\n/* lists.js */\n\n'
       + lists_js
-      + '\n\n/* assert.js */\n\n'
-      + assert_js
       + '\n\n/* CSET */\n\n'
-      + ugly_hack(cset_prod_js)
-      + '\n\n/* PEG_codegen_6_attr.js */ \n\n'
-      + PEG_codegen_6_attr_js
-      + '\n\n/* PEG_codegen_6.js */ \n\n'
-      + PEG_codegen_6_js +'\n\n'
-      + _tree_attribution+'\n\n'
-      + _dfa_generation+'\n\n'
-      + _dfa_output+'\n\n'
-      + _character_equivalence_classes+'\n\n'
-      + _rle+'\n\n'
-      + _expression_flags+'\n\n'
+      + cset_prod_js
+      + '\n\nCSET.import(\'\',CSET)\n\n'
+      + '\n\n/* PTNode.js (for showTree() only) */\n\n'
+      + PTNode_js}
 
- return comment + build_module('PanPG',requires,exports,body)}
-
-// one module is included directly in another here, with the 'typeof exports' test this doesn't work well, so we use an ugly hack.  A better solution will be to have some dependency system fold the required module in.
-
-function ugly_hack(cset){var test=0,ret
- ret = cset.replace(/typeof exports=='object'\?exports:CSET={}/,function(){test=1;return 'CSET={}'})
- if(!test)throw new Error('the ugly hack broke')
- return ret}
+// remaining dependencies:
+// p_PEG_v5_RuleSet (parser) comes from ../PEG_v5.js
+// PEG_codegen_5 this is the compiled TAL program
+// codegen_v5 and the rest of PEG_codegen_5.js
+// re_union, from ../re.js
+// foldl1, from ../../3box/lists.js
+// CSET, used by PEG_codegen_5, from ../cset_prod.js
+// showTree, not actually a requirement but nice to have, from ../PTNode.js, though we really don't want most of the rest of that file
+// something to tie it all together with options, etc

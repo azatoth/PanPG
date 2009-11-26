@@ -1,0 +1,337 @@
+cset.fromString was only correct on strings of sorted character points, which I had already forgotten by the time I used it later in the same file
+ solved by rewriting fromString() (which was needed anyway to deal with non-BMP characters)
+
+semicolon insertion bug:
+ return {import:function(prefix,object){object=object||this // <-- no semicolon, parses as this[...]
+  [['fromChar',fC]
+
+syntax error, leaving off opening brace from the block in an if statement "if(SPRE.test(s)){"
+
+bug caused by renaming var diff to d, renaming function difference to diff, and leaving old references to diff (as the variable) around
+
+funny bug: there is a required global variable cset_unicode_categories, declared in generated code.
+the file exists, but since the variable is used in the CSET module before the generated code is included, there is a reference error which prevents the code from getting to the point where the variable is declared.
+Commenting out the offending use allows the rest of the code to run, inserting the global into the window.
+The use can then be uncommented and the code continues to run.
+Moral: a system such as 3box may have more than one fixed point.
+
+bug in cset_fromString, characters outside the BMP aren't handled as such
+ misuse of & where | was required in the expression: return 0x10000+(((hi&0x3FF) << 10) | (lo&0x3FF))}
+
+bug in 3box: while trying to debug cset_fromString, since the function is called by other functions, and those functions are now called during CSET module import to generate the value of reCC.safe, there is no longer the flexibility there once was in returning nonsensical-but-useful debugging output.
+Moral: it would be very nice to have 3box only deal with the current function being edited (at the user's choice) and the inputs to that function would be fixed.
+No other functions should be changed, and dependencies on a function shouldn't break while it is being intentionally broken-for-debugging.
+
+cset: bug in new ctor:
+function push(p,c){
+ if(p[1]){
+  if(p[2]+1 != c)p[0].push(p[2]+1,c) //close previous open range
+  p[2]=c}
+ else{
+  p[0].push(c)
+  p[1]=true
+  p[2]=c}}
+when pushing, failed to push the character onto the stack after closing the previous range.
+This was pure stupidity and a failure to ensure the invariant (even though it was documented) that push() always leaves the partial cset in the open state (hence it would have to have an odd number of elements, and pushing only one element breaks this invariant)
+interestingly, the only commented line in the entire set of related functions was the one with the bug, perhaps because the comment obscured or derailed my thought process about what else needed to be done
+Some direct debugging, including looking at incorrect output of the function repeatedly on very simple inputs did not make the problem immediately obvious, though it is hard to know why.
+
+cset: set difference operator is either buggy or does something that is not set difference and is misnamed (or I'm confused)
+ this was not a bug but my own stupidity in testing, trying to call cset_fromList on something that was already a cset, not a list, like an idiot
+
+cset: bug in Unicode general properties, parsed from UnicodeData.txt by code that did not handle ranges (actually this is more a new feature than a bug fix)
+
+cset: output of toRegex(fromIntRange(0,0xFFFF)) is "[\u0000-\ud7ff\ud801-\uffff]|\ud800[\udc00-\udbff]|[\ud800]", should be "[\u0000-\uffff]"
+ the problem was that when the range ended on 0xFFFF, splitAtBMP returned the ranges (0-0xFFFF, 0xFFFF-0xFFFF) instead of (0-0xFFFF, nil)
+
+re.js: in two functions:
+ function re_sequence(res) res.length>1 ?[2,res] :res
+ the return in case length==1 was not a re but a list of 1 re, corrected to:
+ function re_sequence(res) res.length>1 ?[2,res] :res[0]
+
+re table post-process: in the part of the algorithm that was not already documented (because I forgot about it) the code that I added in once I realized it would be necessary was broken in at least two ways
+
+PEG codegen: had add(o,x) for add(o,x[1]), type error
+
+re output incorrectly matches a string literal when in fact there is a string literal later in the string, the reason is apparently insufficient parenthesization of the serialized re
+
+Firefox, probably:
+ this one is fucking nuts
+ it seems to have something to do with regex literals not doing the same thing depending on how many times they are used, or something.
+ I've been debugging it for a day already.
+ I upgraded Firefox to a new trunk build and a bunch of my parser tests (in code I haven't touched in weeks) went from green to red.
+ these are tests that have not failed since the code was originally written.
+ currently trying to create a minimal test case and see wtf is actually going on.
+ among other things, adding a simple logging call to one function, changes the behavior.
+ in fact, just a reference to the log function changes it.
+ in fact, just adding the statement "window;" causes the problem to go away.
+ so it's probably some kind of over-eager optimization but fuck if I can guess what.
+ currently I'm copying and pasting all the functions that the offending test calls (and all the functions that they call...) into the test function so that everything is in one place.  it would be easy for an editor that parses the code and has a call graph to do this for me automatically, and that would be a great help for this kind of bizarro debugging crap.
+
+re.js this is a bug where a union is getting serialized without parens and substituted into an ordChoice, so for a(b|c) you get instead ab|c and things break
+ in this case it leads to an re that should not match ϵ but does, and put that in a rep(0,0,x) and you got an infinite loop.
+ we should check for these things in PEG, though since this was a codegen bug that wouldn't have helped here, but having the same behavior with a bad PEG would not be pretty, if we can catch at compile time, all the better.
+ at this point I've done some serious debugging of re_serialize, and it occurs to me now to look at the PEG grammar, and I think... wouldn't it be funny if the bug was actually in the grammar I wrote and not the codegen?
+ but it doesn't seem to be, in fact it's every bit as simple as the a(b|c) mistake I first guessed.
+ it took me all this time to construct a test case, however, which is unfortunate.
+ ah, bug found, in the following:
+function re_serialize(re){
+ return f(re)
+ function g(re){return f(re,1)}
+ function f(re,noparen){var q,cs
+  switch(re[0]){
+  case ...
+  case 2:
+   return re[1].map(f).join('')
+  case 3:
+   return (noparen || re[1].length<2)
+            ? ...
+            : ...
+ the idea here was that f would be called recursively when parentheses were needed, and g would be called otherwise.
+ the idea is that f would be called with no second argument, and therefore noparen would be falsy, which matters in case 3.
+ however.
+ when we call f recursively using .map(), .map() calls f with more than one argument.
+ specifically it gives something like the array element, the index, and the entire array.
+ so obviously noparen is coming back truthy, and we are fucked. QED.
+ lessons learned:
+  the mapping from functional programming concepts in JS is still fairly weak.
+  relying on the lack of an argument rather than an explicit 'false' may have been a bad idea.
+  the .map() that is in JavaScript is not the true map
+
+ECMAScript_unified.peg: there is a rule LHSExpr ← NewExpr / CallExpr, where NewExpr contains prefixes of members of CallExpr, so it shadows them.
+ it would be nice if PEG can detect some of these cases.
+ it would be nicer to have an | operator, where "A | B" is operationally equivalent to "A / B" but additionally makes the compile-time assertion that A and B are disjoint; if the PEG cannot prove that "A | B" and "A / B" and "B / A" are equivalent, then "A | B" cannot be used and the user will have to choose between A / B and B / A.
+
+ECMAScript_unified.peg: The ECMAScript unified PEG is stopping parsing of API.js at char 653.
+ the parse tree suggests NumericLiteral may be to blame.
+ the actual problem that x does not parse as y where x="var a,b";y=p_ES5_VariableStatement
+ actually, that shouldn't parse because there's no EOS
+ actually, the problem there was that my testing was all fucked because I forgot how bad ES string literal syntax sucks again
+ the actual problem is where x="function f(){ret=applyTMProg()}",y=p_ES5_FunctionDeclaration
+ which is caused by the failure of x="a=f();",y=p_ES5_Statement
+ which is casued by x="a=f()",y=p_ES5_AssignmentExpr only consuming one character instead of five
+ "a=b" doesn't work either...
+ which, again, is because of bad order between alternatives in the PEG
+
+ECMAScript_unified.peg: The ArgumentList rule (which is supposed to match everything between the parens of a function call) failed because of a "?" appearing in place of a "*" in the grammar.
+
+ECMAScript_unified.peg: The IfStatement rule inadvertently left out else clauses.
+
+ECMAScript_unified.peg: EOS doesn't match at EOF
+ this one was known and expected, I just hadn't thought of how to deal with it yet.
+ the PEG parser generator currently doesn't have a way to express EOF
+ actually it does: !([^])
+ EOF is the position at which a lookahead assertion which matches any character will fail
+
+ECMAScript_unified.peg: CaseClause had Identifier in place of Expr, and so failed to match, e.g. "case 'x': ..."
+
+ECMAScript_unified.peg: CaseClause had "S? Statement" in place of "(S? Statement)*" and thus failed to match any case clause with more or less that one statement.
+ interestingly, I note that the grammar allows "switch(0){case 0:}", i.e. an empty case clause at the end of a switch statement, which seems semantically dubious at best.
+
+ECMAScript_unified.peg: FunctionExpr and FunctionStatement disallowed whitespace between ")" and "{" due to an oversight (apparently none of my own code has any such whitespace, since I didn't notice it until I tested jQuery)
+
+ECMAScript_unified.peg: ArgumentList did not allow whitespace following the comma after an argument, so "f(a, b)" would not parse.
+ With this fix, jQuery's core.js is now parsed successfully to the end of the file (there may still be errors in the parse tree of course).
+
+3box: I wrote a function which copied all the properties of an object to a new object, and then changed one of them
+ I spent quite some time finding out the bug, which was that I actually forgot to change the one...
+ The code involved a for..in loop; had I used a direct Object.copy or some such method, I probably would have remembered what I was doing long enough to actually finish it
+
+3box: in the new feedback registration system, where state values are named by strings, I wrote 'file_contents' in place of 'server_file_cache' where these are both existing state values but have a slightly different purpose; this is the first error of this kind under the feedback system
+
+3box: there are two server update feedbacks, and they may conflict with each other.
+ in particular, changing a file, then changing it back and quickly switching to another file writes the modified version to the server after a timeout
+ solved (under some assumptions) by using a shorter timeout to ensure that current_buffer == <textarea>.value always holds
+
+3box: there is a bug in the conf file parser and/or the pure function feedback list feedback, whereby only the last pure feedback appears in the list
+ caused by putting the code to clear the list inside tho loop that populates it
+
+3box: when loading, the file contents don't seem to be initialized properly; pure feedbacks fail since the functions aren't defined, and the current_buffer is empty even if the current file is not an empty file
+ solved by adding back the code that updates the current_buffer after updating the file list once the file cache is fully populated
+
+3box: the syntax feedback no longer works
+ seems to have been fixed
+
+3box: there is a bug related to server updates, where a pending update is not canceled when the state of the buffer is returned to the state that matches the server file cache.
+ solved by canceling the pending timeout
+
+3box: there is a new server update incorrect save bug.
+ actually it appears to be an unnecessary save, not an incorrect save.
+ solved by adding the same timeout cancel to the other server update feedback
+
+3box: there is a bug when adding a file to the conf file, and then navigating to it, which ends up writing the contents of the first file to the server as the contents of the new file, and then removes the file from the list.
+ I think the cause is that registerFileContents is not correct under the new way that server_file_cache is updated
+ what happens is this: we track three state values: the server file contents, the current buffer contents, and a set of most-up-to-date file contents which is the server file contents for most files, with the current buffer contents overlaid.
+ however...
+ there may be a dirty buffer which is not the current buffer, since network saves are asynchronous and we only update the server file cache once the PUT request succeeds
+ so we should assume the file_contents may be more current than the server file cache, and only update file_contents from server_file_cache when it is not already populated with that file
+ changing this, somewhat shockingly, didn't seem to change *anything*.
+ perhaps I eliminated a bug that was not getting exercised...?
+ actually the way in which I changed this was only a partial fix, making the full change however did seem to fix the problem
+
+3box: there was a bug in pure feedbacks, basically an indentation/nesting bug, where an if statement was incorrectly put inside another if statement though they needed to run independently.
+
+3box: there was a bug in the file_contents updater, which was stupidly 'fixed' by me in a way that added another bug.
+ there was an object 'o' being updated, and a line 'o=o||{}' to handle the initialization case.
+ following that was code that maintained existing values already existing in o.
+ the bug was that o might contain values that need to be deleted, and reusing the same object did not remove values, there was only a loop that updated the values that should have existed.
+ I changed the line to 'o={}' which resolved the problem of leaving properties on the object that should not have existed.
+ However this introduced the new problem of making all the subsequent "o[x]=o[x]||..." statements pointless.
+ this was a really stupid lazy kind of way to introduce a bug and I feel quite embarrassed about it
+ solved by keeping 'o=o||{}' and adding a separate loop to delete properties of o which are no longer needed
+
+3box: outputs aren't apparently retrieved from the server correctly, or something
+ the problem is that output_contents and file_contents are in different formats, one is {} keyed by file name, the other is just []
+ fixed by fixing this discrepancy (I think some other things might be cleared up by this as well, viz getFile() will work on outputs again)
+
+3box: there is all kinds of breakage when using 3box on 3box, I think the problem is that the pureWorker.js is included in the environment, so when the worker eval()'s the environment, it overwrites it's own onmessage handler.
+ this would be solved by having more control over javascript_environment
+ fixed in the meantime with a hack in pureWorker.js
+
+3box: 'server error 0' bug
+ when an XHR for a file on the server is canceled, which happens when a file is being typed in the conf file and it is requested but then the filename is changed before the request is completed, we get a 'server error 0' message displayed.
+
+3box: the following:
+   if(fb=='syntax')opt.value='syntax'
+   else opt.value='pure '+fb})
+ was changed to:
+  if(fb=='syntax')opt.value='syntax'
+  if(fb=='_iset')opt.value='_iset'
+  else opt.value='pure '+fb})
+ obviously this makes the if(fb=='syntax') statement no longer relevant to the else clause, which was not the intention of the edit
+ possibly syntax highlighting would have helped spot this, but only if the syntax highlighting changes happen in such a way that they are useful for detecting unintended changes to semantics.
+ if the syntax highlighting is too 'jumpy' then the original and final syntax highlighting states of that edit may have been separated by many intermediate states, so the effect of seeing an 'unexpected' color change in the else clause would be lost.
+ (it's also possible that such changes will just be filtered out while programming and will have no value anyway)
+
+3box: the server is getting updated too frequently (after partial rewrite of server updater and two other feedbacks)
+ this cost some hours and was caused by some unexpected side effects of the way putState() works
+ specifically, if an old state value was requested as an input, fireFeedback would only include that input if the state value changed.
+ solved by fixing putState() (actually fireFeedback()) but this whole framework needs some design work
+
+TAL: interesting bug in the following:
+ ,highWaterParent:function(){var i,l
+  for(i=0,l=this.ancestors.length-1;i<l;i++){
+   if(this.ancestors[i]==this.highWaterMark)
+    return this.ancestors[i+1]}}
+ the bug should be instantly visible because of the following property:
+  the for loop iterates from 0 to length-2, i.e. it loops over all but one of the ancestors.
+  however, the function is intended to return each ancestor in turn, so the code cannot be correct.
+  the number of successful return conditions is too low to satisfy the correct behavior
+
+TAL: the tree walking and matching algorithm isn't visiting every node in the tree
+ ... for fuck's sake.
+ the problem was that loop variables i and l were not declared anywhere.
+ I spent all kinds of time looking for something else that might be mutating i or l, before it ever occurred to me to look for where they were declared.
+ (This was a mistake made in generated code.)
+
+3box:
+ in the file content updater feedback, the code was modifying the existing object, and then putting the modified copy to the state space.
+ the problem with this is that if something requests old file_contents and new file_contents and compares their properties to see if something needs updating, they will always be equal since it is the same object
+ I fixed three or four more of these bugs in code I wrote recently.
+ If possible, using const with state values, or sealing them somehow, would be a good idea.
+
+TAL:
+ there is an error by which [x]D*[y]D incorrectly fails to match nodes
+ replacing D* with DDD, e.g. works correctly, so the error is probably in the *-expr generated code
+ after attempting to prove the code correct, and utterly failing to deal with the complexity of it, I have resorted to debugging
+ the bug is solved, the problem was confusion on my part regarding how the algorithm that I designed actually works
+
+PEG:
+ a bug with parse tree reconstruction from result tables was discovered while describing a new algorithm.
+ thinking about how the new algorithm would handle a particular case, I eventually realized that the current code did not handle it either.
+ testing at this point revealed the bug did indeed exist, though all previous testing (including parsing entire JavaScript libraries using parsers generated by the buggy code) had failed to expose the bug.
+
+PEG:
+ wrote a zip() function which did not work because I named both the first argument and the result variable 'a'.
+ this is one of a few mistakes I have made recently with same-named variables
+
+PEG:
+ A rule SourceCharacter ← [ U+0000-U+10FFFF ] which ought to match any Unicode character produces the generated code:
+  function cs_11(){var c,x;if(pos==l)return false;c=g();x=c<85?0:c<86?1:0;if(x){pos++;return true}return false}
+ this matches only "U", which is certainly suspicious.
+ the problem was that that part of the codegen wasn't finished, and it was taking the 'U' from the 'U+0000' as the actual character.
+
+PEG:
+ In generated code, wrote the following:p=tbl[z[0],z[1]][1], when what was intended was: p=tbl[z[0]][z[1]][1].
+ what is truly mysterious about this bug is that it took me nearly an hour of scrutinizing the code to catch it.
+ I knew that that statement was very likely the cause of the bug, yet the utterly bogus array index syntax did not catch my attention.
+ partly this is probably due to the lateness of the hour, but also, the syntax I used corresponds well to my mental model of the 2-d array.
+
+nhttpd:
+ I wrote a function which returns an inner function which takes the remainder of the arguments (poor man's currying), as I frequently do, in the following style:
+ function f(a){return function(b,c){...}}
+ but with the following twist (which I also do fairly frequently now:
+ function f(a){return function f(b,c){...}}
+ so that the inner function, in debugging/tracing/etc would have the name of the outer function, however, this created a problem, because:
+ function f(a){return function f(b,c){ ... f() ... }}
+ the function call inside the inner function was now calling the inner function, not the outer function.
+ The return type was all wrong, so this is something a type system would have caught.
+ Moral: if you name inner functions like this, prepend the name of the inner function with an underscore:
+ function f(a){return function _f(b,c){ ... f() }}
+
+nhttpd:
+ In a call to a filesystem api, wrote node.O_CREAT|node.O_RDRW (instead of O_RDWR).
+ because of JavaScript's behavior with undefined and the | operator, this was not caught by the interpreter.
+
+nhttpd:
+ go(segments,tree.getTreeMutating(segments.pop()+'/'))
+ wrote .pop() for .shift(), and ended up with code which reconstructed a directory hierarchy in inverted form (e.g. /etc/fstab would now become /fstab/etc).
+ A somewhat humorous bug, once solved.
+
+nhttpd:
+ by excessive (or insufficient) cleverness, wrote: while(lastrev=this.revs[--i] && lastrev[0]==1)
+ actually intended was: while((lastrev=this.revs[--i]) && lastrev[0]==1)
+ capable syntax highlighting might have helped catch this one
+
+nhttpd:
+ instead of: Leaf.prototype.getLastRevTimes=function(n){var ret=[],l ...
+ wrote: Leaf.prototype.getLastRevTimes(n){var ret=[],l ...
+ I have made this particular typo so many times it is ridiculous
+ proper syntax highlighting would flag this error immediately (as would the existing 3box continuous syntax error checking)
+
+nhttpd:
+ ... the same mistake as above, but on the very next function after it ...
+
+nhttpd:
+ an off-by-one error in:
+ Leaf.prototype.getLastRevTimes=function(n){var ret=[],l
+  for(l=this.revs.length,n=Math.min(l,n);n;n--){
+    ret.push(this.revs[l-1-n])}
+  return ret}
+ the l-1-n should be simply l-n
+ after all these years of doing array arithmetic I still do not feel I have adequate mental machinery for getting it right reliably
+
+nhttpd:
+ massive bug, have been hunting since yesterday... something to do with timestamps not having the same number of digits everywhere they are used, or something
+ probably nothing to do with that, seems to have been a red herring, (an unrelated bug is putting too many digits in the timestamp in the URI, but the behavior with that bogus timestamp is still broken)
+ the bug can be described as follows:
+ there is a tree.getChildNames(ts) method which returns the names of the children of a given tree at a given time in the past (or in this case, future, due to the above-mentioned bug)
+ these create links which when dereferenced should give the contents of that resource as it existed as that time
+ the contents are stored in a file on disk, the name of which should be returned by leaf.revisionPathAtTime(ts)
+ however, the getChildNames() function is returning names for which the leaf has no corresponding file, and this is the bug.
+Leaf.prototype.revisionPathAtTime=function(ts){var i,l
+  for(i=this.revs.length;i--;)
+    if(this.revs[i][1]<ts && this.revs[i][0]==0)
+      return this.fname(this.revs[i][1])}
+ simplified to eliminate the revs[i][0]!=0 possibility (though I know that does not apply in the case I am testing)
+Leaf.prototype.revisionPathAtTime=function(ts){var i,l
+  for(i=this.revs.length;i--;)
+    if(this.revs[i][1]<ts)
+      return this.fname(this.revs[i][1])}
+ there are at least two bugs here
+ one is that both ts and this.revs[i][1] are stored as strings, though they are intended to be compared as numeric values
+ the other is that ts is an absolute timestamp (relative to the epoch), while revs[i][1] is relative to the time the leaf was created
+ the moral here is that if you don't know what types your variables have, there is no hope
+ also, writing things down probably shortened considerably the time to find a bug, so doing this at the start would have been a good investment
+ bug solved by enforcing numeric types everywhere timestamps are used, by adding typeof tests that throw exceptions, and then fixing all the exceptions
+ so this was not an error of reasoning but was an error of an inadequate model of the computational environment, specifically, wishful thinking with regard to the types of values.
+
+nhttpd:
+ there is another bug which is that none of the resources are available in the correct places.
+ /3box/doc/users is a 404, but /3box/doc/doc/users is accessible.
+ something is adding this extra path
+ and it doesn't matter what the extra path component is... /3box/xxx/doc/users works just as well
+ oddly, everything is there under /3box/xxx/, including the directory listings
+ ...how could I have been so blind.
+ there is a null (catchall) entry in a PathBranch, and of course this consumes a path component
+ I knew of this problem before

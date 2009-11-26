@@ -1,0 +1,9 @@
+* {border:0;padding:0;margin:0}
+pre {white-space:pre-wrap;background:#111}
+.ECMAScript {background:#000;color:#fff}
+.fundef {display:inline-block;border:2px solid #00f;background:#000;width:99%}
+.struct {color:#888}
+.funbod {}
+.lit {color:#ff0}
+.varstmt {background:#303;border:1px #f0f;border-style:none solid}
+.retstmt {background:#007;border:1px #00f;border-style:none solid}

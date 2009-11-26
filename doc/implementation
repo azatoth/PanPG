@@ -1,0 +1,151 @@
+Title: Practical PEG Parsing
+Date: 2009-02-04
+Status: notes
+
+## Standard packrat parser implementation
+
+- every rule corresponds to a parser function as in a recursive descent parser
+- on success or failure, the result of every such function (let us call them p_ functions) is memoized in a table.
+- this table is consulted before calling such functions, so the same p_ function will never be called twice with the same input.
+
+Memory usage is O(n) in the size of the input string, given that the table is a fixed number of rows (one per rule) and each added terminal symbol in the input adds a column, thus increasing memory requirements by some multiple of the number of rules.
+
+Time is also O(n).  [Proof?]
+
+Other parser algorithms have both better asymptotic constraints on space usage, but lack some of the flexibility and convenience of PEGs.
+
+## Optimizations
+
+### Chunk dropping
+
+A simple optimization, which can parse common input on common grammars in constant space, is to chunk the input into discrete units, and discard parts of the result table once the associated chunk is no longer a candidate for backtracking.
+
+Consider a grammar with start token S defined by a parsing rule of the form:
+
+S ← E+
+
+as is a common case in parsing, e.g. programming languages in which a program consists of a sequence of statements, each of which is self-contained.
+
+Once a given call from p_S to p_E has succeeded, even if a subsequent p_E call fails, the top-level rule will never backtrack into the part of the input which was matched by the successful p_E call.
+This means that the space consumption is not a function of the input length, but of the longest span of input which is either matched by an E rule, or examined by a failing p_E call.
+
+Unfortunately, this optimization cannot be applied to arbitrary rules of the above form which are not at the top level without giving up the linear runtime guarantee.
+
+### Probabilistic branch choice
+
+In cases such as 
+
+A ← B / C
+
+where B and C are disjoint (i.e. there is no string accepted by both), attempting to match either B or C first will give the same parse result.
+In case parse failure of either B or C is computationally costly, statistical analysis can be used to determine criteria for which is the most likely to succeed, on the basis of context, previously parsed terms, etc, and the most likely rule can be tried first.
+
+## ECMAScript packrat parser implementation
+
+### Storing the result table
+
+The result table is the most frequently accessed data structure in a packrat parser and should be made as fast as practical.
+ECMAScript doesn't have data types optimized for fast low-level access, but it does have hash tables and arrays.
+
+We use a simple array of objects for now.
+Each element in the array represents a position in the input, and includes properties for every p_ function that has been tried at that position.
+
+### Control flow
+
+We have a function parse() which is called with an input string, a set of p_ functions, and a p_ function to be matched.
+
+Each p_ function will check the result table before it tries to parse the string.
+
+All CharSet expressions will be matched by ECMAScript RegExps, with character ranges calculated from the expression and a table of Unicode property values for all supported properties.
+CharSets that are modified by '{m,n}', '*', '+', or '?' will also be translated into RegExps (though this may need to be partially unrolled later as tree operations are to be performed).
+
+The regex matching function can match the regex against the string, but cannot perform lookups in the result table since this is based on rule names rather than on regex equality.  Since both the p_ functions and the regexes will be machine generated, we may just as well inline the regex matching function into the p_ functions as they are generated.
+
+Each parsing function either succeeds by returning true and (possibly) consuming input, or fails by returning false and consuming no input. 
+
+Parse functions derived from PEG rules are named with a leading "p_" and are often referred to as "p_ functions".
+
+Parse functions are called with a state object, which they modify, by advancing the current position if they succeed, and by recording the result of the parse attempt (success or failure) in the result table. 
+
+Combinators such as seq(), rep(), and ordChoice() take one or more parse functions and return an anonymous parse function which combines the provided functions in some way.
+These combined parse functions take the same arguments, and otherwise behave the same as named p_ functions.
+
+There are also some helper functions such as re() and strLit(), which are called only by parse functions.
+
+### Tree Construction
+
+If a string is matched, the caller will often want to do something with the parse tree.
+For this we provide an API method which parses a string against a PEG, and in the case of success returns a parse tree.
+
+Parsing proceeds as usual, with the exception that we add an additional datum to each success record in the result table.
+
+A ← B / C
+B ← D E F
+C ← G I
+G ← D E
+
+Assume an input which matches C.
+
+The new row holds a parent pointer for a successful match at the given point.
+When a p_ function A, matching against position P1, calls a p_ function B which then succeeds at position P2, then B sets the value in the parenting row at column P2 to the pair (A,P1).
+Parenting information may be overwritten by later successful matches, but after a successful top-level match the parenting information which remains is sufficient to construct the corresponding parse tree.
+(When additional data is needed to support error reporting, the replacement behavior may be replaced by appending to a list.)
+
+#### Rule Limitations Imposed by Parenting
+
+A rule RHS must match the OrdChoice production:
+
+(syntactic noise omitted for clarity)
+
+OrdChoice  ≔ Sequence+
+
+Sequence   ≔ SeqUnit+
+
+SeqUnit    ≔ Repetition / PosRep / MNRep / Optional / ParenthExpr / AtomicExpr
+
+This allows a ruleset such as the following ordered choice between two sequences:
+
+S ← A B C / D E F
+
+Suppose that on a given input, A and B match but C fails, and then D E F are tried and succeed.
+
+The parenting row will now contain (S,0) pairs for all of A, B, D, E, and F, though only D, E, F are legitimate.
+
+We define a subset of the full PEG grammar for which such ambiguities can be shown not to arise, and then [either redefine the language to be this subset, or define a mapping onto it by creating names for anonymous groups, sequences, etc, or both]
+
+We define a terminal atom RHS as any construct which can match at most one single terminal (e.g. one single Unicode character).
+A terminal string RHS is any construct which may match only a string of zero or more terminals directly, without reference to any non-terminal productions.
+[This covers character sets, string literals, as well as repetitions, sequences or ordered choices made up entirely of terminal RHSs.]
+
+Within these, the parse tree will not conserve any further structure (such as distinguishing between a "abcd" rule and a "ab" "cd" sequence, or even a [a-z]+ character set rule that happens to match against an "abcd" input).
+
+All RHSs which do not fit the terminal-string RHS description are called compound RHSs.
+
+Compound RHSs, like all RHSs, must match the OrdChoice production above.
+
+If an OrdChoice contains a single sequence (of unambiguous elements), the parse tree will be unambiguous.
+(Either it will all match, or all fail.)
+
+If a RHS is an OrdChoice of more than one sequence, but each sequence contains only a single non-terminal, there can be no ambiguity.
+(At most one non-terminal will match, and any successful children of failed matches will be children of that non-terminal, not us.)
+
+In any other case, an OrdChoice RHS includes both more than one choice and at least one choice which is either a sequence of length > 1, or a sequence of length 1 consisting of a terminal string rather than a non-terminal.
+In either case, for each such sequence, we mint a new rule name (e.g. by appending something to the existing rule name) and add this to the set of p_ names (and hence to the set of result table rows).
+In the RHS we replace the sequence with the new rule name, and we then add a rule with the new rule name as the LHS and the sequence as the RHS.
+[The unique rule names created can be exposed to the user as such, or they could be exposed as "anonymous N" or similar, where N is unique only within the parent rule rather than globally (e.g. "A ← B C / D E" would give an "anon 1" or "anon 2" child).]
+
+[fill in the rest of this section as necessary for other similar ambiguous situations, e.g. ParenthExprs]
+
+#### Reconstructing the Parse Tree
+
+To reconstruct the parse tree from a result table, it is sufficient to begin at the row corresponding to the top-level p_ rule, in column zero of the result tree, and, if that call was successful, look for any pair in the parenting row that matches that rule at position 0.
+Add those matches, in ascending input string position order, as children of the top-level parent, and proceed recursively for each such added child.
+The expansion of this tree can be performed lazily as the data is requested.
+
+... The above may be missing the whole point of packrat parsing ...
+
+The need to record parent information means that ...
+
+ah, ok
+
+State.prototype.start just needs to record the new parent if it returns true or false

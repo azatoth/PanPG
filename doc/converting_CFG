@@ -1,0 +1,55 @@
+The following CFG cannot be converted to an equivalent PEG without eliminating the left recursion.
+
+A → B
+  | A C
+  | A D
+  | A E
+
+A ← B ( C / D / E )*
+
+Well that was easy.
+
+A ≔ B
+  | C
+  | A D
+  | A E
+  | F A G
+
+A ← ( B / C / F A G ) ( D / E )*
+
+Not so hard.
+
+From ES5, simplified:
+
+LHS ≔ NExpr | CExpr
+
+where we have:
+
+CExpr ← MExpr A (A / B / C)*
+NExpr ← MExpr / D NExpr
+
+MExpr ← E / D MExpr A
+
+The immediate problem is that LHS ← NExpr / CExpr fails on valid input because NExpr matches prefixes of CExpr.
+The structure of MExpr is important, because D MExpr can be a prefix of a valid MExpr, so NExpr cannot be rewritten as D* MExpr.
+NExpr tries MExpr which will match Dⁿ E Aⁿ, and if this fails will match one leading D and try NExpr again.
+
+MExpr = Dⁿ E Aⁿ
+NExpr = D* Dⁿ E Aⁿ
+CExpr = Dⁿ E Aⁿ A (A|B|C)*
+LHS = D* E (A|B|C)*
+
+So the language matched by LHS is simple, but we are concerned not only with matching the correct language, but also in finding the parse tree with the correct semantics.
+Disregarding B and C for the moment, what we match is an E preceded by D* and followed by A*.
+If the number of A and D matches is equal, the parse is NExpr → MExpr → Dⁿ E Aⁿ.
+If there are more A matches, we have a CExpr.
+If there is a surfeit of Ds we have an NExpr.
+The CExpr will match in all cases when there is at least one extra A, the NExpr will match in all other cases, so CExpr and NExpr are disjoint, and the grammar can be written as LHS ← CExpr / NExpr.
+
+But this not sufficient, if what we want is not to consume a complete input, but rather find the longest LHS match possible on a given input string.
+For this it is necessary that we fail to match as a CExpr or NExpr if it is the case that the other would match a longer string.
+
+Assume that prefixes of a given string will match either as CExpr or NExpr.
+Then both will match the same sequence of Ds, followed by the same occurrence of E.
+(It is the case in this grammar that E is disjoint from all other productions appearing above.)
+Then if one of the two is longer

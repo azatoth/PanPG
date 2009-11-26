@@ -1,0 +1,98 @@
+[RuleSet] D[Rule]B*
+ code ≔ Ds.fdecl.join('\n')
+
+[Rule] D[NonTerminal] BD[OrdChoice]
+ nm ≔ D.match
+ fdecl ≔ 'function $PREFIX$'+.nm+'(s,p){var c=s.pre(\''+ .nm+'\',p);if(typeof c==\'boolean\')return c;return s.fin(c,p,'+BD.p+'(s,c))}'
+
+[AtomicExpr]D[NonTerminal]
+ p ≔ '$PREFIX$' + D.match
+
+[AtomicExpr]D[CharSet]
+ p ≔ 're(/^'+CSET.toRegex(D.cset)+'/)'
+
+[AtomicExpr]D[StrLit]
+ p ≔ 'strLit('+D.match+')'
+
+[AtomicExpr]D[Empty]
+ p ≔ 'empty'
+
+[ParenthExpr]D[OrdChoice]
+ p ≔ D.p
+
+[OrdChoice]D[Sequence]B*
+ p ≔ 'ordChoice('+Ds.p.join(',')+')'
+
+[OrdChoice] D[Sequence] B!D[Sequence]
+ p ≔ D.p
+
+[Sequence] D[SeqUnit] BD[SeqUnit]B*
+ p ≔ 'seq('+[ D.p ] . concat( Ds.p ).join()+')'
+
+[Sequence] D[SeqUnit] B!D[SeqUnit]
+ p ≔ D.p
+
+[SeqUnit]D
+ p ≔ D.p
+
+[Optional]D[Replicand]D
+ p ≔ 'rep(0,1,'+DD.p+')'
+
+[AnyRep]D[Replicand]D
+ p ≔ 'rep(0,0,'+DD.p+')'
+
+[PosRep]D[Replicand]D
+ p ≔ 'rep(1,0,'+DD.p+')'
+
+[MNRep]D[Replicand]DBBD[M]B!D[N]
+ p ≔ 'rep('+BD.n+','+BD.n+','+DD.p+')'
+
+[MNRep]D[Replicand]DBBD[M]BD[N]
+ p ≔ 'rep('+BD.n+','+BDBD.n+','+DD.p+')'
+
+[NegLookahead] D[OrdChoice]
+ p ≔ 'negPeek(' + D.p + ')'
+
+[PosLookahead] D[OrdChoice]
+ p ≔ 'peek(' + D.p + ')'
+
+[PropSpec]
+ cset ≔ CSET.fromUnicodeGeneralCategory(.match)
+
+[CodePointRange]D[CodePointFrom]DDBBBD[CodePointTo]DD
+ cset ≔ CSET.fromCharRange(DDD.match,BDDD.match)
+
+[CodePointExpr]D
+ cset ≔ D.cset
+
+[UnicodePropSpec]D[PositiveSpec]D[PropSpec]
+ cset ≔ DD.cset
+
+[UnicodePropSpec]D[NegativeSpec]D[PropSpec]
+ cset ≔ CSET.complement(DD.cset)
+
+[CodePoint]D
+ cset ≔ CSET.fromInt(D.cp)
+ cp ≔ D.cp
+
+[UPlusCodePoint]
+ cp ≔ parseInt( .match.slice(2),16)
+
+[CodePointLit]
+; XXX handle surrogate pairs
+ cp ≔ .match.charCodeAt(0)
+
+[CharSetUnion] D[CodePointExpr]B*
+ cset ≔ foldl1(CSET.union, Ds.cset)
+
+[CharSetIntersection] D[CharSetUnion]B*
+ cset ≔ foldl1(CSET.intersection, Ds.cset)
+
+[CharSetExpr] D[CharSetDifference] D[CharSetIntersection]B*
+ cset ≔ foldl1(CSET.difference, Ds.cset)
+
+[CharSet] D[PosCharSet] D[CharSetExpr]
+ cset ≔ DD.cset
+
+[CharSet] D[NegCharSet] D[CharSetExpr]
+ cset ≔ CSET.complement(DD.cset)
