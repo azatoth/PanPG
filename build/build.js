@@ -28,3 +28,5 @@ function build_PEG_compiler(PEG_codegen_5,PEG_codegen_5_js,TAL_match_js,PEG_v5,r
 // CSET, used by PEG_codegen_5, from ../cset_prod.js
 // showTree, not actually a requirement but nice to have, from ../PTNode.js, though we really don't want most of the rest of that file
 // something to tie it all together with options, etc
+
+// The showTree function is useful even after a parser is already generated, so it should be in a separate file.

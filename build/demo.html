@@ -9,27 +9,18 @@ label {display:inline-block;border:2px solid black;width:45%;margin:1em 2%;posit
 textarea {width:100%;height:24em;border:0}
 </style>
 
-<!--
-<script src=../PEG_codegen_5.js></script>
-<script src=../re.js></script>
-<script src=../../3box/lists.js></script>
-<script src=../cset_prod.js></script>
-<script>CSET.import('',CSET)</script>
-<script src=../PTNode.js></script>
-<script src=../../3box/util.js></script>
--->
 <script src=build_output.js></script>
 
 <h1>PEG demo 2009-11-26</h1>
 
-<p>This is a very simple demo that demonstrates the PEG API.
+<p>This is a very simple demo (Firefox only at the moment) that demonstrates the PEG API.
 We load a PEG grammar from a file, construct a JavaScript parser from it, and use that parser to parse some input and display the resulting parse tree.
 
 <p id=status></p>
 
 <fieldset>
-<label>Grammar: <br><textarea id=PEG></textarea></label>
-<label>Input: <br><textarea id=text></textarea></label>
+<label>Grammar: <br><textarea id=PEG spellcheck=false></textarea></label>
+<label>Input: <br><textarea id=text spellcheck=false></textarea></label>
 <label>Generated parser: <br><textarea readonly id=parser></textarea></label>
 <label>Parse tree: <br><textarea readonly id=parse_tree></textarea></label>
 </fieldset>
@@ -42,7 +33,9 @@ var inputPEG_el=document.getElementById('PEG')
   , status_el=document.getElementById('status')
   , compilerOpts
 
-function status(s){status_el.innerHTML=s}
+// TODO: make the first two textareas live so that people can edit the grammar and the input and see the parse tree change (or see meaningful error messages)
+
+function status(s){status_el.innerHTML+=s+'<br>'}
 
 function xhr(method,uri,body,callback){var headers,p
   // instead of a method string, the first argument can be an object with method and headers properties
@@ -53,17 +46,18 @@ function xhr(method,uri,body,callback){var headers,p
   if(headers) for(p in headers){x.setRequestHeader(p,headers[p])}
   x.send(body)}
 
-status('fetching grammar...')
+status('fetching grammar file...')
 xhr('GET','../PEG_arith.peg',null,function(x){
  inputPEG_el.value=x.responseText
  status('generating parser...')
  compilerOpts=
- {}
+ {} // TODO: document the options that are available
  parser_el.value=generateCode(inputPEG_el.value,compilerOpts)
  status('loading the parser...')
  eval(parser_el.value)
  window.Expr=Expr
  // now Expr, the generated parser, is in scope
+ status('fetching the input file...')
  xhr('GET','arith_test_expr',null,function(x){
   inputText_el.value=x.responseText
   status('parsing...')
