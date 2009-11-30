@@ -16,10 +16,12 @@ textarea {width:100%;height:24em;border:0}
 <p>This is a very simple demo (Firefox only at the moment) that demonstrates the PEG API.
 We load a PEG grammar from a file, construct a JavaScript parser from it, and use that parser to parse some input and display the resulting parse tree.
 
+<p>Though this demo doesn't show it, the parser generator also has Unicode support, including characters outside the BMP.
+
 <p id=status></p>
 
 <fieldset>
-<label>Grammar: <br><textarea id=PEG spellcheck=false></textarea></label>
+<label>Grammar: <br><textarea readonly id=PEG spellcheck=false></textarea></label>
 <label>Input: <br><textarea id=text spellcheck=false></textarea></label>
 <label>Generated parser: <br><textarea readonly id=parser></textarea></label>
 <label>Parse tree: <br><textarea readonly id=parse_tree></textarea></label>
@@ -33,7 +35,7 @@ var inputPEG_el=document.getElementById('PEG')
   , status_el=document.getElementById('status')
   , compilerOpts
 
-// TODO: make the first two textareas live so that people can edit the grammar and the input and see the parse tree change (or see meaningful error messages)
+// TODO: make the grammar textarea live like the input is, and add meaningful error messages
 
 function status(s){status_el.innerHTML+=s+'<br>'}
 
@@ -72,6 +74,16 @@ function generateCode(s,opts){var pt
 function parseAndShowArithExpr(s){var pt
   pt=Expr(s) // TODO: display parse errors
   //return s+'\n\n'+pp(pt)
-  return showTree(pt[1],Expr.names)}
+  return (pt[0] ? showTree(pt[1],Expr.names) : 'parse error')}
+
+function updateParseTree(){
+  parseTree_el.value=parseAndShowArithExpr(inputText_el.value)}
+
+function delay(f,ms){return function(){
+  if(f.pending) clearTimeout(f.pending)
+  f.pending = setTimeout(f,ms)}}
+
+inputText_el.onkeydown=inputText_el.onkeyup=inputText_el.onclick=delay(updateParseTree,50)
+inputText_el.focus()
 
 </script>
