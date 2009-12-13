@@ -1,37 +1,10 @@
-{ciset:'ES5_peg'
-,ciset:'ES5_noc'
-,cfunc:'stripComments'
-,cfunc:'ECMAScript_unified_PEG_output_step_2'
-,cfunc:'ECMAScript_unified_PEG_output_step_3'
-//,cfunc:'cset_prod',ciset:'cset_prod',outfn:'cset_prod.js',outct:'application/x-javascript'
-//,cfunc:'PEG_codegen_2_test',ciset:'ES5_peg'
-//,cfunc:'PEG_codegen_2_test_2',ciset:'ES5_pt'
-//,cfunc:'PEG_codegen_2_test_3',ciset:'arith'
-//,cfunc:'PEG_codegen_2_test_3_showCode'
-//,cfunc:'PEG_codegen_2_test_5',ciset:'arith_expr1'
-//,cfunc:'PEG_codegen_2_test_4',ciset:'arith',outfn:'PEG_arith.js',outct:'application/x-javascript'
+{cfunc:''
+//cfunc:'cset_prod',ciset:'cset_prod',outfn:'cset_prod.js',outct:'application/x-javascript'
 //,cfunc:'PEG_summarize',ciset:'ES5arith'
 //,cfunc:'PEG_summarize_tal',ciset:'ES5arith'
-,cfunc:'peg_arith_test',ciset:'arith_expr1'
+//,cfunc:'peg_arith_test',ciset:'arith_expr1'
 
 //,cfunc:'peg_generator',ciset:'peg_generator',outfn:'peg_generated.js',outct:'application/x-javascript'
-//,cfunc:'old_peg_codegen_test',ciset:'PEG.peg',outfn:'PEG_gen_1.js',outct:'application/x-javascript'
-//,cfunc:'peg_v3_gen_tal',ciset:'PEG.peg'
-//,cfunc:'peg_v3_gen_tal',ciset:'arith'
-//,cfunc:'peg_v3_gen',ciset:'PEG.peg_gen',outfn:'PEG_v3.js',outct:'application/x-javascript'
-//,cfunc:'peg_v3_gen',ciset:'arith_gen',outfn:'PEG_arith_v3.js',outct:'application/x-javascript'
-
-//,cfunc:'peg_v4_gen_tal',ciset:'PEG.peg'
-
-//,cfunc:'peg_v4_gen_tal',ciset:'arith'
-
-//,cfunc:'peg_v4_gen_tal',ciset:'PEG_features_gen_v4'
-
-//,cfunc:'peg_v4_gen',ciset:'PEG.peg_gen_v4',outfn:'PEG_v4.js',outct:'application/x-javascript'
-
-//,cfunc:'peg_v4_gen',ciset:'arith_gen_v4',outfn:'PEG_arith_v4.js',outct:'application/x-javascript'
-
-//,cfunc:'peg_v4_gen',ciset:'PEG_features_gen_v4',outfn:'PEG_features_v4.js',outct:'application/x-javascript'
 
 /**************/
 /* Codegen v5 */
@@ -43,7 +16,9 @@
 
 //,cfunc:'peg_v5_gen_tal',ciset:'PEG_features_gen_v5'
 
-,cfunc:'peg_v5_gen',ciset:'arith_gen_v5',outfn:'PEG_arith_v5.js',outct:'application/x-javascript'
+//,cfunc:'peg_v5_gen',ciset:'PEG_features_gen_v5'
+
+//,cfunc:'peg_v5_gen',ciset:'arith_gen_v5',outfn:'PEG_arith_v5.js',outct:'application/x-javascript'
 
 //,cfunc:'peg_v5_gen',ciset:'PEG.peg_gen_v5',outfn:'PEG_v5.js',outct:'application/x-javascript'
 
@@ -86,9 +61,6 @@
  ,arith_gen:['file(PEG_arith.peg)'
             ,'arith_start'
             ,'arith_prefix']
- ,arith_gen_v4:['file(PEG_arith.peg)'
-               ,'arith_start'
-               ,'arith_prefix_v4']
  ,arith_gen_v5:['file(PEG_arith.peg)'
                ,'arith_v5_opts']
  ,arith_expr1:['arith_expr1']
@@ -102,17 +74,11 @@
  ,'PEG.peg_gen':['file(PEG.peg)'
                 ,'PEGpeg_start'
                 ,'PEGpeg_prefix']
- ,'PEG.peg_gen_v4':['file(PEG.peg)'
-                   ,'PEGpeg_start'
-                   ,'PEGpeg_prefix_v4']
  ,'PEG.peg_gen_v5':['file(PEG.peg)'
                    ,'PEGpeg_v5_opts']
  ,'PEG.peg_gen_v5_1':['file(PEG.peg)'
                      ,'PEGpeg_start'
                      ,'PEGpeg_prefix_v5_1']
- ,'PEG_features_gen_v4':['file(PEG_features.peg)'
-                        ,'PEG_feat_start'
-                        ,'PEG_feat_pre_v4']
  ,'PEG_features_gen_v5':['file(PEG_features.peg)'
                         ,'PEG_feat_start'
                         ,'PEG_feat_pre_v5']
@@ -148,17 +114,14 @@
                 ,nocache:['Expr']}
  ,arith_start:'Expr'
  ,arith_prefix:'p_arith_'
- ,arith_prefix_v4:'p_arith_v4_'
  ,ES5arith_v5_opts:{prefix:'p_ES5_arith_'}
  ,ES5arith_expr:'8 * 3 << ~-2'
  ,PEGpeg_v5_opts:{start:'RuleSet'
                  ,prefix:'p_PEG_v5_'
                  }
- ,PEGpeg_prefix_v4:'p_PEG_v4_'
  ,PEGpeg_prefix_v5:'p_PEG_v5_'
  ,PEGpeg_prefix_v5_1:'p_PEG_v5_1_'
  ,PEG_feat_start:'S'
- ,PEG_feat_pre_v4:'p_PEG_features_v4_'
  ,PEG_feat_pre_v5:'p_PEG_features_v5_'
  ,ES5_v5_opts:{prefix:'p_ES5_v5_'
               ,debug:1

@@ -1475,21 +1475,21 @@ BindingContext.prototype=
 
 */
 
-function re_from_cset(cset) [0,cset]
+function re_from_cset(cset){return [0,cset]}
 
-function re_from_str(str) [1,str]
+function re_from_str(str){return [1,str]}
 
-function re_sequence(res) res.length>1 ?[2,res] :res[0]
+function re_sequence(res){return res.length>1 ?[2,res] :res[0]}
 
-function re_union(res) res.length>1 ?[3,res] :res[0]
+function re_union(res){return res.length>1 ?[3,res] :res[0]}
 
-function re_rep(m,n,re) [4,m,n,re]
+function re_rep(m,n,re){return [4,m,n,re]}
 
-function re_reference(name) [5,name]
+function re_reference(name){return [5,name]}
 
-function re_neg_lookahead(re) [6,re]
+function re_neg_lookahead(re){return [6,re]}
 
-function re_pos_lookahead(re) [7,re]
+function re_pos_lookahead(re){return [7,re]}
 
 /* the following needs a correctness proof. */
 function re_serialize(re){
@@ -1534,7 +1534,7 @@ function re_simplify(re){var r
   return r
  case 3:
   r=[3,re[1].map(re_simplify)]
-  if(r[1].every(function(r) r[0]===0)){
+  if(r[1].every(function(r){return r[0]===0})){
    cs=r[1][0][1]
    r[1].slice(1).forEach(function(r){cs=CSET.union(cs,r[1])})
    return [0,cs]}
@@ -1988,7 +1988,7 @@ return {'import':function(prefix,object){object=object||g
   object[(prefix||'')+e[0]]=e[1]}}
 }();
 
-CSET.import('',CSET)
+CSET['import']('',CSET)
 
 
 

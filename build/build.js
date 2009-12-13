@@ -15,7 +15,8 @@ function build_PEG_compiler(PEG_codegen_5,PEG_codegen_5_js,TAL_match_js,PEG_v5,r
       + lists_js
       + '\n\n/* CSET */\n\n'
       + cset_prod_js
-      + '\n\nCSET.import(\'\',CSET)\n\n'
+      + '\n\nCSET[\'import\'](\'\',CSET)\n\n'
+      // + '\n\nCSET.import(\'\',CSET)\n\n' // safari is buggy here
       + '\n\n/* PTNode.js (for showTree() only) */\n\n'
       + PTNode_js}
 
