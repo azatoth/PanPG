@@ -94,6 +94,6 @@ Rule              ← NonTerminal S "←" S OrdChoice
 RuleSet           ← (Comment / Rule) (LB+ (Comment / Rule))*
                   / ϵ
 
-PosLookahead      ← "&(" OrdChoice ")"
+PosLookahead      ← "&" SeqUnit
 
-NegLookahead      ← "!(" OrdChoice ")"
+NegLookahead      ← "!" SeqUnit

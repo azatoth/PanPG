@@ -1,3 +1,5 @@
+looks like old syntax
+
 [.*]
  tags ≔ esh_tags children .elem .class .id .start .end
  elem ≔ esh_empty children
