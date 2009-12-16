@@ -1,38 +1,56 @@
+Updated: 2009-12-16
+
 The code which the PEG parser generator generates produces a syntax tree as its output.
 The data structure used to store this tree is described here.
 
-The tree is returned as a node.
-A node is stored as a JavaScript array and contains four values: a rule index, a start offset, a length, and a child node array.
+The parse tree is returned as a root node.
+Nodes are described below and may contain other nodes as children.
+A node is represented as a JavaScript array of three elements: a rule index, a length, and a child node array.
 
 The rule index is the 0-based index at which the matched rule appeared in the PEG given to the code generator.
+For example if the start rule is the first rule in the PEG (as it often is) then the root node in a successful parse will have the rule index 0.
+Nodes may also be anonymous, corresponding to terminals appearing with non-terminals in the same rule.
+As an example, a successful parse of the rule Mult ← Num "*" Num will generate a Mult node with three child nodes.
+The first and third nodes correspond to the Num rule, but the middle node matched only the literal string "*" which does not have any name in the grammar, hence this creates an anonymous node.
+Rules which only match terminal symbols and do not also contain non-terminal rules do not generate anonymous nodes, e.g. if the rule above were rewritten as Mult ← Num MultOp Num; MultOp ← "*" then no anonymous node would be generated.
+Anonymous nodes have -1 in place of the rule index.
 
-The start offset is the offset of the beginning of the match from the /end/ of the node's previous sibling, or, if it has no previous sibling, from the start of the parent node.
-This field is necessary because PEG rules can contain anonymous expressions which consume input but do not contribute any child nodes to the parse tree, therefore the input matched by a parse tree node may not be fully covered by its child nodes.
-(By adding anonymous matches to the parse tree, and assigning rule indices for them, we could eliminate this field.)
-(An alternative is to not assign rule indices for specific anonymous expressions, but to just use a -1 rule index for all anonymous matches.)
+The second element in each parse node is the length, which is the number of terminal symbols (e.g. characters) matched by that application of the rule.
+If "2*2" is parsed by the Mult rule given above, the length of the Mult node will be 3, and the length of each Num node, and of the anonymous node matching the asterisk, will be 1.
+To find the position of a node in the input string, it is necessary to accumulate the lengths of the nodes while descending into the tree.
 
-The length is the number of characters of the input matched by the rule.
+Finally, the child node array contains the node's children in the same format.
 
-The child node array contains the node's children, in the same format, in source order.
+Example:
+
+Here is a complete grammar, sample input, and the corresponding parse tree:
+
+Expr ← Add
+Add ← Mult ( S? "+" S? Mult )*
+Mult ← Num ( S? "*" S? Num )*
+Num ← "0" / [1-9] [0-9]*
+S ← [ U+0020 ]+
+
+"4 * 3 + 2"
+
+[0, 9, [[1, 9, [[2, 5, [[3, 1, []], [4, 1, []], [-1, 1], [4, 1, []], [3, 1, []]]], [4, 1, []], [-1, 1], [4, 1, []], [2, 1, [[3, 1, []]]]]]]]
 
 
 Finding a tree path from an offset
 ----------------------------------
 
-If we have a position p in the input, and wish to find the corresponding path into the tree, we apply this algorithm, beginning with the root node, a running offset of 0, and an empty result path:
+If we have a position p in the input, and wish to find the corresponding path into the parse tree, we apply this algorithm, beginning with the root node, a running offset of 0, and an empty result path:
 
-- Increase the running offset by the start offset of this node.
-- If the result is greater than p, return false.
 - Increase the running offset by the length of this node.
-- If the result is greater than p then this node contains p.
+- If the running offset is greater than p then this node contains the position.
   - push this node onto the result path.
-  - run this algorithm on each child node in order as long as each one returns false.
+  - run this algorithm on each child node until one returns true or there are no more child nodes.
   - return true.
 - otherwise return false.
 
 This means that finding a path into a parse tree is linear in the number of left-siblings of the path.
-That is, for each node on the path, each of its sibling nodes to the left (previous in the input string) must be visited and two addition operations performed.
-In a typical program in a typical programming language, this means one would skip over any blocks, statements, function declarations, or whatever other top-level rules the grammar may have, which appear previous to the top-level rule containing the position of interest.
+That is, for each node on the path, each of its sibling nodes to the left (previous in the input string) must be visited and one addition operation performed.
+If the parse tree represents a typical program in a typical programming language, this means one would skip over any blocks, statements, function declarations, or whatever other top-level rules the grammar may have, which appear previous to the top-level rule containing the position of interest.
 Average runtime to generate a path, then, can be expected to be linear in the input position, with some factor that varies with the "chunkiness" of the grammar and the input.
 
 
@@ -60,9 +78,26 @@ For each match in the table we produce a new array.
 The first element is the rule index.
 The second element is the length.
 The third element is the children of this node, if any, each of which may be anonymous or named.
-If the node has at least one child match, we insert anonymous child nodes, using -1 for the rule index, such that the sum of the lengths of the anonymous and named children is equal to the length of the node itself, and that the sum of the lengths of the previous siblings of any node are equal to the offset of that node's match relative to the match of its parent.
+If the node has at least one child match, we insert anonymous child nodes, using -1 for the rule index, such that the sum of the lengths of the anonymous and named children is equal to the length of the node itself, and that the sum of the lengths of the left-siblings of any node are equal to the offset of that node's match relative to the match of its parent.
 If there are no named rule matches, we do not insert an anonymous child node.
 So the constraint holds that every node N is either a leaf node having no children, or has child nodes such that the sum of their lengths is equal to the length of N.
 Anonymous nodes are always leaf nodes.
 An anonymous node always has at least one non-anonymous sibling.
 Two anonymous nodes are never adjacent siblings.
+
+
+Streaming parse tree output
+---------------------------
+
+The streaming parser API allows input to be parsed in chunks.
+Grammar annotations on the PEG define chunk points at which parsing is guaranteed not to backtrack, and the accumulated parse tree can be returned to the caller at these points.
+Each chunk is returned as a single array of integers.
+
+When a node is opened, the rule index is given, followed by either a length, if known, or -1, if the length is not yet known when the chunk is returned.
+Leaf nodes will always include a length, and the length of a higher node can be determined by summing the lengths of the child nodes that have been seen when the node is closed.
+A node and its children may be returned in separate chunks.
+This means that inclusion of a node's children in the array that defines the node is not possible.
+Instead each node is explicitly closed by the integer -2 appearing in the stream.
+
+The caller can construct a tree or tree fragment from the stream, or process the stream directly.
+Since the parser is streaming, it is entirely possible for the parse to fail in the middle of the input after many events have already been generated.

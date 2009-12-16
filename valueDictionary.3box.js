@@ -20,7 +20,7 @@
 
 //,cfunc:'peg_v5_gen',ciset:'ES5arith_gen_v5',outfn:'PEG_ES5_arith_v5.js',outct:'application/x-javascript'
 
-,cfunc:'peg_v5_gen',ciset:'ES5_gen_v5_opt',outfn:'ES5_v5_1.js',outct:'application/x-javascript'
+//,cfunc:'peg_v5_gen',ciset:'ES5_gen_v5_opt',outfn:'ES5_v5_1.js',outct:'application/x-javascript'
 
 //,cfunc:'ES5_test',ciset:'ES5_test'
 
@@ -33,6 +33,12 @@
 
 //,cfunc:'peg_profile_analyzer',ciset:'profile_analyzer'
 
+/*************/
+/* Streaming */
+/*************/
+
+,cfunc:'peg_v5_gen',ciset:'arith_streaming'
+
 /************/
 /* FEATURES */
 /************/
@@ -42,23 +48,17 @@
 //,cfunc:'peg_features_test'
 
 ,isets:
- {ES5_peg:['file(ECMAScript_unified.peg)']
- ,ES5_noc:['result(1247595874,stripComments,ES5_peg)']
- ,ES5_st3:['result(1247595874,stripComments,ES5_peg)'
-          ,'result(1247597204,ECMAScript_unified_PEG_output_step_2,ES5_noc)']
- ,cset_prod:['file(cset.js)'
+ {cset_prod:['file(cset.js)'
             ,'file(cset_unicode_properties_generated.js)'
             ,'file(../compat/forEach.js)'
             ,'file(../compat/filter.js)']
- ,ES5_pt:['result(1249527781,PEG_codegen_2_test,ES5_peg)']
  ,arith:['file(PEG_arith.peg)'
         ,'hide'
         ,'force']
- ,arith_gen:['file(PEG_arith.peg)'
-            ,'arith_start'
-            ,'arith_prefix']
  ,arith_gen_v5:['file(PEG_arith.peg)'
                ,'arith_v5_opts']
+ ,arith_streaming:['file(PEG_arith.peg)'
+                  ,'arith_streaming']
  ,arith_expr1:['arith_expr1']
  ,ES5arith:['file(PEG_ES5_arith.peg)','hide']
  ,ES5arith_gen_v5:['file(PEG_ES5_arith.peg)'
@@ -108,8 +108,13 @@
  ,CodePointLit:'C ← [a-z−z]'
  ,arith_v5_opts:{prefix:'p_arith_v5_'
                 ,nocache:['Expr']}
- ,arith_start:'Expr'
- ,arith_prefix:'p_arith_'
+ ,arith_streaming:{prefix:'p_arith_streaming_'
+                  ,chunk:['Expr'
+                         ,'Add'
+                         ,'Mult'
+                         ,'Num'
+                         ,'S']
+                  ,streaming:true}
  ,ES5arith_v5_opts:{prefix:'p_ES5_arith_'}
  ,ES5arith_expr:'8 * 3 << ~-2'
  ,PEGpeg_v5_opts:{start:'RuleSet'
