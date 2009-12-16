@@ -1,0 +1,88 @@
+Date: 2009-12-16
+
+Before tackling full incremental parsing in the new codegen we need to support simple streaming parsers.
+
+Here is a parser for arithmetic expressions from the current (v5) codegen:
+
+function p_arith_Expr(str){
+ var tbl=[],pos=0,l=str.length+1;while(l--)tbl.push([]);l=str.length;
+ function Expr(a){var x,p=pos,c;if(x=tbl[p][0]){pos=x[1];a.push([p,0]);return 1}if(x==false){return 0}c=[];return fin(c,p,0,_Expr(c),a)}
+ function Add(a){var x,p=pos,c;if(x=tbl[p][1]){pos=x[1];a.push([p,1]);return 1}if(x==false){return 0}c=[];return fin(c,p,1,_Add(c),a)}
+ function Mult(a){var x,p=pos,c;if(x=tbl[p][2]){pos=x[1];a.push([p,2]);return 1}if(x==false){return 0}c=[];return fin(c,p,2,_Mult(c),a)}
+ function Num(a){var x,p=pos,c;if(x=tbl[p][3]){pos=x[1];a.push([p,3]);return 1}if(x==false){return 0}c=[];return fin(c,p,3,_Num(c),a)}
+ function S(a){var x,p=pos,c;if(x=tbl[p][4]){pos=x[1];a.push([p,4]);return 1}if(x==false){return 0}c=[];return fin(c,p,4,_S(c),a)}
+ var _Expr=Add
+ var _Add=q(Mult,r(0,0,q(r(0,1,S),sl_0,r(0,1,S),Mult)))
+ var _Mult=q(Num,r(0,0,q(r(0,1,S),sl_1,r(0,1,S),Num)))
+ var _Num=o(sl_2,q(cs_0,r(0,0,cs_1)))
+ var _S=r(1,0,cs_2)
+ function cs_0(){var c,x;if(pos==l)return false;c=g(pos);x=c&lt;49?0:c&lt;58?1:0;if(x){pos++;return true}return false}
+ function cs_1(){var c,x;if(pos==l)return false;c=g(pos);x=c&lt;48?0:c&lt;58?1:0;if(x){pos++;return true}return false}
+ function cs_2(){var c,x;if(pos==l)return false;c=g(pos);x=c&lt;32?0:c&lt;33?1:0;if(x){pos++;return true}return false}
+ function sl_0(){var p=pos;if(str.charCodeAt(p)==43){pos+=1;return true}return false}
+ function sl_1(){var p=pos;if(str.charCodeAt(p)==42){pos+=1;return true}return false}
+ function sl_2(){var p=pos;if(str.charCodeAt(p)==48){pos+=1;return true}return false}
+ function fin(c,p,x,r,a){if(r)a.push([p,x]);tbl[p][x]=r?[true,pos,c]:false;return r}
+ function e(){return true}
+ function o(){var args=arguments;return function(c){var i,l;for(i=0,l=args.length;i&lt;l;i++)if(args[i](c))return true;return false}}
+ function q(){var args=arguments;return function(c){var i,l,cp=pos,cl=c.length;for(i=0,l=args.length;i&lt;l;i++)if(!args[i](c)){pos=cp;t(c,cl);return false}return true}}
+ function r(m,n,f){return function(c){var i=0,cp=pos,cl=c.length;while(i&lt;m){i++;if(!f(c)){pos=cp;t(c,cl);return false}}cl=c.length;while(i++&lt;n||n==0)if(!f(c))return true;return true}}
+ function n(f){return function(){var p=pos,x=f([]);pos=p;return !x}}
+ function p(f){return function(){var p=pos,x=f([]);pos=p;return x}}
+ function t(a,n){if(a.length&gt;n)a.splice(n)}
+ function g(p){return str.charCodeAt(p)}
+ function b(p,n){var x=tbl[p][n],c=[],a=[n,x[1]-p,c],y=x[2],i=0,l=y.length,z;for(;i&lt;l;i++){z=y[i];if(z[0]&gt;p)c.push([-1,z[0]-p]);c.push(b(z[0],z[1]));p=tbl[z[0]][z[1]][1]}if(p&lt;x[1]&amp;&amp;c.count)c.push([-1,x[1]-p]);return a}
+ return Expr([])&amp;&amp;pos==l?[true,b(0,0)]:[false,pos,tbl]}
+p_arith_streaming_Expr.names=['Expr','Add','Mult','Num','S'];
+
+The grammar:
+
+Expr ← Add
+Add ← Mult ( S? "+" S? Mult )*
+Mult ← Num ( S? "*" S? Num )*
+Num ← "0" / [1-9] [0-9]*
+S ← [ U+0020 ]+
+
+function p_arith_streaming_Expr(out){var
+ tbl=[],pos=0,l,s=''
+ return function p_arith_streaming_Expr_in(chunk){
+  s+=chunk;l=s.length+1;while(l--)tbl[l]=[];l=s.length
+  
+
+Rewriting this by hand to be streaming, first we must change the API.
+The parser generator gets a list of 'chunk' rule names along with the grammar.
+In this case the grammar never backtracks over any of these rules unless the entire parse fails, so each of them can be a chunk point.
+
+The API of the generated parser is a little different.
+Rather than returning a parse tree it returns a function which takes a chunk of input as argument and returns a [
+
+Several API ideas:
+
+- parser returns a function, which takes a chunk and returns a parse tree fragment.
+  the function is a closure and maintains its own state.
+  the caller keeps feeding chunks to the same function.
+
+- parser takes a chunk of input and an optional state structure.
+  it returns a parse tree fragment (possibly empty of course) and a state structure (which is opaque to the caller).
+  all state is in the state structure, so multiple streams can be parsed at once, resumed on different input, etc.
+
+- parser takes a function `out` and returns a function `in`.
+  `in` is then called repeatedly with each chunk of input.
+  when `in` is called, it will call `out` with each parse tree fragment.
+
+Since there is no way to copy a closure with its internal state, maintaining state only in a closure is probably less desirable.
+Of course we could add a 'copy' message that can be sent to the function which will clone the internal state and return a new closure.
+
+The ability to inspect the returned state might be useful for debugging, but this would require some helper function to interpret the state, and a debug message could just as easily be sent to the function for this as well.
+
+This latter idea is nice, I think it will make a good example of OO done in a JavaScript style.
+Messages can be passed as the first argument to the function as a string, followed by any arguments.
+Another advantage of the last idea is that it can be made asynchronous (e.g. by passing the actual parsing off to a worker) without any API change.
+
+Parsing strategy
+----------------
+
+When entering a rule, there can now be three possible results: success, failure, or premature end of input.
+After the last chunk the caller must signal it by sending an EOF message.
+This message converts the premature end of input state into a final parse result.
+Whenever the end of the input is reached, this state needs to be entered, and the parse needs to resume on the next chunk at the first rule that went past the end of the previous chunk.
