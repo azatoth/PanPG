@@ -1,11 +1,3 @@
-function old_peg_codegen_test(s){var pt
- pt=tree(p_RuleSet,s)
- if(!pt[0])return 'error'
- pt=pt[1]
- PEG_codegen_2(pt)
- PEG_codegen_1(pt)
- return pt.codegen_v1()('RuleSet','p_PEG_v1_',[],false)}
-
 function peg_v5_gen_tal(s){var pt,hide,force
  //pt=tree(p_RuleSet,s)[1]
  pt=p_PEG_v5_RuleSet(s)[1]

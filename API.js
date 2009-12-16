@@ -14,19 +14,7 @@ function tree(p_,str){
 function explainParseFailure(s){
  return pp(buildFailTree(s[1]))}
 
-function createParserContext(peg,prefix){var ret
- ,n2_body=getFile('_n2')
- ,n2_ast=parseTMProg(n2_body)
- ,peg_tree=tree(p_PEG_RuleSet,peg)
- if(peg_tree[0]==false) return "no parse"
- ret=applyTMProg(n2_ast,"{prefix:'"+prefix+"'}",peg_tree[1],peg,'match_code')
- return ret}
-
-function treeCtx(p_name,str,ctx){var
- code='(function(str){\n'+ctx+'\n'+'return tree('+p_name+',str);}(str)'
- return code}
-
-/* summarize() parses a PEG and makes some human-readable remarks about it.  This will borrow much of the TMProg used for codegen and the re code that does cycle detection, etc, but none of that is performant enough to be used in a live feedback currently anyway on a grammar of even moderate size.
+/* summarize() parses a PEG and makes some human-readable remarks about it.
 
 Any desired start token may be passed as the second parameter and the summary will cover that rule and its dependencies. */
 
@@ -53,16 +41,6 @@ function syntax(peg){
   return true}
  else{
   return explainParseFailure(pt)}}
-
-/* Given a PEG, return an output table which includes re objects and parser template functions for each rule. */
-
-function codegenTable(peg,prefix){
- var pt=tree(p_PEG_RuleSet,peg)
- return codegenTableTree(peg,pt,prefix)}
-
-function codegenTableTree(peg,tree,prefix){
- var prog=parseTMProg(getFile('PEG_codegen'))
- return applyTMProg(prog,"{prefix:'"+prefix+"'}",tree,peg,'codegenTable')}
 
 function PEG_summarize(s,hide){var pt,d,x
  s=stripComments(s)
