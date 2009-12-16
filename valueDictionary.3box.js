@@ -14,17 +14,13 @@
 
 //,cfunc:'peg_v5_gen_tal',ciset:'arith'
 
-//,cfunc:'peg_v5_gen_tal',ciset:'PEG_features_gen_v5'
-
-//,cfunc:'peg_v5_gen',ciset:'PEG_features_gen_v5'
-
 //,cfunc:'peg_v5_gen',ciset:'arith_gen_v5',outfn:'PEG_arith_v5.js',outct:'application/x-javascript'
 
 //,cfunc:'peg_v5_gen',ciset:'PEG.peg_gen_v5',outfn:'PEG_v5.js',outct:'application/x-javascript'
 
 //,cfunc:'peg_v5_gen',ciset:'ES5arith_gen_v5',outfn:'PEG_ES5_arith_v5.js',outct:'application/x-javascript'
 
-//,cfunc:'peg_v5_gen',ciset:'ES5_gen_v5_opt',outfn:'ES5_v5_1.js',outct:'application/x-javascript'
+,cfunc:'peg_v5_gen',ciset:'ES5_gen_v5_opt',outfn:'ES5_v5_1.js',outct:'application/x-javascript'
 
 //,cfunc:'ES5_test',ciset:'ES5_test'
 
@@ -80,8 +76,7 @@
                      ,'PEGpeg_start'
                      ,'PEGpeg_prefix_v5_1']
  ,'PEG_features_gen_v5':['file(PEG_features.peg)'
-                        ,'PEG_feat_start'
-                        ,'PEG_feat_pre_v5']
+                        ,'emptyOpts']
  ,'ES5_gen_v5':['file(ECMAScript_unified.peg)'
                ,'ES5_v5_opts']
  ,'ES5_gen_v5_opt':['file(ECMAScript_unified.peg)'
@@ -108,6 +103,7 @@
        //,'NonTerminal'
        ,'HEXDIG'
        ]
+ ,emptyOpts:{}
  ,arith_expr1:'42 * 3 + 1'
  ,CodePointLit:'C ← [a-z−z]'
  ,arith_v5_opts:{prefix:'p_arith_v5_'
@@ -177,6 +173,8 @@
   ,'Keyword'
   ,'FutureReservedWord'
   ,'SourceCharacter'
+  ,'SingleStringCharacter'
+  ,'DoubleStringCharacter'
   ]
 }
  }

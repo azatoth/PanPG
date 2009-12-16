@@ -94,8 +94,8 @@ function p_ES5_v5_Program(str){
  function SQ(){var x,p=pos;if(x=tbl[p][91]){pos=x[1];return 1}if(x==false){return 0}if(_SQ([])){tbl[p][91]=[true,pos];return 1}return 0}
  function StringLiteral(a){var c=[],p=pos;if(_StringLiteral(c)){a.push([p,92]);tbl[p][92]=[,pos,c];return 1}return 0}
  function RS(){var x,p=pos;if(x=tbl[p][93]){pos=x[1];return 1}if(x==false){return 0}if(_RS([])){tbl[p][93]=[true,pos];return 1}return 0}
- function DoubleStringCharacter(a){var c=[],p=pos;if(_DoubleStringCharacter(c)){a.push([p,94]);tbl[p][94]=[,pos,c];return 1}return 0}
- function SingleStringCharacter(a){var c=[],p=pos;if(_SingleStringCharacter(c)){a.push([p,95]);tbl[p][95]=[,pos,c];return 1}return 0}
+ function DoubleStringCharacter(){return _DoubleStringCharacter([])}
+ function SingleStringCharacter(){return _SingleStringCharacter([])}
  function LineContinuation(a){var c=[],p=pos;if(_LineContinuation(c)){a.push([p,96]);tbl[p][96]=[,pos,c];return 1}return 0}
  function EscapeSequence(a){var c=[],p=pos;if(_EscapeSequence(c)){a.push([p,97]);tbl[p][97]=[,pos,c];return 1}return 0}
  function CharacterEscapeSequence(a){var c=[],p=pos;if(_CharacterEscapeSequence(c)){a.push([p,98]);tbl[p][98]=[,pos,c];return 1}return 0}
@@ -436,7 +436,7 @@ else x=c<68097?c<65856?c<65488?c<65313?c<65020?c<64968?c<64914?0:1:c<65008?0:1:c
  function sl_73(){var p=pos;if(str.charCodeAt(p++)==102&&str.charCodeAt(p++)==111&&str.charCodeAt(p)==114){pos+=3;return true}return false}
  function sl_74(){var p=pos;if(str.charCodeAt(p++)==102&&str.charCodeAt(p++)==117&&str.charCodeAt(p++)==110&&str.charCodeAt(p++)==99&&str.charCodeAt(p++)==116&&str.charCodeAt(p++)==105&&str.charCodeAt(p++)==111&&str.charCodeAt(p)==110){pos+=8;return true}return false}
  function sl_75(){var p=pos;if(str.charCodeAt(p++)==105&&str.charCodeAt(p)==102){pos+=2;return true}return false}
- function sl_76(){var x;x=str.slice}
+ function sl_76(){var x=str.slice(pos,pos+10);if(x=="instanceof"){pos+=10;return true}return false}
  function sl_77(){var p=pos;if(str.charCodeAt(p++)==105&&str.charCodeAt(p)==110){pos+=2;return true}return false}
  function sl_78(){var p=pos;if(str.charCodeAt(p++)==110&&str.charCodeAt(p++)==101&&str.charCodeAt(p)==119){pos+=3;return true}return false}
  function sl_79(){var p=pos;if(str.charCodeAt(p++)==114&&str.charCodeAt(p++)==101&&str.charCodeAt(p++)==116&&str.charCodeAt(p++)==117&&str.charCodeAt(p++)==114&&str.charCodeAt(p)==110){pos+=6;return true}return false}
@@ -462,22 +462,22 @@ else x=c<68097?c<65856?c<65488?c<65313?c<65020?c<64968?c<64914?0:1:c<65008?0:1:c
  function sl_99(){var p=pos;if(str.charCodeAt(p++)==102&&str.charCodeAt(p++)==105&&str.charCodeAt(p++)==110&&str.charCodeAt(p++)==97&&str.charCodeAt(p)==108){pos+=5;return true}return false}
  function sl_100(){var p=pos;if(str.charCodeAt(p++)==102&&str.charCodeAt(p++)==108&&str.charCodeAt(p++)==111&&str.charCodeAt(p++)==97&&str.charCodeAt(p)==116){pos+=5;return true}return false}
  function sl_101(){var p=pos;if(str.charCodeAt(p++)==103&&str.charCodeAt(p++)==111&&str.charCodeAt(p++)==116&&str.charCodeAt(p)==111){pos+=4;return true}return false}
- function sl_102(){var x;x=str.slice}
+ function sl_102(){var x=str.slice(pos,pos+10);if(x=="implements"){pos+=10;return true}return false}
  function sl_103(){var p=pos;if(str.charCodeAt(p++)==105&&str.charCodeAt(p++)==109&&str.charCodeAt(p++)==112&&str.charCodeAt(p++)==111&&str.charCodeAt(p++)==114&&str.charCodeAt(p)==116){pos+=6;return true}return false}
- function sl_104(){var x;x=str.slice}
+ function sl_104(){var x=str.slice(pos,pos+9);if(x=="interface"){pos+=9;return true}return false}
  function sl_105(){var p=pos;if(str.charCodeAt(p++)==105&&str.charCodeAt(p++)==110&&str.charCodeAt(p)==116){pos+=3;return true}return false}
  function sl_106(){var p=pos;if(str.charCodeAt(p++)==108&&str.charCodeAt(p++)==111&&str.charCodeAt(p++)==110&&str.charCodeAt(p)==103){pos+=4;return true}return false}
  function sl_107(){var p=pos;if(str.charCodeAt(p++)==110&&str.charCodeAt(p++)==97&&str.charCodeAt(p++)==116&&str.charCodeAt(p++)==105&&str.charCodeAt(p++)==118&&str.charCodeAt(p)==101){pos+=6;return true}return false}
  function sl_108(){var p=pos;if(str.charCodeAt(p++)==112&&str.charCodeAt(p++)==97&&str.charCodeAt(p++)==99&&str.charCodeAt(p++)==107&&str.charCodeAt(p++)==97&&str.charCodeAt(p++)==103&&str.charCodeAt(p)==101){pos+=7;return true}return false}
  function sl_109(){var p=pos;if(str.charCodeAt(p++)==112&&str.charCodeAt(p++)==114&&str.charCodeAt(p++)==105&&str.charCodeAt(p++)==118&&str.charCodeAt(p++)==97&&str.charCodeAt(p++)==116&&str.charCodeAt(p)==101){pos+=7;return true}return false}
- function sl_110(){var x;x=str.slice}
+ function sl_110(){var x=str.slice(pos,pos+9);if(x=="protected"){pos+=9;return true}return false}
  function sl_111(){var p=pos;if(str.charCodeAt(p++)==112&&str.charCodeAt(p++)==117&&str.charCodeAt(p++)==98&&str.charCodeAt(p++)==108&&str.charCodeAt(p++)==105&&str.charCodeAt(p)==99){pos+=6;return true}return false}
  function sl_112(){var p=pos;if(str.charCodeAt(p++)==115&&str.charCodeAt(p++)==104&&str.charCodeAt(p++)==111&&str.charCodeAt(p++)==114&&str.charCodeAt(p)==116){pos+=5;return true}return false}
  function sl_113(){var p=pos;if(str.charCodeAt(p++)==115&&str.charCodeAt(p++)==116&&str.charCodeAt(p++)==97&&str.charCodeAt(p++)==116&&str.charCodeAt(p++)==105&&str.charCodeAt(p)==99){pos+=6;return true}return false}
  function sl_114(){var p=pos;if(str.charCodeAt(p++)==115&&str.charCodeAt(p++)==117&&str.charCodeAt(p++)==112&&str.charCodeAt(p++)==101&&str.charCodeAt(p)==114){pos+=5;return true}return false}
- function sl_115(){var x;x=str.slice}
+ function sl_115(){var x=str.slice(pos,pos+12);if(x=="synchronized"){pos+=12;return true}return false}
  function sl_116(){var p=pos;if(str.charCodeAt(p++)==116&&str.charCodeAt(p++)==104&&str.charCodeAt(p++)==114&&str.charCodeAt(p++)==111&&str.charCodeAt(p++)==119&&str.charCodeAt(p)==115){pos+=6;return true}return false}
- function sl_117(){var x;x=str.slice}
+ function sl_117(){var x=str.slice(pos,pos+9);if(x=="transient"){pos+=9;return true}return false}
  function sl_118(){var p=pos;if(str.charCodeAt(p++)==118&&str.charCodeAt(p++)==111&&str.charCodeAt(p++)==108&&str.charCodeAt(p++)==97&&str.charCodeAt(p++)==116&&str.charCodeAt(p++)==105&&str.charCodeAt(p++)==108&&str.charCodeAt(p)==101){pos+=8;return true}return false}
  function sl_119(){var p=pos;if(str.charCodeAt(p)==36){pos+=1;return true}return false}
  function sl_120(){var p=pos;if(str.charCodeAt(p)==95){pos+=1;return true}return false}
@@ -490,5 +490,6 @@ else x=c<68097?c<65856?c<65488?c<65313?c<65020?c<64968?c<64914?0:1:c<65008?0:1:c
  function p(f){return function(){var p=pos,x=f([]);pos=p;return x}}
  function t(a,n){if(a.length>n)a.splice(n)}
  function g(p){return str.charCodeAt(p)}
- function b(p,n){var i,l,x=tbl[p][n],c=x[2],cn=[],o=[n,p,x[1],cn];for(i=0,l=c.length;i<l;i++){cn.push(b(c[i][0],c[i][1]))}return o}
+ function b(p,n){var x=tbl[p][n],c=[],a=[n,x[1]-p,c],y=x[2],i=0,l=y.length,z;for(;i<l;i++){z=y[i];if(z[0]>p)c.push([-1,z[0]-p]);c.push(b(z[0],z[1]));p=tbl[z[0]][z[1]][1]}if(p<x[1]&&c.count)c.push([-1,x[1]-p]);return a}
  return Program([])&&pos==l?[true,b(0,0)]:[false,pos,tbl]}
+p_ES5_v5_Program.names=['Program','FunctionBody','FunctionDeclaration','FunctionExpr','FormalParameterList','UseStrictDirective','Statement','Block','VariableStatement','VariableDeclarationListNoIn','VariableDeclaration','VariableDeclarationNoIn','EmptyStatement','ExprStatement','IfStatement','IterationStatement','DoWhileStatement','WhileStatement','ForInStatement','ForStatement','ContinueStatement','BreakStatement','ReturnStatement','WithStatement','LabelledStatement','SwitchStatement','CaseClause','DefaultClause','ThrowStatement','TryStatement','Catch','Finally','DebuggerStatement','Expr','ExprNoIn','AssignmentExpr','AssignmentExprNoIn','AssignmentOperator','ConditionalExpr','ConditionalExprNoIn','LogicalOrExpr','LogicalOrExprNoIn','LogicalAndExpr','LogicalAndExprNoIn','BitwiseOrExpr','BitwiseOrExprNoIn','BitwiseXOrExpr','BitwiseXOrExprNoIn','BitwiseAndExpr','BitwiseAndExprNoIn','EqualityExpr','EqualityExprNoIn','EqualityOp','RelationalExpr','RelationalExprNoIn','RelationalOp','RelationalOpNoIn','ShiftExpr','ShiftOp','AdditiveExpr','AdditiveOp','MultiplicativeExpr','MultiplicativeOp','UnaryExpr','PostfixExpr','LeftHandSideExpr','CallExpr','Arguments','ArgumentList','NewExpr','MemberExpr','PrimaryExpr','ArrayLiteral','ElementList','Elision','ObjectLiteral','PropertyNameAndValueList','PropertyAssignment','PropertyName','PropertySetParameterList','Literal','NullLiteral','BooleanLiteral','NumericLiteral','DecimalLiteral','DecimalIntegerLiteral','DecimalDigit','ExponentPart','SignedInteger','HexIntegerLiteral','DQ','SQ','StringLiteral','RS','DoubleStringCharacter','SingleStringCharacter','LineContinuation','EscapeSequence','CharacterEscapeSequence','SingleEscapeCharacter','NonEscapeCharacter','EscapeCharacter','HexEscapeSequence','UnicodeEscapeSequence','RegularExpressionLiteral','RegularExpressionBody','RegularExpressionFirstChar','RegularExpressionChar','RegularExpressionBackslashSequence','RegularExpressionClass','RegularExpressionClassChar','RegularExpressionFlags','SourceCharacter','WhiteSpace','LF','CR','LS','PS','LineTerminator','LineTerminatorSequence','Comment','MultiLineComment','MultiLineCommentNoLB','SingleLineComment','S','SnoLB','EOS','EOSnoLB','EOF','ReservedWord','Keyword','FutureReservedWord','Identifier','IdentifierName','IdentifierStart','IdentifierPart','UnicodeLetter','HexDigit','FalseTok','TrueTok','NullTok','BreakTok','ContinueTok','DebuggerTok','InTok','InstanceOfTok','DeleteTok','FunctionTok','NewTok','ThisTok','TypeofTok','VoidTok','IfTok','ElseTok','DoTok','WhileTok','ForTok','VarTok','ReturnTok','CaseTok','DefaultTok','SwitchTok','ThrowTok','CatchTok','FinallyTok','TryTok','WithTok'];

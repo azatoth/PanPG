@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<title>ECMAScript 5 parser</title>
+
+<style>
+body,html {margin:0;padding:0}
+fieldset {width:100%;border:0;padding:0;margin:0;background:#888;position:relative}
+label {display:inline-block;border:2px solid black;width:90%;margin:1em 2%;position:relative;background:#AAA}
+textarea {width:100%;height:24em;border:0}
+</style>
+
+<script src=../ES5_v5_1.js></script>
+<script src=PEG_util.js></script>
+
+<h1>ECMAScript 5 Parser 2009-12-14</h1>
+
+<p id=status></p>
+
+<fieldset>
+<label>Input: <textarea id=text readonly></textarea></label>
+<label>Parse Tree: <textarea id=parse_tree readonly></textarea></label>
+</fieldset>
+
+<script>
+
+var inputText_el=document.getElementById('text')
+  , parseTree_el=document.getElementById('parse_tree')
+  , status_el=document.getElementById('status')
+
+function status(s){status_el.innerHTML+=s+'<br>'}
+
+function xhr(method,uri,body,callback){var headers,p
+  if(typeof method==='object'){headers=method.headers;method=method.method}
+  var x=new XMLHttpRequest()
+  x.onreadystatechange=function(){if (x.readyState==4){callback(x)}}
+  x.open(method,uri,true)
+  if(headers) for(p in headers){x.setRequestHeader(p,headers[p])}
+  x.send(body)}
+
+status('fetching input...')
+//xhr('GET','../ES5_v5_1.js',null,function(x){
+xhr('GET','Y.js',null,function(x){
+ inputText_el.value=x.responseText
+ //inputText_el.value="function f(){return 42}"
+ parseTree_el.value=parseAndShow(inputText_el.value)
+ status('done')})
+
+function parseAndShow(s){var pt
+  status('parsing...')
+  pt=p_ES5_v5_Program(s)
+  //return s+'\n\n'+uneval(pt) // TODO: display parse errors
+  status('displaying parse tree...')
+  return (pt[0] ? showTree(pt[1],p_ES5_v5_Program.names) : 'parse error')}
+
+//function updateParseTree(){
+//  parseTree_el.value=parseAndShow(inputText_el.value)}
+
+//function delay(f,ms){return function(){
+//  if(f.pending) clearTimeout(f.pending)
+//  f.pending = setTimeout(f,ms)}}
+
+//inputText_el.onkeydown=inputText_el.onkeyup=inputText_el.onclick=delay(updateParseTree,50)
+//inputText_el.focus()
+
+</script>

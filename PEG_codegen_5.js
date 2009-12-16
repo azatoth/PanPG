@@ -1,3 +1,5 @@
+CSET['import']('',CSET)
+
 function codegen_v5(opts,names,named_res){var ctx
  ctx={csets:[],strlits:[]}
  opts.drop=opts.drop||[]
@@ -168,8 +170,10 @@ function re_to_function_v5(ctx){return function(re){
  function strlit_f(str,n){var i,l,ret,ret2
   l=str.length
   if(l>8){
-   return 'function sl_'+n+'(){var x;'
-   + 'x=str.slice'
+   return 'function sl_'+n+'(){'
+   + 'var x=str.slice(pos,pos+' +l+ ');'
+   + 'if(x=="'+escDblQuot(str)+'"){pos+='+l+';return true}'
+   + 'return false'
    + '}'}
   else{
    ret=['function sl_'+n+'(){var '
@@ -182,6 +186,8 @@ function re_to_function_v5(ctx){return function(re){
    ret.push('){pos+='+str.length+';return true}')
    ret.push('return false}')
    return ret.join('')}}}
+
+function escDblQuot(s){return s.replace(/\\|"/g,"\\$&")}
 
 function cset_to_js_v5(cset,id,id2){
  return g(cset)
