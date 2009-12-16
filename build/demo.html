@@ -9,12 +9,13 @@ label {display:inline-block;border:2px solid black;width:45%;margin:1em 2%;posit
 textarea {width:100%;height:24em;border:0}
 </style>
 
-<script src=build_output.js></script>
+<script src=PEG_generator.js></script>
 
-<h1>PEG demo 2009-11-26</h1>
+<h1>PEG demo 2009-12-14</h1>
 
-<p>This is a very simple demo (Firefox only at the moment) that demonstrates the PEG API.
-We load a PEG grammar from a file, construct a JavaScript parser from it, and use that parser to parse some input and display the resulting parse tree.
+<p>This is a very simple demo that demonstrates the PEG parser generator API.
+We load a PEG from a file, construct a JavaScript parser from it, and use that parser to parse some input and display the resulting parse tree.
+You can edit the arithmetic expression below and see the different parse trees generated.
 
 <p>Though this demo doesn't show it, the parser generator also has Unicode support, including characters outside the BMP.
 
@@ -53,12 +54,12 @@ xhr('GET','../PEG_arith.peg',null,function(x){
  inputPEG_el.value=x.responseText
  status('generating parser...')
  compilerOpts=
- {} // TODO: document the options that are available
- parser_el.value=generateCode(inputPEG_el.value,compilerOpts)
+ {} // see the API documentation for the available options, here we just accept the defaults
+ // since the input is known, we don't expect any error here and use generateParserThrowing() in preference to generateParser()
+ parser_el.value=generateParserThrowing(inputPEG_el.value,compilerOpts)
  status('loading the parser...')
- eval(parser_el.value)
- window.Expr=Expr
- // now Expr, the generated parser, is in scope
+ eval(parser_el.value) // here we use eval, but more commonly the generated parser will be written to a file and used many times
+ window.Expr=Expr // put Expr, the generated parser, in the global scope
  status('fetching the input file...')
  xhr('GET','arith_test_expr',null,function(x){
   inputText_el.value=x.responseText
@@ -66,14 +67,8 @@ xhr('GET','../PEG_arith.peg',null,function(x){
   parseTree_el.value=parseAndShowArithExpr(inputText_el.value)
   status('done')})})
 
-function generateCode(s,opts){var pt
-  pt=p_PEG_v5_RuleSet(s)[1]
-  PEG_codegen_5(pt)
-  return pt.code_v5()(opts)}
-
 function parseAndShowArithExpr(s){var pt
   pt=Expr(s) // TODO: display parse errors
-  //return s+'\n\n'+pp(pt)
   return (pt[0] ? showTree(pt[1],Expr.names) : 'parse error')}
 
 function updateParseTree(){

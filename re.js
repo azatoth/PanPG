@@ -1,4 +1,4 @@
-/* Here we define an 're' type and operations on it.  These are like regular expressions, except that they are stored not as strings but in a more convenient format.  They may be operated on and combined in various ways and eventually may be converted into ECMAScript regexes. */
+/* Here we define an 're' type and operations on it.  These are like regular expressions, except that they are stored not as strings but in a more convenient format.  They may be operated on and combined in various ways and eventually may be converted into ECMAScript regexes.  An re object can also be a named reference, to some other re object, which means that a set of re objects can be recursive and can express non-regular languages.  Circular re objects cannot be turned into ECMAScript regexes, although some collections of re objects that contain named references but are not circular can be flattened by substitution. */
 
 /* An re is an array, in which the first element is an integer which encodes the type of the second element:
 
@@ -7,7 +7,7 @@
 2 → sequence of res
 3 → union of res
 4 → m to n reps of re
-5 → named re reference
+5 → named reference
 6 → re negative lookahead
 7 → re positive lookahead
 
@@ -31,6 +31,7 @@ function re_pos_lookahead(re){return [7,re]}
 
 /* the following needs a correctness proof. */
 function re_serialize(re){
+ assert(this.CSET)
  return f(re)
  function f(re){return h(re,1)}// wants parens
  function g(re){return h(re,0)}// doesn't

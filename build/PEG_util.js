@@ -1,3 +1,5 @@
+/* Useful functions on PEG parse trees. */
+
 function PTNode(name,start,end,str){
  this.name=name;this.start=start;this.end=end
  this.cn=[]
