@@ -2,11 +2,10 @@ function build_PEG_compiler(API_compiling,PEG_codegen_5,PEG_codegen_5_js,TAL_mat
  tree=PTNodeTALDict.fnParse(PEG_codegen_5)
  talProg=PTNodeTALDict.fnCompile(tree,{functionName:'PEG_codegen_5'})
  return '/* PEG → JavaScript parser generator, with its dependencies.\n * See http://inimino.org/~inimino/blog/peg_first_release */\n\n'
-      + ';(function(){\n\n'
-      + '/* exports */\n'
-      + 'this.generateParser=generateParser\n'
-      + 'this.generateParserThrowing=generateParserThrowing\n'
-      + 'this.showTree=showTree\n'
+      + ';(function(exports){\n\n'
+      + 'exports.generateParser=generateParser\n'
+      + 'exports.generateParserThrowing=generateParserThrowing\n'
+      + 'exports.showTree=showTree\n'
       + '\n'
       + API_compiling
       + '\n\n /* PEG_v5 */ \n\n'
@@ -27,7 +26,7 @@ function build_PEG_compiler(API_compiling,PEG_codegen_5,PEG_codegen_5_js,TAL_mat
       // + '\n\nCSET.import(\'\',CSET)\n\n' // safari is buggy here
       + '\n\n/* PTNode.js (for showTree() only) */\n\n'
       + PTNode_js
-      + '\n})();\n'}
+      + '\n})(typeof exports==\'undefined\'?this:exports);\n'}
 
 // remaining dependencies:
 // p_PEG_v5_RuleSet (parser) comes from ../PEG_v5.js
