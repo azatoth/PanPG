@@ -16,22 +16,22 @@ function p_arith_Expr(str){
  var _Mult=q(Num,r(0,0,q(r(0,1,S),sl_1,r(0,1,S),Num)))
  var _Num=o(sl_2,q(cs_0,r(0,0,cs_1)))
  var _S=r(1,0,cs_2)
- function cs_0(){var c,x;if(pos==l)return false;c=g(pos);x=c&lt;49?0:c&lt;58?1:0;if(x){pos++;return true}return false}
- function cs_1(){var c,x;if(pos==l)return false;c=g(pos);x=c&lt;48?0:c&lt;58?1:0;if(x){pos++;return true}return false}
- function cs_2(){var c,x;if(pos==l)return false;c=g(pos);x=c&lt;32?0:c&lt;33?1:0;if(x){pos++;return true}return false}
+ function cs_0(){var c,x;if(pos==l)return false;c=g(pos);x=c<49?0:c<58?1:0;if(x){pos++;return true}return false}
+ function cs_1(){var c,x;if(pos==l)return false;c=g(pos);x=c<48?0:c<58?1:0;if(x){pos++;return true}return false}
+ function cs_2(){var c,x;if(pos==l)return false;c=g(pos);x=c<32?0:c<33?1:0;if(x){pos++;return true}return false}
  function sl_0(){var p=pos;if(str.charCodeAt(p)==43){pos+=1;return true}return false}
  function sl_1(){var p=pos;if(str.charCodeAt(p)==42){pos+=1;return true}return false}
  function sl_2(){var p=pos;if(str.charCodeAt(p)==48){pos+=1;return true}return false}
  function fin(c,p,x,r,a){if(r)a.push([p,x]);tbl[p][x]=r?[true,pos,c]:false;return r}
  function e(){return true}
- function o(){var args=arguments;return function(c){var i,l;for(i=0,l=args.length;i&lt;l;i++)if(args[i](c))return true;return false}}
- function q(){var args=arguments;return function(c){var i,l,cp=pos,cl=c.length;for(i=0,l=args.length;i&lt;l;i++)if(!args[i](c)){pos=cp;t(c,cl);return false}return true}}
- function r(m,n,f){return function(c){var i=0,cp=pos,cl=c.length;while(i&lt;m){i++;if(!f(c)){pos=cp;t(c,cl);return false}}cl=c.length;while(i++&lt;n||n==0)if(!f(c))return true;return true}}
+ function o(){var args=arguments;return function(c){var i,l;for(i=0,l=args.length;i<l;i++)if(args[i](c))return true;return false}}
+ function q(){var args=arguments;return function(c){var i,l,cp=pos,cl=c.length;for(i=0,l=args.length;i<l;i++)if(!args[i](c)){pos=cp;t(c,cl);return false}return true}}
+ function r(m,n,f){return function(c){var i=0,cp=pos,cl=c.length;while(i<m){i++;if(!f(c)){pos=cp;t(c,cl);return false}}cl=c.length;while(i++<n||n==0)if(!f(c))return true;return true}}
  function n(f){return function(){var p=pos,x=f([]);pos=p;return !x}}
  function p(f){return function(){var p=pos,x=f([]);pos=p;return x}}
  function t(a,n){if(a.length&gt;n)a.splice(n)}
  function g(p){return str.charCodeAt(p)}
- function b(p,n){var x=tbl[p][n],c=[],a=[n,x[1]-p,c],y=x[2],i=0,l=y.length,z;for(;i&lt;l;i++){z=y[i];if(z[0]&gt;p)c.push([-1,z[0]-p]);c.push(b(z[0],z[1]));p=tbl[z[0]][z[1]][1]}if(p&lt;x[1]&amp;&amp;c.count)c.push([-1,x[1]-p]);return a}
+ function b(p,n){var x=tbl[p][n],c=[],a=[n,x[1]-p,c],y=x[2],i=0,l=y.length,z;for(;i<l;i++){z=y[i];if(z[0]&gt;p)c.push([-1,z[0]-p]);c.push(b(z[0],z[1]));p=tbl[z[0]][z[1]][1]}if(p<x[1]&amp;&amp;c.count)c.push([-1,x[1]-p]);return a}
  return Expr([])&amp;&amp;pos==l?[true,b(0,0)]:[false,pos,tbl]}
 p_arith_streaming_Expr.names=['Expr','Add','Mult','Num','S'];
 
@@ -45,9 +45,356 @@ S ← [ U+0020 ]+
 
 function p_arith_streaming_Expr(out){var
  tbl=[],pos=0,l,s=''
- return function p_arith_streaming_Expr_in(chunk){
-  s+=chunk;l=s.length+1;while(l--)tbl[l]=[];l=s.length
-  
+ return function p_arith_streaming_Expr_in(m,x,y,z){
+  switch(m){
+  case 'chunk':
+   s+=x;l=s.length+1;while(l--)tbl[l]=[];tbl.length=l=s.length // note that we mutate tbl rather than create a new array
+   // if this is the first chunk we have seen we want to pass it to Expr
+   // otherwise we probably already have some parse rules on the stack
+   // since we need to be resumable we can no longer rely on recursive functions to maintain the stack
+   // instead of calling Expr we push Expr's index (0) onto the stack
+   // when we re-enter on each chunk we look at the stack to see what we need to try to parse
+   // our saved state consists of the result table and the call stack which we manually maintain
+
+Transforming the recursive function version into a version with an explicit call stack requires analyzing all the shared state in the call stack on which we rely and would need to reconstruct to resume.
+
+Assume the input "4*3+" has been seen in the first chunk.
+Considering only the parse rules on the stack, we have:
+ Expr
+  Add
+   Mult
+    Num    [E A M N]
+     "4"
+    .      [E A M]
+    S?     (S fails, S? succeeds)
+    "*"
+    S?
+    Num
+     "3"
+    .
+    (S? "*" S? Num) is tried again, but fails since there is a "+" not a "*"
+    The *-expr, and Mult, succeed, without seeing the end of the input chunk [1]
+   .       [E A]
+   We now push Mult onto the stack of nodes we can safely return in this chunk [2]
+   S?
+   "+"     succeeds!
+   S?      S fails, but touching EOF, this is the first time EOF is touched.
+
+We don't know whether the next input char will be a space or not, so we cannot go any further.[3]
+
+[1]
+We have no way of knowing a priori when (S? "*" S? Num) fails the second time, that it will never succeed because of the "+" already seen.
+Instead we must rely on the chunk annotations given by the user to make these calls.
+
+When the next chunk is seen, do we need to test the (S? "*" S? Num) again?
+No, because it didn't read forward to the end of the input before it failed.
+Since it failed when the "+" was seen, it would be fine to resume from this point.
+However, that is just a *-expr, not a named rule, so in this case there won't be any cached result on the result table.
+
+[2]
+This is because: (1) Mult succeeded without seeing EOF, and (2) Mult is in the "chunkable" set given by the caller.
+
+[3]
+In particular, we don't even know if the Add or Expr nodes will succeed.
+The price of streaming output is that errors can happen at any time.
+
+At the moment we first touch EOF, there are two rules, Expr and Add on the stack.
+Looking at the JavaScript stack instead of only the parse rule stack, we have the following functions:
+
+ function Expr(a){var x,p=pos,c;if(x=tbl[p][0]){pos=x[1];a.push([p,0]);return 1}if(x==false){return 0}c=[];return fin(c,p,0,_Expr(c)
+                                                                                                                                   ^
+ waiting for _Expr(c) to return, then fin() will be called.
+ In scope are the lookup result x (useless),
+ the child nodes so far `c`, which has been passed down to _Expr(),
+ the p=pos which was the start position and will be passed to fin()
+
+ var _Expr=Add
+              ^
+ var _Add=q(Mult,r(0,0,q(r(0,1,S),sl_0,r(0,1,S),Mult)))
+                                                       ^ (waiting for 'q' to return)
+
+ Here is the interesting stuff.
+ The outer q() has been called and all the combinator functions inside it have been called and have returned new parser functions which have been passed to q().
+ The call structure here just reflects the grammar and holds no interesting state, for that we must look at q() or rather the anonymous function which q() has returned
+
+ function q(){var args=arguments;return function(c){var i,l,cp=pos,cl=c.length;for(i=0,l=args.length;i<l;i++)if(!args[i](c)){pos=cp;t(c,cl);return false}return true}}
+                                                                                                                              ^ waiting for args[i](c)
+
+ In this case args[i] happens to be the function corresponding to ( S? "+" S? Mult )*
+ It was returned from the call to r() above, r(0,0,q(r(0,1,S),sl_0,r(0,1,S),Mult))
+ Looking at the call to q() we note the following state:
+ i represents the position in the sequence, in this case Mult · ( S? "+" S? Mult )*
+ cp is the original character position which we need to backtrack to in case the entire thing fails
+ cl is the original length of the child nodes, which we need to truncate it to if the entire thing fails
+ It is also worth noting that the arguments to q, i.e. the args variable, is closed over and forms part of the unique identity of what is currently on the stack.
+
+ function r(m,n,f){return function(c){var i=0,cp=pos,cl=c.length;while(i<m){i++;if(!f(c)){pos=cp;t(c,cl);return false}}cl=c.length;while(i++<n||n==0)if(!f(c))return true;return true}}
+                                                                                        ^ waiting for f(c) to return
+
+ In the anonymous function returned from this call to r() we are waiting for f(c), where f is the function returned by r(0,1,S)
+ This corresponds to the position ( S? "+" · S? Mult )* inside the first repetition of this *-expr
+ i represents the number of matches and would be needed to know how many times to keep going in case this was an upper-bounded rep
+ We could do away with this by unrolling all (m,n) rep into sequences of length m followed by either *-expr or nothing.
+ cp is the original char pos and is needed to reset in case the subexpr fails before m is reached.
+ Otherwise, or with the transformation above, it would not be needed since *-expr never rolls back the pos (though its sub-expr may)
+ cl is used to truncate the child list in case this fails before m is reached
+ It is also assigned to near the end of the function for a reason I do not understand.
+ It cannot possibly be used after it is assigned at that point so that assignment should be removed.
+
+ function r(m,n,f){return function(c){var i=0,cp=pos,cl=c.length;while(i<m){i++;if(!f(c)){pos=cp;t(c,cl);return false}}cl=c.length;while(i++<n||n==0)if(!f(c))return true;return true}}
+                                                                                        ^ waiting for f(c)
+
+ The next call is also an anonymous function returned from r, in this case r(0,1,S) as mentioned above.
+ This corresponds to the S? expression.
+ It is also waiting for f(c) which in this case is the S expression and function
+ i = 0, since the S has not yet succeeded.
+ cp and cl are at their initial values.
+
+ function S(a){var x,p=pos,c;if(x=tbl[p][4]){pos=x[1];a.push([p,4]);return 1}if(x==false){return 0}c=[];return fin(c,p,4,_S(c),a)}
+                                                                                                                              ^
+ waiting on its actual test function
+
+ var _S=r(1,0,cs_2)
+                   ^ waiting on r()
+
+ This corresponds to the S rule's RHS, which is " "+ i.e. 1 or more spaces.
+
+ function cs_2(){var c,x;if(pos==l)return false;c=g(pos);x=c<32?0:c<33?1:0;if(x){pos++;return true}return false}
+                                               ^
+
+ Here pos==l because we are at the end of the chunk, and so we return false.
+ This is where some magic needs to happen.
+
+At any given time, conceptually, there is a stack of some number of the following calls with their corresponding operators and local state:
+
+string   sl_n    "..."    start_pos
+cset     cs_n    [...]    -
+
+sequence   q      A B     position within the sequence, start_pos, length of the current child array at the start
+rep        r      A*      number of subexpr matches so far
+ordC       o     A / B    position within the sequence of choices
+posL       p      &A      original child array, original position
+negL       n      !A      original child array, original position
+
+When an expression is entered, we create a 'stack frame' for it by pushing onto the array that represents the stack.
+
+Global state includes the current position, the reference to the current child array, and the result table.
+
+Main loop:
+Based on the state, we consume a character, and transition to a new state.
+If there is no next character we abort immediately and wait for further input, unless the EOF messages has been received.
+Some states are marked as 'emit' states, at these points we emit the current contents of the result table and clear it up to the current position.
+
+There is a state for each position in the RHS of each rule, numbered sequentially.
+   rule                               states
+Expr ← Add                              0
+Add ← Mult (S? "+" S? Mult)*       1 2 3 4 5 6    · Mult · ( · S? · "+" · S? · Mult )*
+Mult ← Num (S? "*" S? Num)*       7 8 9 10 11 12
+Num ← [0-9]+                          13 14        translates to: · [0-9] · [0-9]*
+S ← " "+                              15 16
+
+after translation to core language, using sexps for clarity:
+
+   rule                                                       states
+Expr ← Add                                                      0
+Add ← (q Mult (r (q (o S ϵ) "+" (o S ϵ) Mult)))                 0x10 (q) 0x11 (Mult) 0x12 (r) 0x13
+Mult ← (q Num (r (q (o S ϵ) "*" (o S ϵ) Num)))
+Num ← (q [0-9] (r [0-9]))
+S ← (q " " (r " "))
+
+random thought: there's an interesting duality between tail-call elimination and eliminating co-extensive parent nodes
+
+Note that r = *-expr, all other m,n reps are converted to sequences, ordchoice with / ϵ, etc
+
+one way to deal with q is to have some generic code for moving through a sequence of states, corresponding to q() in the current code, another way is to encode the state transitions directly.
+In the former case we must pust a stack frame for the q() call onto the stack, and it must have its list of sub-expression states which the generic code will then walk through.
+In the latter case there is no stack frame created for the q, it just becomes a set of states, one for each sub-expression.
+This seems fine, because the setup can be combined into the initial state and the teardown can be combined with the return of the last state.
+Unlike r or o there is no interesting state apart from the position in the sequence.
+Essentially there is a translation from q( a b c d ) to q(a b'), b' ← q (b c'), c' ← q(c d'), and d' contains the return code for the entire sequence, i.e. a sequence of states, each of which tests one expression and then if successful continues to the next.
+But if unsuccessful, we need to cancel the whole thing.
+This is why q maintains its start position and original child array length.
+So q does indeed put a frame on the stack.
+We get back to that frame after each subexpr success or failure, and we either continue with the next subexpr or fail the entire q.
+So when entering a q we push the current position and current child node list onto the stack, and then go to the first subexpr state.
+Each subexpr in the q has its own unique state.
+When each of these states succeeds it continues to the next state.
+When it fails it runs a popq() action which fails the q and resets the pos and child array.
+
+Expr ← Add                                         0
+
+Add ← (q Mult (r (q (o S ϵ) "+" (o S ϵ) Mult)))
+     0  1    2  3  4  5 6  7   8  9 A  B         + 0x10
+
+Mult ← (q Num (r (q (o S ϵ) "*" (o S ϵ) Num)))
+      0  1   2  3  4  5 6  7   8  9 A  B         + 0x20
+
+Num ← (q [0-9] (r [0-9]))
+     0  1     2  3                               + 0x30
+
+S ← (q " " (r " "))
+   0  1   2  3                                   + 0x40
+
+terminal tests start at 0x80
+0x80  ϵ  // aka 'true'
+0x81  "+"
+0x82  "*"
+0x83  [0-9]
+0x84  " "
+
+function p_arith_streaming_Expr(out){var
+ tbl=[],pos=0,l,s='',l2,c,S=0,eof=0,eT,a=[],r,R // N.B. s = string, S = state, a = stack, r = result table entry, R = Boolean result
+ // transition table
+ // we have some unused states here, just stick -1 in those slots
+ //     0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
+ ,T=[0x10,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 // 0x0_  (Expr)
+    ,0x11,0x20,0x13,0x14,0x15,0x40,0x80,0x81,0x19,0x40,0x80,0x20,  -1,  -1,  -1,  -1 // 0x1_  (Add)
+    ,0x21,0x30,0x23,0x24,0x25,0x40,0x80,0x82,0x29,0x40,0x80,0x30,  -1,  -1,  -1,  -1 // 0x2_  (Mult)
+    ,0x31,0x83,0x33,0x83,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 // 0x3_  (Num)
+    ,0x41,0x84,0x43,0x84,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 // 0x4_  (S)
+ // the type of each state < 0x80, which is either q, r, o, n, p, or R
+ // of course this can be done better with some numbers and math, and 
+ // can most likely be eliminated altogether by choosing the state 
+ // values more carefully than we did here.
+ //     0123456789ABCDEF
+ ,type="R               " // 0x0_ (Expr)
+      +"qRrqoR  oR R    " // 0x1_ (Add)
+      +"qRrqoR  oR R    " // 0x2_ (Mult)
+      +"q r             " // 0x3_ (Num)
+      +"q r             " // 0x4_ (S)
+ return function p_arith_streaming_Expr_in(m,x,y,z){
+  switch(m){
+   case 'chunk':
+    s+=x;l2=s.length+1;while(l2-->l)tbl[l2]=[];tbl.length=l=s.length
+    mainloop();break
+   case 'eof':
+    eof=1;mainloop();break
+   case 'clone': case 'stringify': default: throw new Error("unhandled message "+m)}
+  function mainloop(){
+   for(;;){
+    if(S<0x80){ // if < 0x80, then the state represents an expression other than a primitive test, i.e. either o, r, q, n, p, or a Rule
+     // we need to know if this is a q, r, o, n, p, or Rule.  This is the expressionType.
+     eT=type[S];assert(typeof eT == 'string');assert(eT != " ")
+     if(eT='q'){a.push([S,c=[],pos])} else
+     if(eT='r'){a.push([S,c=[]])} else
+     if(eT='o'){a.push([S])} else
+     if(eT='n'
+     || eT='p'){a.push([S,c=[],pos])} else
+     if(eT='R'){
+      if(r=tbl[pos][S]){R=1;pos=r[1];c=r[2]} // cached success
+      else if(r==false){R=0} // cached failure
+      else{
+       a.push([S,c=[],pos])
+     S=T[S] // next state comes from the transition table
+     continue}
+    
+
+It is worth noting that stack entries contain the child array of the current expression, but the S of the previous expression.
+
+The things that we push onto the stack, and what happens to them on success or failure:
+For:    Push:
+q       previous S, new child array, start pos
+Success: child array is appended to parent child array, start pos is discarded
+Fail: child array is discarded, position is reset to start pos
+Success happens when the last subexpr succeeds, failure when any fails.
+
+r       S, new child array
+Success: child array is appended to parent child array
+Fail: r cannot fail
+Success happens when the subexpr fails.  If it succeeds we loop.
+Since this cannot backtrack we do not save the start pos.
+
+o       S
+Success: append the sub-expression's child array to the parent child array.
+Fail: do nothing
+Success happens when any subexpression succeeds, failure when the last fails.
+There is no need to create a separate child array because each subexpr will create its own, and as soon as any subexpr succeeds we are done.
+In other words, unlike with q, the child array is not built up by parts, but is received atomically from the subexpr which succeeds.
+For the same reason there is no need to store the start pos because this will never need to be rolled back.
+
+n       S, new child array, pos
+p       S, new child array, pos
+On either success or failure, the child array of a lookahead is thrown away and the pos is rolled back.
+Then the result is inverted in the case of n, and the stack popped as usual in either case.
+
+R       S, new child array, pos
+On entry, we also check the result table, and if a result exists, use it instead.
+Success: push the child array onto a new rule match node and push this node onto the parent
+Fail: drop the child array
+Either success or failure is recorded in the result table.
+"Pushing onto the parent" means, in an event stream model, emitting a rule start event, all child events, and a rule end event.
+If the rule was entered in streaming mode however, some of these events may have already been sent.
+If events have already been sent and the rule fails then this is a hard failure.
+If there is a parent position in the stack which has a failure continuation, some branch of which could have succeeded, then this is an error.
+This can be tested by reparsing in non-streaming mode and comparing the output, it is acceptable if a different error is generated but if the non-streaming parser succeeds then it is a bug (possibly in the grammar annotations provided by the caller).
+It is never necessary to roll back to the start position, since any subexpression which failed will have done so; note that a rule only has one direct subexpression (which may be a sequence).
+However, we do store the position, so that once the result is known we can add it to the result table, which is indexed by position then by rule index.
+If the rule was entered in streaming mode, this represents an assertion by the provider of the streaming annotations that the rule, if successful, will never be backtracked over by a parse that will succeed (though it may be retested by a parse that ultimately will fail).
+This implies that the rule need not be recorded in the result table, even if the result is not being streamed immediately.
+Instead we should record a distinguished value indicating that the result has been 'burned' by a commit point annotation.
+If such a result is accessed in the table, the accessor can then either throw an exception, or return a parse failure, possibly with a warning.
+In 'grammar annotation debugging mode' the warning would be useful.
+There might be stricter annotations that would also make the exception correct, e.g. if there is a 'backtracking will not occur' annotation on an expression rather than the weaker 'commit point' annotation.
+
+Primitive tests (i.e. in this version, only cset membership tests) do not push data onto to the stack, though they can be conceptualized as a stack frame which is simply optimized down to nothing but a state change.
+They are the only thing which consumes input, and thus changes the parser from the "control" or "stack setup" mode to the "has result" mode in which stack frames are popped and parse results are determined.
+Once in 'has result' mode, multiple state changes may occur, shrinking the stack and remaining in 'has result' mode, until a state is reached which again enters "control" mode (i.e. an expression state) or primitive testing mode.
+
+A primitive test either succeeds or fails, and may increment the position.
+In the case of ϵ, the position is not incremented, otherwise the position is incremented for every test which succeeds.
+Once a test succeeds or fails we have a result value, and are in 'has result' mode.
+
+In 'has result' mode, first the state is looked up in either the match or fail transition table, as determined by the result.
+If the new state is a primitive state, then it is immediately tested and the stack is unchanged.
+(This allows a kind of inlined lexing without falling back to an enclosing q or r, and assumes special-cased primitive states which have their own transition table entries.)
+We won't implement this at all in this version.
+Instead, no primitive test has any entry in a transition table, so once it is tested and the result is known, the state itself has no value and is replaced by the state from the top of the stack.
+This state will represent the caller of this primitive test.
+This then is the state looked up in the match or fail table.
+
+
+
+Now that our concept of the stack is sufficiently well developed we can define the streaming behavior in terms of the stack contents.
+Each expression in the grammar (each of which corresponds to a state) is either 'streamable' or 'atomic', 'unitary', 'unstreamable'.
+Then, if the stack contains any unstreamable state, we are in non-streaming mode, otherwise we are in streaming mode.
+So streaming mode can be maintained as a flag which is set or unset as we push and pop the stack.
+When in streaming mode we can emit a tree chunk at any time, including on every rule match, which may be convenient for debugging at least.
+Otherwise we must buffer until non-streaming mode is entered again.
+The v5 parser behavior is just a special case in which the start rule is non-streamable.
+
+To verify that streaming mode "works" on a corpus we could record a position and move it forward at every expression we enter in streaming mode, and then at any occasion where we backtrack, throw an exception if the position we backtrack to is earlier than this maximal point at which streaming could have happened.
+
+
+At least in a debugging mode, when we enter a rule we should record a distinguished value in the result table.
+If that value is seen then we have left recursion or something equivalent to it.
+Ideally this would be detected at compile time, which is why the runtime check should not need to be added, but the latter is much easier to implement.
+
+
+For simplicity in the code generator we also replace all string literals with q( "a" "b" ... ).
+Thus the only terminal test is (possibly singleton) cset membership.
+Later the optimization can be added back in of testing multiple characters without a state change and a loop.
+Incidentally the grammar can be analyzed to find overlapping sequences that may be unified into a single such state (this simply compresses the code for such things as "\r\n|\r|\n" which may appear directly in multiple places in a grammar).
+
+making each character test only consume a single character makes it possible to compose character tests.
+For example there can be a faster ASCII test for characters in a range, and then if this fails the state can simply be switched to a state that does more expensive comparisons to handle a wider range of characters.
+If two character ranges are used in the same parser and they are both very large and one is a superset of the other, it can be implemented as the other with the difference as the error fallback, etc.
+
+
+What we probably really want is not to say which rules should be chunked, but rather which rules (and maybe which parts of that rule's RHS) should be entered into and returned partially when chunking.
+In this case there would be no need to mention the atomic rules, that is, any rule which will never have any child nodes, such as Num.
+However we would want to mention the top-level rule if there is to be any chunking at all.
+We would also want to mention here that Add and Mult can be entered and returned partially.
+Another way to do it perhaps would be to exclude certain expressions (not just rules) from chunking.
+
+One thing we could also possibly do with these annotations is say "this annotation is an assertion that if this expression succeeds, the parser will never backtrack back over this point (unless it fails)" and in this case an actual assertion could be added to the generated code and then run against a test corpus to heuristically test the premise.
+
+// the only case this might matter is if someone tries to resume a failed parse but then pass the original tbl reference to error analysis.
+// I guess we can reset tbl at the point when we return it.
+
+unrelated note:
+interestingly the same time-annotated tree structure used by revstore can serve as a representation of a time-varying parse tree
+rather than having a single value, each node in the tree has a sequence of (time, new value) pairs which describe its history
+
 
 Rewriting this by hand to be streaming, first we must change the API.
 The parser generator gets a list of 'chunk' rule names along with the grammar.
@@ -86,3 +433,16 @@ When entering a rule, there can now be three possible results: success, failure,
 After the last chunk the caller must signal it by sending an EOF message.
 This message converts the premature end of input state into a final parse result.
 Whenever the end of the input is reached, this state needs to be entered, and the parse needs to resume on the next chunk at the first rule that went past the end of the previous chunk.
+
+
+unrelated idea:
+
+There is a program transformation from any ECMAScript program to a new program which makes no function calls.
+The general strategy is: for each function, define a unique state value and a set of local variables.
+Structure the program as a loop which maintains its own stack, tests the state on each loop entry, and contains corresponding function bodies in a switch statement on the state value.
+It is obvious that this works, since it is exactly what an interpreter does, we are simply hoisting part of the interpreter into the program.
+However, it has some interesting side effects.
+One is that tail call elimination and such features can be implemented by such a compiler.
+The other is that, since we have full access to the stack, we can implement call/cc.
+If all data are serializable we can even at any time serialize the entire program state and resume it later at will.
+The transformation from the mutually-recursive-function v5 parser implementation to the streamable v6 implementation is essentially just this transformation applied to the original parser program, with a few optimizations applied to the result (e.g. eliminating local variables in some states, and combining some state values) based on domain-specific expectations about how the program will execute.
