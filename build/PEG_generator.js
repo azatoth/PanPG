@@ -1,12 +1,11 @@
 /* PEG → JavaScript parser generator, with its dependencies.
  * See http://inimino.org/~inimino/blog/peg_first_release */
 
-;(function(){
+;(function(exports){
 
-/* exports */
-this.generateParser=generateParser
-this.generateParserThrowing=generateParserThrowing
-this.showTree=showTree
+exports.generateParser=generateParser
+exports.generateParserThrowing=generateParserThrowing
+exports.showTree=showTree
 
 function generateParser(peg,opts){var pt
  peg=peg.replace(/^[\n\r]+|[\n\r]+$/g,'') // TODO: regenerate the PEG parser and fix this
@@ -2158,4 +2157,4 @@ function _define(opts,op,rule){var attrName=op[1],ctx=[]
   'node.'+attrName+'=function(){var res='+op[2]
    +';node.'+attrName+'=function(r){return function(){return r}}(res);return res}})')
 }
-})();
+})(typeof exports=='undefined'?this:exports);
