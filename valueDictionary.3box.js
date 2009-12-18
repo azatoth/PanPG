@@ -47,6 +47,8 @@
 
 //,cfunc:'peg_features_test'
 
+,cfunc:'generateParserThrowing',ciset:'test_markdown'
+
 ,isets:
  {cset_prod:['file(cset.js)'
             ,'file(cset_unicode_properties_generated.js)'
@@ -84,6 +86,7 @@
  ,'ES5_test':['file(API.js)']
  ,CodePointLit:['CodePointLit']
  ,profile_analyzer:['result(1252281266,ES5_test,ES5_test)']
+ ,test_markdown:['file(tests/markdown.peg)']
  }
 
 

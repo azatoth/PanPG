@@ -1,6 +1,19 @@
 Documenting the result table representation maintained by the v5 generated parsers.
 This is an internal detail and shouldn't be relevant for users of the API.
 
+Summary
+-------
+
+tbl[<start position in input>][<rule index>] = either
+- undefined (the rule has not been tried at that position)
+- [true,<end position>,<children>] (the rule matched)
+- false (the rule failed at this position)
+
+<children> is an array of zero or more arrays of the form [<pos>,<rule index>] which can be used to look up the children of a node in the result table.
+
+Details
+-------
+
 The result table is an array of arrays.
 It is indexed first by position in the input, in code units.
 This array is then indexed by rule name index.
