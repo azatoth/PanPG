@@ -243,7 +243,7 @@ terminal tests start at 0x80
 0x84  " "
 
 function p_arith_streaming_Expr(out){var
- tbl=[],pos=0,l,s='',l2,c,S=0,eof=0,eT,a=[],r,R // N.B. s = string, S = state, a = stack, r = result table entry, R = Boolean result
+ tbl=[],pos=0,l,s='',l2,c,S=0,eof=0,eT,a=[],r,R,chr // N.B. s = string, S = state, a = stack, r = result table entry, R = Boolean result
  // transition table
  // we have some unused states here, just stick -1 in those slots
  //     0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
@@ -252,6 +252,10 @@ function p_arith_streaming_Expr(out){var
     ,0x21,0x30,0x23,0x24,0x25,0x40,0x80,0x82,0x29,0x40,0x80,0x30,  -1,  -1,  -1,  -1 // 0x2_  (Mult)
     ,0x31,0x83,0x33,0x83,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 // 0x3_  (Num)
     ,0x41,0x84,0x43,0x84,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 // 0x4_  (S)
+ // the match table gives the next state after an expression match
+ ,M=
+ // the fail table gives the state after an expression fails
+ ,F=
  // the type of each state < 0x80, which is either q, r, o, n, p, or R
  // of course this can be done better with some numbers and math, and 
  // can most likely be eliminated altogether by choosing the state 
@@ -285,9 +289,35 @@ function p_arith_streaming_Expr(out){var
       else if(r==false){R=0} // cached failure
       else{
        a.push([S,c=[],pos])
-     S=T[S] // next state comes from the transition table
-     continue}
-    
+     S=T[S]} // next state comes from the transition table
+    if(S>=0x80){ // primitive tests
+     chr=s.charCodeAt(pos)
+     switch(S){
+      // this tier should just handle BMP chars, optimized towards the ASCII end
+      case 0x80:R=1;break
+      case 0x81:R=chr==43;break
+      case 0x82:R=chr==42;break
+      case 0x83:R=chr<58&&chr>47;break
+      case 0x84:R=chr==32;break
+      default:throw new Error("unknown S>=80 "+S)}
+     // we know that S is one of the cases above
+     // R is either true or false; if it is true, we are done with this test
+     // if it is false, maybe the chr was bad, or maybe we just looked past the end of the input and chr is NaN
+     // in such case our next step depends on whether 'eof' is set, if it is we fail, otherwise we wait for the next chunk or eof message.
+     if(!R)
+      if(isNaN(chr))
+       if(eof)R=false
+       else{
+        // do whatever teardown necessary to be ready for the next 'chunk' event
+        R=undefined // this is probably not necessary
+        out("ready") // let the caller know we are waiting for more input
+        return}
+     // if we reach here either R is true, or R and isNaN(chr) are false, or isNaN(chr) and eof are both true
+     assert(R || !isNaN(chr) || eof)
+     // in any of these cases, R is a legitimate value, i.e. we have a result
+     while(R!=undefined){ // the 'has result' loop will only be exited when we no longer have a result
+      // while we have a result we do teardown of stack frames according to the rule on the stack and the corresponding result
+      // 
 
 It is worth noting that stack entries contain the child array of the current expression, but the S of the previous expression.
 

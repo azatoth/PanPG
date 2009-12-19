@@ -6,6 +6,7 @@
 exports.generateParser=generateParser
 exports.generateParserThrowing=generateParserThrowing
 exports.showTree=showTree
+exports.rawFailDump=rawFailDump
 
 function generateParser(peg,opts){var pt
  peg=peg.replace(/^[\n\r]+|[\n\r]+$/g,'') // TODO: regenerate the PEG parser and fix this
@@ -2100,6 +2101,16 @@ function buildTree(s){var root,p,tbl=s.tbl,str=s._str
    delete tbl[0][p]}
  
  return populate(root)}
+
+// just dump everything in the fail result in a more human-friendly format
+function rawFailDump(fail,names){var ret=[],i,rules,j
+ for(i=0;i<fail.length;i++){
+  ret.push('pos: '+i)
+  rules=fail[i]
+  for(j=0;j<rules.length;j++){
+   if(rules[j]==undefined)continue
+   ret.push(' '+names[j]+': '+rules[j])}}
+ return ret.join('\n')}
 
 function buildFailTree(s){var root,p,tbl=s.tbl,failpos
  //failpos=tbl[0].str.length-s.str().length
