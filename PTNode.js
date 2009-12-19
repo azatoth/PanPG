@@ -79,6 +79,16 @@ function buildTree(s){var root,p,tbl=s.tbl,str=s._str
  
  return populate(root)}
 
+// just dump everything in the fail result in a more human-friendly format
+function rawFailDump(fail,names){var ret=[],i,rules,j
+ for(i=0;i<fail.length;i++){
+  ret.push('pos: '+i)
+  rules=fail[i]
+  for(j=0;j<rules.length;j++){
+   if(rules[j]==undefined)continue
+   ret.push(' '+names[j]+': '+rules[j])}}
+ return ret.join('\n')}
+
 function buildFailTree(s){var root,p,tbl=s.tbl,failpos
  //failpos=tbl[0].str.length-s.str().length
  failpos=s.pos

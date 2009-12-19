@@ -6,6 +6,7 @@ function build_PEG_compiler(API_compiling,PEG_codegen_5,PEG_codegen_5_js,TAL_mat
       + 'exports.generateParser=generateParser\n'
       + 'exports.generateParserThrowing=generateParserThrowing\n'
       + 'exports.showTree=showTree\n'
+      + 'exports.rawFailDump=rawFailDump\n'
       + '\n'
       + API_compiling
       + '\n\n /* PEG_v5 */ \n\n'
