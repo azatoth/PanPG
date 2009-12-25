@@ -1,0 +1,38 @@
+// display a successful parse result
+function showTree(t,names){
+ return f(t,0)
+ function f(n,p){var ret,i,l
+  if(n[0]==-1)return 'anonymous '+p+'-'+(p+n[1])
+  ret = names[n[0]]+' '+p+'-'+(p+n[1]) // construct label
+  for(i=0,l=n[2].length;i<l;i++){ // append children
+   ret += '\n' + f(n[2][i],p)
+   p += n[2][i][1]}
+  return ret.replace(/\n/g,'\n ')}} // indent
+
+// dump a parse fail result in a slightly more human-friendly format
+function rawFailDump(fail,names){var ret=[],i,rules,j
+ for(i=0;i<fail.length;i++){
+  ret.push('pos: '+i)
+  rules=fail[i]
+  for(j=0;j<rules.length;j++){
+   if(rules[j]==undefined)continue
+   ret.push(' '+names[j]+': '+rules[j])}}
+ return ret.join('\n')}
+
+// construct a parse result, suitable for use with showTree, from a complete array of events from a streaming parser.
+function treeFromEvents(a){var pos,i,ret
+ pos=i=0
+ ret=f(0,0)
+ return ret
+ function f(start){var rule,len,cn=[]
+  rule=a[i];i++
+  len=a[i];i++
+  if(rule==-1){
+   assert(len!=-1,1)
+   pos+=len
+   return [-1,len,[]]}
+  while(a[i]!=-2){
+   cn.push(f(pos))}
+  i++
+  if(!cn.length)pos+=len
+  return [rule,pos-start,cn]}}

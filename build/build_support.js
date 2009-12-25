@@ -1,3 +1,3 @@
-function build_support(PTNode_js){
+function build_support(API_support_js){
  return '/* Useful functions on PEG parse trees. */\n\n'
-      + PTNode_js}
+      + API_support_js}

@@ -6,7 +6,11 @@
 
 //,cfunc:'peg_generator',ciset:'peg_generator',outfn:'peg_generated.js',outct:'application/x-javascript'
 
-,cfunc:'rawFailDump',ciset:'buildFailTree'
+//,cfunc:'rawFailDump',ciset:'buildFailTree'
+
+//,cfunc:'abc_test',ciset:'test_abc'
+
+,cfunc:'streaming_test',ciset:'streaming_test'
 
 /**************/
 /* Codegen v5 */
@@ -89,7 +93,9 @@
  ,CodePointLit:['CodePointLit']
  ,profile_analyzer:['result(1252281266,ES5_test,ES5_test)']
  ,test_markdown:['file(tests/markdown.peg)']
+ ,test_abc:['abc_peg']
  ,buildFailTree:['failTree','failNames']
+ ,streaming_test:['arith_expr2']
  }
 
 
@@ -111,6 +117,7 @@
        ]
  ,emptyOpts:{}
  ,arith_expr1:'42 * 3 + 1'
+ ,arith_expr2:'7'
  ,CodePointLit:'C ← [a-z−z]'
  ,arith_v5_opts:{prefix:'p_arith_v5_'
                 ,nocache:['Expr']}
@@ -191,5 +198,6 @@
  ,failNames: ["Document", "P_spacechar", "P_sp", "P_spnl", "P_specialchar", "P_newline", "P_normalchar", "P_blankline", "P_eof", "P_interblockspace", "P_line", "P_nonemptyline", "P_space", "P_nonspacechar", "P_lineof_star", "P_lineof_dash", "P_lineof_underscore", "P_bullet", "P_enumerator", "P_nonindentspace", "P_linechar", "P_indent", "P_indentedline", "P_optionallyindentedline", "P_openblocktag", "P_closeblocktag", "P_selfclosingblocktag", "P_blocktag", "P_alphanumeric", "P_singlequoted", "P_doublequoted", "P_htmlattributevalue", "P_htmlattribute", "P_htmlcomment", "P_htmltag", "P_inticks", "References", "Block", "Heading", "AtxStart", "AtxInline", "AtxEnd", "AtxHeading", "SetextHeading", "SetextHeadingBig", "SetextHeadingSmall", "BulletList", "BulletListTight", "BulletListLoose", "OrderedList", "OrderedListTight", "OrderedListLoose", "ListItem", "ListBlock", "ListContinuationBlock", "NestedList", "ListBlockLine", "InBlockTags", "HtmlBlock", "BlockquoteLine", "Blockquote", "VerbatimChunk", "Verbatim", "Label", "RefTitle", "RefSrc", "Reference", "HorizontalRule", "Para", "Plain", "Inline", "RawHtml", "EscapedChar", "Entity", "HexEntity", "DecEntity", "CharEntity", "Endline", "NormalEndline", "TerminalEndline", "LineBreak", "Code", "UlOrStarLine", "Emph", "EmphStar", "EmphUl", "Strong", "StrongStar", "StrongUl", "Image", "Link", "ReferenceLink", "ReferenceLinkDouble", "ReferenceLinkSingle", "AutoLinkUrl", "AutoLinkEmail", "BasicSource", "AngleSource", "Source", "LinkTitle", "ExplicitLink", "Str", "Space", "Symbol"]
 
  ,failTree: [[false, false, [true, 0, []], , false, false, , false, false, , false, false, false, , , , , , , [true, 0, []], , , , , , , , , , , , , , false, false, false, false, , , , , , , , , , , , , , , , , , , , , , , , , , , false, , , false, , , , false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, , , , , false, , false, false], [, , , , , false, , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , false], [, , , , , [true, 21, []]], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
+ ,abc_peg:'TestABC ← "abc"'
  }
 }
