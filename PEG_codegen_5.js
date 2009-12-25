@@ -6,7 +6,8 @@ function codegen_v5(opts,names,named_res){var ctx
  opts.nocache=opts.nocache||[]
  opts.prefix=opts.prefix||''
  opts.start=opts.start||names[0]
- return ['function '+opts.prefix+opts.start+'(str){'
+ opts.fname=opts.fname||opts.prefix+opts.start
+ return ['function '+opts.fname+'(str){'
  , 'var tbl=[],pos=0,l=str.length+1;'
  + (opts.debug?'var i=0;while(i<l)tbl.push({_:i++});'
               :'while(l--)tbl.push([]);')
@@ -64,6 +65,7 @@ function codegen_v5(opts,names,named_res){var ctx
  +  'p=tbl[z[0]][z[1]][1]}' // new position
  + 'if(p<x[1]&&c.count)c.push([-1,x[1]-p]);'
  + 'return a}'
+ , 'if(typeof str!=\'string\')throw new Error(\''+opts.fname+': argument is not a string\')'
  ].join('\n ')
  +'\n return '+opts.start+'([])&&pos==l?[true'
   +(opts.profile?',profile_log'
@@ -71,7 +73,7 @@ function codegen_v5(opts,names,named_res){var ctx
   +']:[false,pos,tbl]'
  //+'\n return '+opts.start+'([])&&pos==l?[true,b(0,\''+start+'\')]:[false,pos,tbl]'
  +'}'
- +'\n'+opts.prefix+opts.start+'.names='
+ +'\n'+opts.fname+'.names='
  +'[\''+names.join('\',\'')+'\'];'
 
  function ntof(name){var drop,nocache,idx

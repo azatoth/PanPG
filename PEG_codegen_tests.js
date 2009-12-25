@@ -128,3 +128,11 @@ function peg_profile_analyzer(profile){var res={},ret=[],totals={puts:0,hits:0,p
       + pp(totals)
       + '\n\nZeros:\n'
       + zeros.map(function(x){return x[0]+' ('+x[1]+')'}).join('\n')}
+
+function abc_test(peg){var parser
+ parser=generateParserThrowing(peg)
+ return parser
+ eval(parser)
+ return parser
+      + '\n\n'
+      + TestABC('abc')}
