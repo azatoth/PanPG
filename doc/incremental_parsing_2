@@ -43,18 +43,12 @@ Mult ← Num ( S? "*" S? Num )*
 Num ← "0" / [1-9] [0-9]*
 S ← [ U+0020 ]+
 
-function p_arith_streaming_Expr(out){var
- tbl=[],pos=0,l,s=''
- return function p_arith_streaming_Expr_in(m,x,y,z){
-  switch(m){
-  case 'chunk':
-   s+=x;l=s.length+1;while(l--)tbl[l]=[];tbl.length=l=s.length // note that we mutate tbl rather than create a new array
-   // if this is the first chunk we have seen we want to pass it to Expr
-   // otherwise we probably already have some parse rules on the stack
-   // since we need to be resumable we can no longer rely on recursive functions to maintain the stack
-   // instead of calling Expr we push Expr's index (0) onto the stack
-   // when we re-enter on each chunk we look at the stack to see what we need to try to parse
-   // our saved state consists of the result table and the call stack which we manually maintain
+// note that we mutate tbl rather than create a new array
+
+since we need to be resumable we can no longer rely on recursive functions to maintain the stack
+instead of calling Expr we push Expr's index (0) onto the stack
+when we re-enter on each chunk we look at the stack to see what we need to try to parse
+our saved state consists of the result table and the call stack which we manually maintain
 
 Transforming the recursive function version into a version with an explicit call stack requires analyzing all the shared state in the call stack on which we rely and would need to reconstruct to resume.
 
@@ -84,7 +78,7 @@ We don't know whether the next input char will be a space or not, so we cannot g
 
 [1]
 We have no way of knowing a priori when (S? "*" S? Num) fails the second time, that it will never succeed because of the "+" already seen.
-Instead we must rely on the chunk annotations given by the user to make these calls.
+Instead we must rely on the chunk annotations given by the user to make these determinations.
 
 When the next chunk is seen, do we need to test the (S? "*" S? Num) again?
 No, because it didn't read forward to the end of the input before it failed.
@@ -180,46 +174,26 @@ When an expression is entered, we create a 'stack frame' for it by pushing onto 
 
 Global state includes the current position, the reference to the current child array, and the result table.
 
-Main loop:
-Based on the state, we consume a character, and transition to a new state.
-If there is no next character we abort immediately and wait for further input, unless the EOF messages has been received.
-Some states are marked as 'emit' states, at these points we emit the current contents of the result table and clear it up to the current position.
+We define a core PEG language which translates string literals into sequences of individual characters and all repetitions other than *-exprs into combinations of sequences, ϵ, and *-exprs.
+The only elements of the core PEG language are sequence, greedy 0-or-more repetition, ordered choice, negative and positive lookaheads, and primitive tests on single characters.
 
-There is a state for each position in the RHS of each rule, numbered sequentially.
-   rule                               states
-Expr ← Add                              0
-Add ← Mult (S? "+" S? Mult)*       1 2 3 4 5 6    · Mult · ( · S? · "+" · S? · Mult )*
-Mult ← Num (S? "*" S? Num)*       7 8 9 10 11 12
-Num ← [0-9]+                          13 14        translates to: · [0-9] · [0-9]*
-S ← " "+                              15 16
+For clarity we use S-expressions to write the core language, and use the abbreviations above for sequences (q), repetitions (r), ordered choice (o), and positive and negative lookahead (p and n).
+Tests on characters are written as string literals or ranges.
 
-after translation to core language, using sexps for clarity:
+After translation to the core language, the arithmetic grammar becomes:
 
-   rule                                                       states
-Expr ← Add                                                      0
-Add ← (q Mult (r (q (o S ϵ) "+" (o S ϵ) Mult)))                 0x10 (q) 0x11 (Mult) 0x12 (r) 0x13
+Expr ← Add
+Add ← (q Mult (r (q (o S ϵ) "+" (o S ϵ) Mult)))
 Mult ← (q Num (r (q (o S ϵ) "*" (o S ϵ) Num)))
 Num ← (q [0-9] (r [0-9]))
 S ← (q " " (r " "))
 
 random thought: there's an interesting duality between tail-call elimination and eliminating co-extensive parent nodes
 
-Note that r = *-expr, all other m,n reps are converted to sequences, ordchoice with / ϵ, etc
-
-one way to deal with q is to have some generic code for moving through a sequence of states, corresponding to q() in the current code, another way is to encode the state transitions directly.
-In the former case we must pust a stack frame for the q() call onto the stack, and it must have its list of sub-expression states which the generic code will then walk through.
-In the latter case there is no stack frame created for the q, it just becomes a set of states, one for each sub-expression.
-This seems fine, because the setup can be combined into the initial state and the teardown can be combined with the return of the last state.
-Unlike r or o there is no interesting state apart from the position in the sequence.
-Essentially there is a translation from q( a b c d ) to q(a b'), b' ← q (b c'), c' ← q(c d'), and d' contains the return code for the entire sequence, i.e. a sequence of states, each of which tests one expression and then if successful continues to the next.
-But if unsuccessful, we need to cancel the whole thing.
-This is why q maintains its start position and original child array length.
-So q does indeed put a frame on the stack.
-We get back to that frame after each subexpr success or failure, and we either continue with the next subexpr or fail the entire q.
-So when entering a q we push the current position and current child node list onto the stack, and then go to the first subexpr state.
-Each subexpr in the q has its own unique state.
-When each of these states succeeds it continues to the next state.
-When it fails it runs a popq() action which fails the q and resets the pos and child array.
+We associate each expression with a distinct integer which we call a state.
+When parsing, the parser moves through these states, pushing them onto the stack and popping them as expressions are tested and succeed or fail.
+Each expression has an expression type, which is either q, r, o, p, or n, that is, the composite expressions of the PEG language, or a primitive expression, or a rule.
+Here for clarity we number these starting at 0x00 for the first rule, 0x10 for the expressions within the second rule, etc.
 
 Expr ← Add                                         0
 
@@ -235,104 +209,90 @@ Num ← (q [0-9] (r [0-9]))
 S ← (q " " (r " "))
    0  1   2  3                                   + 0x40
 
-terminal tests start at 0x80
+In addition to these states there are test states, which represent that the parser has walked through the grammar to the point that it now knows which test to perform on the character at the current position.
+Here we number the test states starting from 0x80.
+
 0x80  ϵ  // aka 'true'
 0x81  "+"
 0x82  "*"
 0x83  [0-9]
 0x84  " "
 
-function p_arith_streaming_Expr(out){var
- tbl=[],pos=0,l,s='',l2,c,S=0,eof=0,eT,a=[],r,R,chr // N.B. s = string, S = state, a = stack, r = result table entry, R = Boolean result
- // transition table
- // we have some unused states here, just stick -1 in those slots
+All of these tests consume one input character when they succeed, except for ϵ which always succeeds and consumes no input.
+
+Based on the key above, we construct the following three tables which determine the next state when an expression is entered (the T table), when it matches (M), and when it fails (F).
+
  //     0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
  ,T=[0x10,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 // 0x0_  (Expr)
     ,0x11,0x20,0x13,0x14,0x15,0x40,0x80,0x81,0x19,0x40,0x80,0x20,  -1,  -1,  -1,  -1 // 0x1_  (Add)
     ,0x21,0x30,0x23,0x24,0x25,0x40,0x80,0x82,0x29,0x40,0x80,0x30,  -1,  -1,  -1,  -1 // 0x2_  (Mult)
     ,0x31,0x83,0x33,0x83,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 // 0x3_  (Num)
-    ,0x41,0x84,0x43,0x84,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 // 0x4_  (S)
- // the match table gives the next state after an expression match
- ,M=
- // the fail table gives the state after an expression fails
- ,F=
- // the type of each state < 0x80, which is either q, r, o, n, p, or R
- // of course this can be done better with some numbers and math, and 
- // can most likely be eliminated altogether by choosing the state 
- // values more carefully than we did here.
+    ,0x41,0x84,0x43,0x84,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1]// 0x4_  (S)
+ ,M=[ 257,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 // 0x0_  (Expr)
+    , 257,0x12, 257,0x13,0x17, 257, 257,0x18,0x1B, 257, 257, 257,  -1,  -1,  -1,  -1 // 0x1_  (Add)
+    , 257,0x22, 257,0x23,0x27, 257, 257,0x28,0x2B, 257, 257, 257,  -1,  -1,  -1,  -1 // 0x2_  (Mult)
+    , 257,0x32, 257,0x33,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 // 0x3_  (Num)
+    , 257,0x42, 257,0x43,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1]// 0x4_  (S)
+ ,F=[ 256,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 // 0x0_  (Expr)
+    , 256, 256,  -1, 257, 256,0x16,  -1, 256, 256,0x1A,  -1, 256,  -1,  -1,  -1,  -1 // 0x1_  (Add)
+    , 256, 256,  -1, 257, 256,0x26,  -1, 256, 256,0x2A,  -1, 256,  -1,  -1,  -1,  -1 // 0x2_  (Mult)
+    , 256, 256,  -1, 257,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 // 0x3_  (Num)
+    , 256, 256,  -1, 257,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1]// 0x4_  (S)
+
+We also have a table of expression types, which are either q, r, o, n, p, for the composite PEG expressions, R for nonterminals, or L for literals, i.e. primitive expressions which actually test the input.
+
  //     0123456789ABCDEF
  ,type="R               " // 0x0_ (Expr)
-      +"qRrqoR  oR R    " // 0x1_ (Add)
-      +"qRrqoR  oR R    " // 0x2_ (Mult)
-      +"q r             " // 0x3_ (Num)
-      +"q r             " // 0x4_ (S)
- return function p_arith_streaming_Expr_in(m,x,y,z){
-  switch(m){
-   case 'chunk':
-    s+=x;l2=s.length+1;while(l2-->l)tbl[l2]=[];tbl.length=l=s.length
-    mainloop();break
-   case 'eof':
-    eof=1;mainloop();break
-   case 'clone': case 'stringify': default: throw new Error("unhandled message "+m)}
-  function mainloop(){
-   for(;;){
-    if(S<0x80){ // if < 0x80, then the state represents an expression other than a primitive test, i.e. either o, r, q, n, p, or a Rule
-     // we need to know if this is a q, r, o, n, p, or Rule.  This is the expressionType.
-     eT=type[S];assert(typeof eT == 'string');assert(eT != " ")
-     if(eT='q'){a.push([S,c=[],pos])} else
-     if(eT='r'){a.push([S,c=[]])} else
-     if(eT='o'){a.push([S])} else
-     if(eT='n'
-     || eT='p'){a.push([S,c=[],pos])} else
-     if(eT='R'){
-      if(r=tbl[pos][S]){R=1;pos=r[1];c=r[2]} // cached success
-      else if(r==false){R=0} // cached failure
-      else{
-       a.push([S,c=[],pos])
-     S=T[S]} // next state comes from the transition table
-    if(S>=0x80){ // primitive tests
-     chr=s.charCodeAt(pos)
-     switch(S){
-      // this tier should just handle BMP chars, optimized towards the ASCII end
-      case 0x80:R=1;break
-      case 0x81:R=chr==43;break
-      case 0x82:R=chr==42;break
-      case 0x83:R=chr<58&&chr>47;break
-      case 0x84:R=chr==32;break
-      default:throw new Error("unknown S>=80 "+S)}
-     // we know that S is one of the cases above
-     // R is either true or false; if it is true, we are done with this test
-     // if it is false, maybe the chr was bad, or maybe we just looked past the end of the input and chr is NaN
-     // in such case our next step depends on whether 'eof' is set, if it is we fail, otherwise we wait for the next chunk or eof message.
-     if(!R)
-      if(isNaN(chr))
-       if(eof)R=false
-       else{
-        // do whatever teardown necessary to be ready for the next 'chunk' event
-        R=undefined // this is probably not necessary
-        out("ready") // let the caller know we are waiting for more input
-        return}
-     // if we reach here either R is true, or R and isNaN(chr) are false, or isNaN(chr) and eof are both true
-     assert(R || !isNaN(chr) || eof)
-     // in any of these cases, R is a legitimate value, i.e. we have a result
-     while(R!=undefined){ // the 'has result' loop will only be exited when we no longer have a result
-      // while we have a result we do teardown of stack frames according to the rule on the stack and the corresponding result
-      // 
+      +"qRrqoRLLoRLR    " // 0x1_ (Add)
+      +"qRrqoRLLoRLR    " // 0x2_ (Mult)
+      +"qLrL            " // 0x3_ (Num)
+      +"qLrL            " // 0x4_ (S)
 
-It is worth noting that stack entries contain the child array of the current expression, but the S of the previous expression.
+We have a table of anonymous expressions which create an anonymous node in the resulting parse tree.
+These are determined partly from the original grammar and extended by annotations the user provides which can cause even named rules to generate anonymous nodes.
+This is just a bitfield, though we use a string here for clarity.
 
-The things that we push onto the stack, and what happens to them on success or failure:
-For:    Push:
-q       previous S, new child array, start pos
+ //     0123456789ABCDEF
+ ,anon="0               " // Expr
+      +"000000010000    " // Add
+      +"000000010000    " // Mult
+      +"0000            " // Num
+      +"0000            " // S
+
+The only anonymous nodes generated here are the operators "*" and "+".
+The rule for generating these automatically is approximately the same as the rule for generating anonymous nodes in the v5 parsers.
+One difference is that, in some cases, more expressions may need to be marked as anonymous, and then trimmed or combined based on the matches that actually occur (or the combining might not even need to happen).
+Anonymous nodes are somewhat comparable to text nodes in DOM, with the combination being akin to normalization.
+The rule for using these in the parser is that expressions appearing in anon always create an anonymous node and have no children.
+For all other expressions, only named rules generate nodes.
+
+When the parser enters an expression it pushes a frame onto the stack.
+The contents of that frame depend on the type of the expression.
+The frame will be used when the result of the expression is known.
+The result can be either success or failure.
+(There is also the case of reaching the end of the current chunk, but this does not affect the stack.)
+The frame that is pushed onto the stack for an expression then needs to include enough information to continue apppropriately after either result.
+
+Currently we push S onto the stack when a new state is entered, so that there is always the current state in S, and the previous state in the frame on the top of the stack.
+Instead we could push the current state onto the top of the stack, which would probably be more intuitive and might simplify the code.
+I'm not really sure what this would entail.
+For one thing, there would need to be a frame for the start rule already on the stack when the parser is started, since we never actually enter this rule, but then is probably necessary anyway unless there is going to be some special-case machinery to add the start rule to the returned tree (in which it currently does not appear).
+When the result of an expression is known, currently the expression that succeeded is already in S, either because the primitive testing code put it there (by popping the stack, but this could just as well be saved an a variable for that purpose), or because the previously unwound frame in the previous iteration of the has_result loop put it there.
+Instead of that we would need to get it from the stack frame, but the same number of stack pushes and pops would happen, so this seems a largely irrelevant difference except in terms of code readability and complexity.
+On the other hand it is quite natural to see the stack as a stack of states that we are in, in addition to the current state in S.
+
+For each expression type, here are the things that we push onto the stack, and what happens to them on success or failure:
+q       previous S, previous child array, start pos
 Success: child array is appended to parent child array, start pos is discarded
-Fail: child array is discarded, position is reset to start pos
+Fail: current child array is discarded, position is reset to start pos
 Success happens when the last subexpr succeeds, failure when any fails.
+In either case the parent child array becomes current.
 
-r       S, new child array
+r       S, child array
 Success: child array is appended to parent child array
 Fail: r cannot fail
 Success happens when the subexpr fails.  If it succeeds we loop.
-Since this cannot backtrack we do not save the start pos.
+Since this cannot backtrack we do not save the start pos; note that the subexpression may of course backtrack.
 
 o       S
 Success: append the sub-expression's child array to the parent child array.
@@ -341,13 +301,15 @@ Success happens when any subexpression succeeds, failure when the last fails.
 There is no need to create a separate child array because each subexpr will create its own, and as soon as any subexpr succeeds we are done.
 In other words, unlike with q, the child array is not built up by parts, but is received atomically from the subexpr which succeeds.
 For the same reason there is no need to store the start pos because this will never need to be rolled back.
+In the success case, appending the child array actually doesn't need to be done explicitly, since no new child array is created when the o is entered.
 
-n       S, new child array, pos
-p       S, new child array, pos
+n       S, child array, pos
+p       S, child array, pos
 On either success or failure, the child array of a lookahead is thrown away and the pos is rolled back.
 Then the result is inverted in the case of n, and the stack popped as usual in either case.
+The result inversion actually happens in the M and F tables, the code for handling these expressions is the same.
 
-R       S, new child array, pos
+R       S, child array, pos
 On entry, we also check the result table, and if a result exists, use it instead.
 Success: push the child array onto a new rule match node and push this node onto the parent
 Fail: drop the child array
@@ -357,9 +319,9 @@ If the rule was entered in streaming mode however, some of these events may have
 If events have already been sent and the rule fails then this is a hard failure.
 If there is a parent position in the stack which has a failure continuation, some branch of which could have succeeded, then this is an error.
 This can be tested by reparsing in non-streaming mode and comparing the output, it is acceptable if a different error is generated but if the non-streaming parser succeeds then it is a bug (possibly in the grammar annotations provided by the caller).
-It is never necessary to roll back to the start position, since any subexpression which failed will have done so; note that a rule only has one direct subexpression (which may be a sequence).
-However, we do store the position, so that once the result is known we can add it to the result table, which is indexed by position then by rule index.
-If the rule was entered in streaming mode, this represents an assertion by the provider of the streaming annotations that the rule, if successful, will never be backtracked over by a parse that will succeed (though it may be retested by a parse that ultimately will fail).
+In a Rule expression it is never necessary to roll back to the start position, since any subexpression which failed will have done so; note that a rule only has one direct subexpression (which may be a sequence).
+However, we do store the position, so that once the result is known we can add it to the result table, which is indexed by position then by rule index, and so that we can report the length of the match in the output stream.
+If the rule was entered in streaming mode, this represents an assertion by the provider of the streaming annotations that the rule, if successful, will never be backtracked over by a parse that will succeed, though it may be retested by a parse that ultimately will fail.
 This implies that the rule need not be recorded in the result table, even if the result is not being streamed immediately.
 Instead we should record a distinguished value indicating that the result has been 'burned' by a commit point annotation.
 If such a result is accessed in the table, the accessor can then either throw an exception, or return a parse failure, possibly with a warning.
@@ -369,20 +331,322 @@ There might be stricter annotations that would also make the exception correct, 
 Primitive tests (i.e. in this version, only cset membership tests) do not push data onto to the stack, though they can be conceptualized as a stack frame which is simply optimized down to nothing but a state change.
 They are the only thing which consumes input, and thus changes the parser from the "control" or "stack setup" mode to the "has result" mode in which stack frames are popped and parse results are determined.
 Once in 'has result' mode, multiple state changes may occur, shrinking the stack and remaining in 'has result' mode, until a state is reached which again enters "control" mode (i.e. an expression state) or primitive testing mode.
+There are three basic 'modes' in the code, the first two controlled by a test on the state value and the last one controlled by whether there is a result.
+The first mode is 'expression entry' mode, in which stack frames are set up and the state is advanced.
+In this mode, an expression is being entered and the result of the expression is not yet known.
+If there is an entry for this expression at this position in the result table, the parser will proceed directly to the has result state, but otherwise, after one or more expressions have been entered, a primitive expression will be entered, and a primitive test state will be the current state.
 
 A primitive test either succeeds or fails, and may increment the position.
 In the case of ϵ, the position is not incremented, otherwise the position is incremented for every test which succeeds.
 Once a test succeeds or fails we have a result value, and are in 'has result' mode.
+The primitive test code also takes care of popping one frame, getting back to the primitive expression state, and then getting the next state or result from the M or F table as appropriate.
+After the primitive test, either another expression state will be entered, or one or more expressions will be exited by the has_result loop.
 
-In 'has result' mode, first the state is looked up in either the match or fail transition table, as determined by the result.
-If the new state is a primitive state, then it is immediately tested and the stack is unchanged.
-(This allows a kind of inlined lexing without falling back to an enclosing q or r, and assumes special-cased primitive states which have their own transition table entries.)
-We won't implement this at all in this version.
-Instead, no primitive test has any entry in a transition table, so once it is tested and the result is known, the state itself has no value and is replaced by the state from the top of the stack.
-This state will represent the caller of this primitive test.
-This then is the state looked up in the match or fail table.
+In has_result mode, we deal with the teardown of expressions that have been entered and for which the result is now known.
+The result applies to the expression currently at the top of the stack, which is first popped.
+This will not be a primitive expression, but always a q, r, o, p, n, or R expression.
+
+It is possible to streamline lexing by having primitive test states that have their own follow states in the M or F tables.
+Then in the primitive test code, we can look up the result and state in the M or F table, and if the new state is a primitive state, then it is immediately tested and the stack is unchanged.
+This isn't implemented currently.
+
+Generating anonymous nodes
+--------------------------
+
+Our parse tree result format is very minimal, representing each node as only a rule name and a length.
+This means that in order to determine where in the input a node corresponds to, it is necessary to keep track of the lengths as a running sum while walking the tree.
+This in turn means that there cannot be any segment of the input which is unaccounted for by some leaf node; the leaf nodes must tile the input.
+This is described in further detail in parse_tree_representation.
+If the input "2+2" is matched by the grammar above, then, we have three leaf nodes in the result, all of length 1.
+They are the Num nodes matching each of the "2"s, and an anonymous node between them.
+If this anonymous node were dropped it would be impossible to determine the correct location of the second Num match.
+Currently, primitive expressions such as "2" do not store any data of interest on the stack, this means that determining the location of the match from the stack alone could be difficult.
+The result table contains enough data to reconstruct it, since each anonymous node has at least one named-rule sibling node.
+However we probably prefer to get this data from the stack for simplicity.
+We can easily determine from the grammar alone where anonymous nodes will be generated.
+When entering an expression that can generate an anonymous node, then, we can simply add the start position to the corresponding stack frame, and when exiting the expression, emit the anonymous node with the length given by subtracting from the current position.
+If the anonymous node is empty, however, i.e. if the start and end positions are the same, we omit it entirely from the output.
+
+It should be noted that, based on annotations provided to the code generator, not only primitive expressions but also named rules that are deemed uninteresting by the user can be supressed, generating only anonymous nodes in the output.
 
 
+streaming output
+----------------
+
+The output of a streaming parser must be sent in chunks even while inside an outer rule (most obviously, the start rule itself) the final result of which is not yet known.
+How does the parser know when a node can be safely emitted?
+For this we can rely on annotations provided by the caller when the parser is generated, on runtime data gathered during the parse, on rules based on expression types, and even potentially on heuristics which can be used to support or disprove the annotations the caller provides.
+
+Nodes are generated only by rule matches and by anonymous expression matches.
+When a node is generated, whether the node can be emitted depends on the parent expressions on the call stack, and of course on the rest of the input, but we can make no assumptions about that.
+
+An expression can make it unsafe for a rule to be emitted, but cannot make it safe if a parent expression has already made it unsafe.
+The interesting question then is whether an expression preserves this safety, or streamability.
+
+Assuming a rule R has just been entered,
+
+R ← e
+
+And that R is safe to stream, meaning that when R succeeds the corresponding node can be emitted immediately.
+
+Obviously, when e itself is successful, R's success is known.
+So if e is a named reference to another rule or a primitive expression, it succeeds or fails atomically and there is no interesting question for streaming.
+In the case of n or p, nothing is emitted in any case, so these are also uninteresting.
+The interesting cases are when e is a q, r, or o expression.
+
+In the case of (q a b), generally, it is not safe to emit a until b also succeeds.
+In the case of (r a), it is safe to emit each a as it succeeds, since r never backtracks.
+In the case of (o a b), it is safe to emit the result of the first branch which succeeds, since no other will be tried.
+
+So, actually the only interesting case is q expressions, in which subexpressions may succeed but later be retracted due to the entire sequence failing.
+The interesting subexpressions of the q are all but the last.
+So for each sequence in a grammar, we can say whether each subexpression is safe or unsafe, possibly at some point within that subexpression.
+Essentially we are saying that we are committed, at some point, to either succeeding on that branch or else failing the entire parse.
+This has a close connection to LR(n) languages.
+If the language is LR(1), for example, then after the next character plus one is consumed, the branch is committed and will succeed or fail with the entire parse.
+Or rather, we can say that if the language is LR(1), a PEG could be constructed for it such that the above holds; it does not follow that this does actually hold for any given PEG matching that language, nor is it particularly likely to hold for a PEG written in a straightforward style.
+
+Perhaps what we want then is a separate stack for these branch and commit points.
+When a possibly-unsafe branch point is entered, we push onto this stack, and when a commit point is reached, we pop from this stack.
+Iff the stack is empty, it is safe to emit events.
+
+Looking at ../PEG_ES5_arith.peg for inspiration.
+This is a grammar that parses only a subset of ES5 arithmetic expressions, i.e. big enough to be interesting but not as big as the full ES5 grammar.
+The start rule is:
+
+Expr ←
+  AssignmentExpr (S? "," S? AssignmentExpr)*
+
+Or in sexp form:
+
+ (q AssignmentExpr (r (q (o S ϵ) "," (o S ϵ) AssignmentExpr)))
+0  1              2  3  4  5 6  7   8  9 A  B
+
+A fairly common pattern in grammars of this sort, as it so happens...
+
+In this case, 1 is ostensibly unsafe as it is the first subexpression of a q, however, since r cannot fail, 1 is actually safe.
+Rule: if the last subexpression of a q cannot fail, the previous subexpression becomes streamable.
+
+Subexpressions 4, 7, and 8 are all unsafe, but we don't care about them anyway since they are (probably) very short in terms of matched input, and in any case have no children.
+Subexpr B is safe, since it appears in the last position in both of the q expressions (and the r has no effect on safety).
+So we can, completely automatically, derive from this rule that all the subexpressions we care about streaming are safely streamable (in any context where the call to Expr itself is streamable, of course).
+
+AssignmentExpr ←
+   LeftHandSideExpr S? AssignmentOperator S? AssignmentExpr
+ / ConditionalExpr
+
+Here we don't care to make LeftHandSideExpr streamable, as these are generally short anyway.
+The ConditionalExpr call here will be preserve safety as it is just the subexpr of an ordered choice.
+
+ConditionalExpr ←
+  LogicalOrExpr (S? "?" S? AssignmentExpr S? ":" S? AssignmentExpr)?
+
+This is a little more sticky.
+The LogicalOrExpr will not be streamable, as we do not quite know that the ?-expr cannot fail, once it is translated into a (o ... ϵ) unless there is a rule for bubbling up the "infallibility" property through subexpressions (i.e. that (o ... ϵ) cannot fail because ϵ cannot fail and any (o ... x) is infallible if x is.)
+
+However, the streamability of LogicalOrExpr can be provided by the user as an annotation.
+
+Most of the rest of this file seems not terribly interesting.
+
+Looking at the full ES5 grammar, the most interesting cases for streamability are a file consisting only of a sequence of statements and function declarations, and a file containing a top-level immediately executed anonymous function, which is quite common and encloses all but the first and last line of the program in a function expression inside a function call.
+In this case, let us see what would be necessary to let the streamability flag survive down through the grammar to the expressions inside the anonymous function.
+
+Program ←
+  (S? (Statement / FunctionDeclaration))* S?
+
+FunctionBody ←
+  (S? (Statement / FunctionDeclaration))* S?
+
+FunctionDeclaration ←
+  FunctionTok S? Identifier S? "(" S? FormalParameterList? S? ")" S? "{" S? FunctionBody S? "}"
+
+FunctionExpr ←
+  FunctionTok S? Identifier? S? "(" S? FormalParameterList? S? ")" S? "{" S? FunctionBody S? "}"
+
+Here, a rule that lets the parser generator know that S? cannot fail would be sufficient to make the Statement and FunctionDeclaration occurrences streamable in the Program and FunctionBody contexts.
+
+In a program of the form (function(){ ... many LOC ... })() the parse tree will be:
+
+Program
+ Statement
+  ExprStatement
+   Expr
+    AssignmentExpr
+     ConditionalExpr
+      LogicalOrExpr
+       LogicalAndExpr
+        BitwiseXOrExpr
+         BitwiseAndExpr
+          EqualityExpr
+           RelationalExpr
+            ShiftExpr
+             AdditiveExpr
+              MultiplicativeExpr
+               UnaryExpr
+                PostfixExpr
+                 LeftHandSideExpr
+                * CallExpr *
+                   MemberExpr
+                    PrimaryExpr
+                     "("
+                     Expr ... see below
+                     ")"
+                   Arguments
+   EOS
+
+The parse tree under the innermost Expr above will be:
+
+Expr
+ AssignmentExpr
+  ConditionalExpr
+   LogicalOrExpr
+    LogicalAndExpr
+     BitwiseXOrExpr
+      BitwiseAndExpr
+       EqualityExpr
+        RelationalExpr
+         ShiftExpr
+          AdditiveExpr
+           MultiplicativeExpr
+            UnaryExpr
+             PostfixExpr
+              LeftHandSideExpr
+               NewExpr
+                MemberExpr
+                 FunctionExpr
+
+It is impossible to stream the meat of this program, the inner FunctionExpr, given this grammar.
+The reason is that, if the last "()" were not present, the CallExpr, marked in the tree above with asterisks, would not appear in the tree, and would be replaced with a NewExpr instead.
+This is because of the way the ES5 grammar is structured.
+In the grammar a CallExpr requires MemberExpr followed by at least one Arguments, even though if the arguments are not present, the LeftHandSideExpr will still parse, but it will do so by falling back to NewExpr, which does not require the trailing arguments after the MemberExpr.
+To make this grammar streamable, then, we need to rework LeftHandSideExpr so that it parses the same language, gives equally useful trees, but doesn't backtrack over quite so much of the text.
+
+Interestingly, one of the great benefits of PEGs is that they allow cheap backtracking, in this case, backtracking over an entire file without any extra reparsing cost, as the MemberExpr successful parse result matched as part of either the CallExpr or NewExpr will already be cached.
+Unfortunately the reliance on cheap backtracking is not compatible with streamability.
+Backtracking is cheap in a packrat parser, but it makes streaming impossible in any expression that may be successfully backtracked over.
+
+In LR parsers, the emphasis is on committing to a parse tree early.
+This is why the parse tree above contains such deeply nested rules, (Expr → AssignmentExpr → ConditionalExpr → …)
+If backtracking were cheap we could have AssignmentExpr require an actual assignment, and first try the AssignmentExpr, and then, if that fails, try the ConditionalExpr at the same position, and then if that fails try the LogicalOrExpr, and so on.
+In this way we would get a much smaller tree, and exclude such unintuitive parses as an AssignmentExpr that doesn't actually contain an assignment operator or a RHS.
+The cost is that it is impossible to know until the end of the expression is reached which of these cases will actually succeed.
+Automatic rule elision of course suffers from the same weakness: until the AssignmentExpr is closed, we cannot know whether it will subsume the ConditionalExpr as its co-extensive only child node, or whether it will be a "true" AssignmentExpr.
+
+Given that the ES5 grammar is generally very solidly in the LR tradition, then, why did this late-choice division between CallExpr and NewExpr arise?
+This is one of the ugliest parts of the grammar.
+
+Taking the CFG productions from ES5:
+
+LeftHandSideExpression :
+      NewExpression
+      CallExpression
+
+NewExpression :
+     MemberExpression
+     new NewExpression
+
+CallExpression :
+      MemberExpression Arguments
+      CallExpression Arguments
+      CallExpression [ Expression ]
+      CallExpression . IdentifierName
+
+MemberExpression :
+     PrimaryExpression
+     FunctionExpression
+     MemberExpression [ Expression ]
+     MemberExpression . IdentifierName
+     new MemberExpression Arguments
+
+A LHSExpr can be either a NewExpr or CallExpr.
+A CallExpr is a MemberExpr followed by one Arguments, followed by any number of Arguments, "[" Expr "]", or "." IdentifierName.
+A NewExpr is "new"* MemberExpr.
+A MemberExpr, confusingly enough, can match "new" MemberExpr Arguments, but not "new" MemberExpr without arguments, and can also produce any number of "[" Expr "]" and "." IndentifierName suffixes.
+Ultimately a MemberExpr must resolve to either a PrimaryExpr or FunctionExpr; these include self-contained things like literals, "this", identifiers, and parenthesized expressions.
+
+So ultimately, a LeftHandSide expression contains a PrimaryExpr or FunctionExpr, surrounded by some optional prefixed "new" and optional suffixed Arguments, and bracket or dot property accessors.
+It is possible for a NewExpr to not actually match the "new" token, in fact this is probably the common case, when the occurrences of "new" and Arguments are balanced.
+If the "new" and Arguments are balanced (possibly with property accessors inside), this is a MemberExpr.
+Examples:
+
+a
+new a.b['c'].d()
+new new a()()
+
+If the "new" occurrences and Arguments occurences are unbalanced in favor of arguments, this is a CallExpr.
+These can have any number of trailing property accessors also.
+Examples:
+
+a()
+new a.b['c'].d()()
+new new a()()()
+new new a()()()[b].c.d
+
+In the middle of the PrimitiveExpr or FunctionExpr at the heart of one of these LHSExprs, the number of leading 'new' tokens is known but the number and order of trailing property accessors and arguments is not known.
+For the purposes of an interpreter the distinction is significant, but an interpreter would need to wait for the entire parse tree anyway.
+For the purposes of a syntax highlighter, or code completion assistance, or in incrementally reparsing the contents of an inner FunctionExpr, the distinction between a surrounding CallExpr or NewExpr is not as significant.
+
+The language matched by LeftHandSideExpr is simply "new"* (PrimaryExpr / FunctionExpr) (DotAccessor / BracketAccessor / Arguments)*.
+
+This can be streamed if LeftHandSideExpr is replaced with this rule.
+The difference in the generated parse tree is that, instead of nested expressions reflecting the language's semantic structure, any expression that matches LHSExpr will have the same form.
+The distinctions in semantics will then have to be sussed out by looking at the trail end of property accessors and Arguments, matching them up to any 'new' tokens seen at the front, to evaluate the structure semantically.
+This could be done after the fact in a fixing-up step which would replace the streamable tree with a tree that captures the language semantics more directly.
+For example an IDE might want to use the streamable representation for syntax highlighting, but the more semantic structure for code completion, type inference, etc.
+The ES5 specification uses the grammar productions directly in defining the evaluation of expressions.
+In particular, each production above the level of the lexical grammar has a fixed number of children, so there is no looping in the definitions of the evaluation algorithms.
+In the case of the streamable tree, the same semantics can of course be defined, but it requires dealing with a list of suffixes one at a time.
+
+This streamable grammar variant is now implemented in ../ECMAScript_streamable.peg.
+
+With the streamable grammar, the parse tree of (function(){ ... })() will now be:
+
+Program
+ Statement
+  ExprStatement
+   Expr
+    AssignmentExpr
+     ConditionalExpr
+      LogicalOrExpr
+       LogicalAndExpr
+        BitwiseXOrExpr
+         BitwiseAndExpr
+          EqualityExpr
+           RelationalExpr
+            ShiftExpr
+             AdditiveExpr
+              MultiplicativeExpr
+               UnaryExpr
+                PostfixExpr
+                 LeftHandSideExpr
+                  PrimaryExpr
+                   "("
+                   Expr ... see below
+                   ")"
+                  Arguments
+   EOS
+
+The parse tree under the innermost Expr above will now be:
+
+Expr
+ AssignmentExpr
+  ConditionalExpr
+   LogicalOrExpr
+    LogicalAndExpr
+     BitwiseXOrExpr
+      BitwiseAndExpr
+       EqualityExpr
+        RelationalExpr
+         ShiftExpr
+          AdditiveExpr
+           MultiplicativeExpr
+            UnaryExpr
+             PostfixExpr
+              LeftHandSideExpr
+               FunctionExpr
+
+Note that MemberExpr, CallExpr, and NewExpr have all been eliminated.
+LeftHandSideExpr remains and matches the same language but with different parse trees.
 
 Now that our concept of the stack is sufficiently well developed we can define the streaming behavior in terms of the stack contents.
 Each expression in the grammar (each of which corresponds to a state) is either 'streamable' or 'atomic', 'unitary', 'unstreamable'.

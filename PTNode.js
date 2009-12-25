@@ -79,16 +79,6 @@ function buildTree(s){var root,p,tbl=s.tbl,str=s._str
  
  return populate(root)}
 
-// just dump everything in the fail result in a more human-friendly format
-function rawFailDump(fail,names){var ret=[],i,rules,j
- for(i=0;i<fail.length;i++){
-  ret.push('pos: '+i)
-  rules=fail[i]
-  for(j=0;j<rules.length;j++){
-   if(rules[j]==undefined)continue
-   ret.push(' '+names[j]+': '+rules[j])}}
- return ret.join('\n')}
-
 function buildFailTree(s){var root,p,tbl=s.tbl,failpos
  //failpos=tbl[0].str.length-s.str().length
  failpos=s.pos
@@ -113,16 +103,6 @@ function buildFailTree(s){var root,p,tbl=s.tbl,failpos
   ,'root node was '+root
   ,'rightmost success chain was '+pp(rightmost(root,0,tbl[0][root][1]))
   ].join('\n\n'))}
-
-function showTree(t,names){
- return f(t,0)
- function f(n,p){var ret,i,l
-  if(n[0]==-1)return 'anonymous '+p+'-'+(p+n[1])
-  ret = names[n[0]]+' '+p+'-'+(p+n[1]) // construct label
-  for(i=0,l=n[2].length;i<l;i++){ // append children
-   ret += '\n' + f(n[2][i],p)
-   p += n[2][i][1]}
-  return ret.replace(/\n/g,'\n ')}} // indent
 
 function markNode(node){node.name='*** '+node.name;return node}
 
