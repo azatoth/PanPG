@@ -1,9 +1,12 @@
 // display a successful parse result
-function showTree(t,names){
+function showTree(t,names,str){
  return f(t,0)
- function f(n,p){var ret,i,l
-  if(n[0]==-1)return 'anonymous '+p+'-'+(p+n[1])
-  ret = names[n[0]]+' '+p+'-'+(p+n[1]) // construct label
+ function f(n,p){var ret,i,l,sub
+  if(n[0]==-1)ret = 'anonymous '+p+'-'+(p+n[1])
+  else ret = names[n[0]]+' '+p+'-'+(p+n[1]) // construct label
+  if(str)
+   if(n[1]>16) ret += ' "'+str.slice(p,16)+'…"'
+   else ret += ' "'+str.slice(p,p+n[1])+'"'
   for(i=0,l=n[2].length;i<l;i++){ // append children
    ret += '\n' + f(n[2][i],p)
    p += n[2][i][1]}

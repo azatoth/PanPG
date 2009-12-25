@@ -125,15 +125,16 @@ Initially:
 The current string position is 0.
 The current array position is 0.
 
-If a node is opened, call a helper function with the rule index and current position.
+When a node is opened, call a helper function with the current position.
 The helper function has a local array to hold the child nodes.
-The helper function advances the array position.
+The helper function reads the rule index and advances the array position.
 If the next element is -1, this must be a named rule and the length will be derived from the length of its child nodes.
 - If this is the case and the rule was anonymous, it is an error.
 Otherwise, increment the current string position by the length of the node.
 If the next element is -2:
+- if this node had no children, i.e. is a leaf node, then advance the string position by the length of this node
 - return a new node, as [<index>, <current string position - start position>, <children>]
-Otherwise:
-- call the helper function recursively with the rule index and current string position
+Otherwise, until -2 is seen:
+- call the helper function recursively with the current string position
 - add the return value to the child array
 - when it returns the current string position will have already been advanced

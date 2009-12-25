@@ -1,16 +1,15 @@
-function streaming_test(input){var output='',f,events=[]
+function streaming_test(input){var output='',f,events=[],chunks
  f=p_arith_streaming_Expr(function(m,x,y){
   output+=pp(m)+'\n'+(x?pp(x)+'\n':'')
   if(m=='tree segment')events=events.concat(x)})
+ chunks=['2','+2','*3']
  //f('chunk','78')
  //f('chunk','9')
- f('chunk','2')
- f('chunk','+2')
- f('chunk','*3')
+ chunks.forEach(function(chunk){f('chunk',chunk)})
  f('eof')
  //return output
  //return pp(treeFromEvents(events))
- return showTree(treeFromEvents(events),p_arith_streaming_Expr.names)
+ return showTree(treeFromEvents(events),p_arith_streaming_Expr.names,chunks.join(''))
 }
 
 p_arith_streaming_Expr.names=['Expr','Add','Mult','Num','S']
