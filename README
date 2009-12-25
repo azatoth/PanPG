@@ -170,6 +170,18 @@ The first node in this tree, beginning "[0, 23, [..." is the match of the entire
 
 ## Parse Tree functions ##
 
-Currently the only exported function is showTree.
-It takes two arguments, a parse tree, and a rule name array, and returns a pretty-printed ASCII representation of the parse tree like the one shown above.
+Only two functions are exported currently for dealing with the output of a generated parser, these are `showTree` and `rawFailDump`.
+
+### `showTree(tree, names, string)` ###
+
+`showTree` takes three arguments: a parse tree, a rule name array, and (optionally) the parsed input string, and returns a pretty-printed ASCII representation of the parse tree like the one shown above.
 The name array is used to correlate the parse rule indices with rule names, and it is provided in generated parsers as a `names` property of the parser function.
+If the input string is provided, the tree will also indicate the part of the input that matched the corresponding rule.
+Otherwise, only the input positions are shown, as in the tree above.
+
+### `rawFailDump` ###
+
+Currently there is little in the way of error reporting when a parse fails.
+This is a fairly helpful function, but it tends to generate a lot of output, which requires a bit of expertise to interpret.
+However, if you are debugging a parser and cannot otherwise tell why it is failing, this is probably worth trying.
+The output shows each rule that was tried at each position, and whether it succeeded or failed.
