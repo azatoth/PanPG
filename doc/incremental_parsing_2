@@ -191,11 +191,14 @@ S ← (q " " (r " "))
 random thought: there's an interesting duality between tail-call elimination and eliminating co-extensive parent nodes
 
 We associate each expression with a distinct integer which we call a state.
-When parsing, the parser moves through these states, pushing them onto the stack and popping them as expressions are tested and succeed or fail.
+When parsing, the parser moves through these states, pushing them onto the stack and popping them as expressions succeed or fail.
 Each expression has an expression type, which is either q, r, o, p, or n, that is, the composite expressions of the PEG language, or a primitive expression, or a rule.
 Here for clarity we number these starting at 0x00 for the first rule, 0x10 for the expressions within the second rule, etc.
+In some places we need to get the rule index from the state integer.
+Currently we do this by dividing, but in a real generated parser we can save having to do this (and having to distribute states evenly) by using the rule index as the start state for that rule, and then using states higher than the highest rule index for all other states.
 
-Expr ← Add                                         0
+Expr ← Add
+      0                                          + 0x00
 
 Add ← (q Mult (r (q (o S ϵ) "+" (o S ϵ) Mult)))
      0  1    2  3  4  5 6  7   8  9 A  B         + 0x10
@@ -239,7 +242,7 @@ Based on the key above, we construct the following three tables which determine 
     , 256, 256,  -1, 257,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 // 0x3_  (Num)
     , 256, 256,  -1, 257,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1]// 0x4_  (S)
 
-We also have a table of expression types, which are either q, r, o, n, p, for the composite PEG expressions, R for nonterminals, or L for literals, i.e. primitive expressions which actually test the input.
+We also have a table of expression types, which are either q, r, o, n, p, for the composite PEG expressions, R for nonterminals (rules), or L for literals, i.e. primitive expressions which actually test the input.
 
  //     0123456789ABCDEF
  ,type="R               " // 0x0_ (Expr)
@@ -263,8 +266,54 @@ The only anonymous nodes generated here are the operators "*" and "+".
 The rule for generating these automatically is approximately the same as the rule for generating anonymous nodes in the v5 parsers.
 One difference is that, in some cases, more expressions may need to be marked as anonymous, and then trimmed or combined based on the matches that actually occur (or the combining might not even need to happen).
 Anonymous nodes are somewhat comparable to text nodes in DOM, with the combination being akin to normalization.
-The rule for using these in the parser is that expressions appearing in anon always create an anonymous node and have no children.
+The rule for using these in the parser is that expressions appearing in anon always create an anonymous node and has no children.
 For all other expressions, only named rules generate nodes.
+
+There is also a table of expressions which preclude streaming output.
+Expressions for which this bit is set will prevent the parser from emitting any nodes until the entire expression succeeds or fails.
+Here the expressions for which partial emitting is unsafe are determined by looking at the grammar.
+In the actual code generator, this set of expressions will be provided as an argument.
+We only need 0 and 1, but we also use " " to mean "this will never be accessed" and "-" to mean "this will never have any effect on output" and we use assertions to verify these.
+
+ //         0123456789ABCDEF
+ ,nostream="0               " // Expr 0x00
+          +"00-01--00000    " // Add  0x10
+          +"00-01--00000    " // Mult 0x20
+          +"0000            " // Num  0x30
+          +"0000            " // S    0x40
+
+Can these expressions be streamed, and why?
+Note that we assume the expression that called the current rule can be streamed, otherwise the parser is already in "no-streaming mode" and the bit has no significance.
+
+Add ← (q Mult (r (q (o S ϵ) "+" (o S ϵ) Mult)))
+     0  1    2  3  4  5 6  7   8  9 A  B         + 0x10
+
+0: yes (if some parts of a q-expr can't be streamed we can mark them separately)
+1: yes - in this case if a Mult succeeds there is no way for the entire expression to fail (unless the entire parse fails)
+2: yes, r cannot fail and can always be streamed
+3: yes, by q-rule given above
+4: no; if the (o S ϵ) succeeds and matches an S, we will eventually emit an S (or fail the entire parse) but not necessarily as part of this expression.
+5: yes, if the S succeeds the o will succeed.
+6: yes, but irrelevant as ϵ never fails and never emits anything.
+but note that both 5 and 6 are irrelevant as we are already in non-streaming mode because of 4.
+7: yes, if the "+" succeeds we are committed to either matching the rest of the Add rule, or failing the entire parse, so at this point the previous children of the rule and this anonymous node can all be emitted.
+8: yes, since we are in a "committed sequence" there is no way for this to fail without the entire rule (and hence the entire parse) failing.
+9: yes
+A: yes
+B: yes, since it is the last expression (of the last expression...) of the rule.
+
+Num and S are interesting cases:
+Num ← (q [0-9] (r [0-9]))
+     0  1     2  3                               + 0x30
+S ← (q " " (r " "))
+   0  1   2  3                                   + 0x40
+Because the question of whether they can be streamed or not does not matter, since they have no child nodes.
+If we were to parse an entire large file containing only whitespace, the difference would be in whether the start of the S node would be emitted at the beginning, followed be the close and length at the end, or whether nothing would be emitted until the end.
+
+A note about composability: here we are assuming that 'failing to parse' includes a successful parse which does not consume the entire input.
+If two complete grammars are composed as a sequence (e.g. "parse an integer followed by a string" or "parse a CSS selector followed by a JavaScript program") without consideration for these effects, then any commit points like these in the first grammar would be invalidated, since the grammar could run ahead into the second part of the input and then fail, without the entire parse failing.
+A more direct way to say this is simply that the considerations of what emit points are safe depend on global knowledge about the grammar.
+...as far as I can tell.
 
 When the parser enters an expression it pushes a frame onto the stack.
 The contents of that frame depend on the type of the expression.
@@ -648,7 +697,7 @@ Expr
 Note that MemberExpr, CallExpr, and NewExpr have all been eliminated.
 LeftHandSideExpr remains and matches the same language but with different parse trees.
 
-Now that our concept of the stack is sufficiently well developed we can define the streaming behavior in terms of the stack contents.
+Now that our concept of the stack is sufficiently well developed, we can define the streaming behavior in terms of the stack contents.
 Each expression in the grammar (each of which corresponds to a state) is either 'streamable' or 'atomic', 'unitary', 'unstreamable'.
 Then, if the stack contains any unstreamable state, we are in non-streaming mode, otherwise we are in streaming mode.
 So streaming mode can be maintained as a flag which is set or unset as we push and pop the stack.

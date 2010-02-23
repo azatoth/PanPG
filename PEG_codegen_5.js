@@ -1,12 +1,15 @@
 CSET['import']('',CSET)
 
-function codegen_v5(opts,names,named_res){var ctx
+function codegen_v5(opts,names,named_res){var ctx,nameline
  ctx={csets:[],strlits:[]}
  opts.drop=opts.drop||[]
  opts.nocache=opts.nocache||[]
  opts.prefix=opts.prefix||''
  opts.start=opts.start||names[0]
  opts.fname=opts.fname||opts.prefix+opts.start
+ if(opts.streaming){
+  return codegen_v6(opts,names,named_res)}
+ nameline=opts.fname+'.names='+'[\''+names.join('\',\'')+'\'];'
  return ['function '+opts.fname+'(str){'
  , 'var tbl=[],pos=0,l=str.length+1;'
  + (opts.debug?'var i=0;while(i<l)tbl.push({_:i++});'
@@ -73,8 +76,7 @@ function codegen_v5(opts,names,named_res){var ctx
   +']:[false,pos,tbl]'
  //+'\n return '+opts.start+'([])&&pos==l?[true,b(0,\''+start+'\')]:[false,pos,tbl]'
  +'}'
- +'\n'+opts.fname+'.names='
- +'[\''+names.join('\',\'')+'\'];'
+ +'\n'+nameline
 
  function ntof(name){var drop,nocache,idx
   drop=opts.drop.indexOf(name)>-1
