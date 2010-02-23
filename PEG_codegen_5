@@ -1,5 +1,5 @@
 [RuleSet] D[Rule]B*
- code_v5 ≔ function(opts,drop){return codegen_v5(opts,Ds.nm,Ds.named_re)}
+ code_v5 ≔ function(opts){return codegen_v5(opts,Ds.nm,Ds.named_re)}
 
 [Rule] D[NonTerminal] BD[OrdChoice]
  nm ≔ D.match

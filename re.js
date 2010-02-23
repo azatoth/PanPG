@@ -201,7 +201,7 @@ function re_to_function(ctx){return function(re){
 
 /* probably belongs in CSET */
 /* takes a cset and a variable name to a JavaScript expression which is a test on the value of that variable for membership in that cset. */
-/* This is probably the simplest possible implementation, and favors small character values; more efficient implementations are of course possible. */
+/* This is probably the simplest possible implementation, and favors small codepoints; more efficient implementations are of course possible. */
 function cset_to_expr(cset,id){var i,l,ret=[]
  for(i=0,l=cset.length;i<l;i++)
   ret.push(id+'<'+cset[i]+'?'+(i%2?'1':'0')+':')

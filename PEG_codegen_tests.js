@@ -4,12 +4,13 @@ function peg_v5_gen_tal(s){var pt,hide,force
  //return showTree(pt)
  //return pp(pt)
  PEG_codegen_5(pt)
- hide=['S','LB','IdentStartChar']
+ hide=['S','LB','IdentStartChar','IdentChar']
  force=['nm','f1','named_re','re','cset','cp']
  return showPTNodeTreeAttrs(pt,hide,force)}
 
 function peg_v5_gen(s,opts){var pt
  //pt=tree(p_RuleSet,s)[1]
+ //return pp(opts)
  pt=p_PEG_v5_RuleSet(s)[1]
  PEG_codegen_5(pt)
  return pt.code_v5()(opts)}
@@ -25,6 +26,55 @@ function peg_arith_test(s){var pt,pt2
     //  + '\n\n' + pp(pt3)
       + '\n\n' + showTree(pt4,p_arith_v5_Expr.names)}
 
+function peg_v6_test_streaming_arith(){var s,messages=[],parser,parse=[],tree,chunks
+ chunks=['1+','2*3']
+ chunks=['1+','2','*3']
+ parser=p_arith_streaming_v6_Expr(out)
+ chunks.forEach(function(chunk){parser('chunk',chunk)})
+ parser('eof')
+ tree=treeFromEvents(parse)
+ s=chunks.join('')
+ return s + '\n\n'
+  + pp(messages) + '\n\n'
+  + pp(parse) + '\n\n'
+  + showTree(tree,p_arith_streaming_v6_Expr.names,s)
+ function out(m,x){messages.push(m+' '+x)
+  if(m=='tree segment')parse=parse.concat(x)}}
+
+function peg_v6_test_streaming_arith_default(){var s,messages=[],parser,parse=[],tree,chunks
+ chunks=['1+','2*3']
+ chunks=['1+','2','*3']
+ //chunks=['1+']
+ //chunks=['1+1']
+ //chunks=['1+','1']
+ //chunks=['1+2*3']
+ //chunks=['1']
+ chunks=['1+2','*','3']
+ parser=p_arith_streaming_v6_default_flags_Expr(out)
+ chunks.forEach(function(chunk){parser('chunk',chunk)})
+ parser('eof')
+ tree=treeFromEvents(parse)
+ return pp(chunks) + '\n\n'
+  + p_arith_streaming_v6_default_flags_Expr.legend + '\n\n'
+  + pp(messages) + '\n\n'
+  + pp(parse) + '\n\n'
+  + showTree(tree,p_arith_streaming_v6_Expr.names,s)
+ function out(m,x){messages.push(m+' '+x)
+  if(m=='tree segment')parse=parse.concat(x)}}
+
+function peg_v6_hacked(){var s,p,msgs=[],i,l,prof,ls=[]
+ s=Array(257).join('1*2+')+'3'
+ assert(s.length==1025,'s length')
+ p=p_arith_streaming_v6_Expr_hacked(out)
+ p('chunk',s)
+ p('eof')
+ function out(m,x,y){msgs.push(m+' '+x);if(m=='profile')prof=x}
+ for(i=0;i<prof.length;i++)
+  if(prof[i])
+   ls.push(i+': '+prof[i])
+ return ls.join('\n')
+ }
+
 function peg_features_test(){
  return showTree(p_PEG_features_v5_S('x')[1])}
 
@@ -39,6 +89,157 @@ function ES5_test(s){var pt
  return pt[0]
  return pp(pt)
  return showPTNodeTreeAttrs(pt,[],[])}
+
+function ES5_default_test(s){var p,pt=[],messages=[],tree
+ p=p_ES5_v6_default(function(m,x){
+  messages.push(m+' '+x)
+  if(m=='tree segment')pt=pt.concat(x)})
+ p('chunk',s)
+ p('eof')
+ tree=treeFromEvents(pt)
+ return s + '\n\n'
+      + pp(messages) + '\n\n'
+ //     + pp(tree) + '\n\n'
+      + showTree(tree,p_ES5_v6_default.names,s)
+ return JSON.stringify(pt)
+ return pt[0]
+ return pp(pt)
+ return showPTNodeTreeAttrs(pt,[],[])}
+
+// here we create a 1024-character string, reach each character from it, and compare this to an existing character.
+// this gives us a theoretical maximum for any parser (assuming this is the fastest way to read the characters from a string)
+function peg_benchmarks_upper_bound(){var ret=[],l,ms
+ l=8192 // length in chars
+ ms=8000 // ms to run test
+ //l=4096,ms=4000
+ //l=2048,ms=2000
+ //l=1024,ms=1000
+ l=128,ms=125
+ // a ratio of 1024 : 1000 means that the results are in KiB/s
+ ret.push(simple(peg_benchmarks_test_chars(l),ms,"test chars (charCodeAt)"))
+ //ret.push(simple(peg_benchmarks_test_chars_bkt(l),ms,"test chars (bracket notation)"))
+ //ret.push(simple(peg_benchmarks_test_chars_charat(l),ms,"test chars (charAt)"))
+ //ret.push(simple(peg_benchmarks_test_chars_re(l),ms,"test chars (regex)"))
+ //ret.push(simple(peg_benchmarks_test_arith_streaming(l),ms,"streaming revisited"))
+ ret.push(simple(peg_benchmarks_test_arith_fast(l),ms,"streaming fast"))
+ ret.push(simple(peg_benchmarks_test_arith_v6(l),ms,"streaming v6"))
+ ret.push(simple(peg_benchmarks_test_arith_v6_hacked(l),ms,"streaming v6 hacked"))
+ ret.push(simple(peg_benchmarks_test_arith_v6_default(l),ms,"v6 default"))
+ ret.push(simple(peg_benchmarks_test_arith_pushpop(l),ms,"state pushes and pops"))
+ return ret.join('\n')}
+
+function peg_benchmarks_test_chars(n){return function(){var s,l,i,x
+ s=Array(n/2+1).join('ab')
+ for(i=0,l=s.length;i<l;i++){
+  x=s.charCodeAt(i)==0x61}}}
+
+function peg_benchmarks_test_chars_bkt(n){return function(){var s,l,i,x
+ s=Array(n/2+1).join('ab')
+ for(i=0,l=s.length;i<l;i++){
+  x=s[i]=='a'}}}
+
+function peg_benchmarks_test_chars_charat(n){return function(){var s,l,i,x
+ s=Array(n/2+1).join('ab')
+ for(i=0,l=s.length;i<l;i++){
+  x=s.charAt(i)=='a'}}}
+
+function peg_benchmarks_test_chars_re(n){return function(){var s,l,i,x
+ s=Array(n/2+1).join('ab')
+ for(i=0,l=s.length;i<l;i++){
+  s.slice(i).match(/^ab/)}}}
+
+function peg_benchmarks_test_arith_streaming(n){return function(){var s,p,x=[]
+ s=Array(n/8+1).join('1*2+')+'3'
+ assert(s.length==n/2+1,'string length '+n)
+ p=arith_stream(function(m,a){})
+ p('chunk',s)
+ p('chunk',s)
+ p('eof')
+ //return pp(x)
+ }}
+
+function peg_benchmarks_test_arith_v6(n){var s,p,x=[]
+ s=Array(n/8+1).join('1*2+')+'3'
+ assert(s.length==n/2+1,'string length '+n)
+ return function(){
+  p=p_arith_streaming_v6_Expr(function(m,a){})
+  p('chunk',s)
+  p('chunk',s)
+  return s}}
+
+function peg_benchmarks_test_arith_v6_hacked(n){var s,p,x=[]
+ s=Array(n/8+1).join('1*2+')+'3'
+ assert(s.length==n/2+1,'string length '+n)
+ return function(){
+  p=p_arith_streaming_v6_Expr_hacked(function(m,a){})
+  p('chunk',s)
+  p('chunk',s)
+  return s}}
+
+function peg_benchmarks_test_arith_v6_default(n){var s,p,x=[]
+ s=Array(n/8+1).join('1*2+')+'3'
+ assert(s.length==n/2+1,'string length '+n)
+ return function(){
+  p=p_arith_streaming_v6_default_flags_Expr(function(m,a){})
+  p('chunk',s)
+  p('chunk',s)
+  return s}}
+
+function peg_benchmarks_test_arith_fast(n){return function(){var s,p,x=[]
+ s=Array(n/8+1).join('1*2+')+'3'
+ assert(s.length==n/2+1,'string length')
+ p=arith_stream(function(m,a){})
+ p('chunk',s)
+ p('chunk',s)
+ p('eof')}}
+
+function peg_benchmarks_test_arith_pushpop(n){return function(){var npushes,a=[],depth=16,i,j,total=0
+  npushes=n*13 // the arithmetic parser does about 13 state pushes and pops per input character on the test input we use
+  for(i=0;i<npushes;i+=depth){
+   for(j=0;j<depth;j++) total++,a.push(42)
+   for(j=0;j<depth;j++) a.pop()}
+  //throw new Error('total: '+total)
+  }}
+
+function peg_benchmarks_array_push(){var ret=[],ms,n
+ n=40960
+ ms=16000
+ ret.push(simple(peg_benchmarks_array_push_push(n),ms,"a.push(x)"))
+ ret.push(simple(peg_benchmarks_array_push_index(n),ms,"a[a.length]=x"))
+ return ret.join('\n')}
+
+function peg_benchmarks_array_push_push(n){return function(){var a=[],i
+ for(i=0;i<n;i++) a.push(42)}}
+
+function peg_benchmarks_array_push_index(n){return function(){var a=[],i
+ for(i=0;i<n;i++) a[a.length]=42}}
+
+function benchmark(f,ms){var d1=+new Date,d2,end=d1+ms,res=[]
+ do{
+  f()
+  d2=+new Date
+  res.push(d2-d1)
+  d1=d2}
+ while(d2<end)
+ return res}
+
+function simple(f,ms,desc){var res,n,tot_ms,most
+ res=benchmark(f,ms)
+ n=res.length
+ tot_ms=sum(res)
+ //most=res.sort(function(a,b){return a==b?0:a<b?-1:1}).slice(0,Math.round(res.length*0.5))
+ return desc+':\n'+
+        ['rate: '+(n/tot_ms).toPrecision(4)
+        ,'ms: '+tot_ms
+        ,'max: '+max(res)
+        ,'min: '+min(res)
+        ,'n: '+n
+        //,'\nmost: '+(most.length/sum(most)).toPrecision(4)
+        //,'ms: '+sum(most)
+        //,'max: '+max(most)
+        //,'min: '+min(most)
+        //,'n: '+most.length
+        ].join(' ')}
 
 function peg_benchmarks_re_vs_loop(s){var t,i,l,re,re2,res=[],res2=[],s2,ret=[],x
  //s=Array(9).join(s)

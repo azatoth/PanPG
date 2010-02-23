@@ -11,22 +11,36 @@ textarea {width:100%;height:24em;border:0}
 <script src=../ES5_v5_1.js></script>
 <script src=PEG_util.js></script>
 
+<!-- for displaying the raw parse tree with JSON.stringify -->
+<script src=../../compat/json2.js></script>
+
 <h1>ECMAScript 5 Parser 2009-12-14</h1>
+
+<p>Updated 2009-12-31 (nicer showTree output, added raw parse tree, added links)</p>
+
+<p>See the <a href=http://inimino.org/~inimino/blog/peg_first_release>related blog post</a>.
+You may also want to look at the <a href=../ECMAScript_unified.peg>PEG input</a> from which the parser is generated.</p>
 
 <p id=status></p>
 
 <fieldset>
 <label>Input: <textarea id=text readonly></textarea></label>
-<label>Parse Tree: <textarea id=parse_tree readonly></textarea></label>
+<label>Parse Tree pretty-printed by showTree(): <textarea id=parse_tree readonly></textarea></label>
+<label>Parse Tree (raw) (see <a href=../doc/parse_tree_representation>documentation</a>): <textarea id=parse_tree_raw readonly></textarea></label>
 </fieldset>
 
 <script>
 
 var inputText_el=document.getElementById('text')
   , parseTree_el=document.getElementById('parse_tree')
+  , parseTreeRaw_el=document.getElementById('parse_tree_raw')
   , status_el=document.getElementById('status')
 
-function status(s){status_el.innerHTML+=s+'<br>'}
+function status(s){var ms,now
+ now=+new Date
+ ms=status.prev ? ' '+(now-status.prev)+'ms' : ''
+ status.prev=now
+ status_el.innerHTML+=ms+'<br>'+s}
 
 function xhr(method,uri,body,callback){var headers,p
   if(typeof method==='object'){headers=method.headers;method=method.method}
@@ -41,15 +55,20 @@ status('fetching input...')
 xhr('GET','Y.js',null,function(x){
  inputText_el.value=x.responseText
  //inputText_el.value="function f(){return 42}"
- parseTree_el.value=parseAndShow(inputText_el.value)
+ parseAndShow(inputText_el.value)
  status('done')})
 
 function parseAndShow(s){var pt
   status('parsing...')
   pt=p_ES5_v5_Program(s)
   //return s+'\n\n'+uneval(pt) // TODO: display parse errors
-  status('displaying parse tree...')
-  return (pt[0] ? showTree(pt[1],p_ES5_v5_Program.names) : 'parse error')}
+  if(pt[0]){
+    status('pretty-printing parse tree...')
+    parseTree_el.value=showTree(pt[1],p_ES5_v5_Program.names,s)
+    status('displaying raw parse tree...')
+    parseTreeRaw_el.value=JSON.stringify(pt[1])}
+  else{
+    parseTree_el.value='parse error'}}
 
 //function updateParseTree(){
 //  parseTree_el.value=parseAndShow(inputText_el.value)}
