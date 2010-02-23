@@ -1,0 +1,161 @@
+2010-02-15
+----------
+
+In the streaming parser we assign certain flags to each expression, which determines whether the parser stores the current position, starts buffering child nodes, etc, when it enters that expression and when the expression matches or fails.
+
+Here is a snippet of diagnostic output from the generator:
+
+{Expr:{S:1
+      ,name:"Expr"
+      ,expr:{id:"Expr+0"
+            ,S:1
+            ,T:28672
+            ,M:41
+            ,F:42
+            ,type:2
+            ,toplevel:true
+            ,flag_n:172
+            ,flags:{cache:false
+                   ,t_bufferout:false
+                   ,pushpos:true
+                   ,t_emitstate:true
+                   ,m_emitstate:false
+                   ,m_emitclose:true
+                   ,m_emitanon:false
+                   ,m_emitlength:true
+                   ,m_resetpos:false
+                   ,m_emitbuf:false
+                   ,m_tossbuf:false
+                   ,f_tossbuf:false}
+            ,S_flags:4268
+            ,S_flags_:"1000010101100"
+            ,subexprs:[{id:"Expr+1"
+                       ,S:7
+                       ,T:8364
+
+For each expression, the T, M, and F states are set, these are the states the parser will transition to when the expression is tested, matches, or fails, respectively.
+The complement of flags are:
+
+cache
+t_bufferout
+pushpos
+t_emitstate
+m_emitstate
+m_emitclose
+m_emitanon
+m_emitlength
+m_resetpos
+m_emitbuf
+m_tossbuf
+f_tossbuf
+
+All of these flags are currently provided by the caller to the code generator, and to enable streaming at least some of the streamable expressions will probably have to be designated by the caller.
+Ultimately these can be derived from the grammar by an analyzer.
+In the meantime we would like to assign reasonable defaults for each flag that will give correct results.
+
+Defaults should be safe for all expressions, then we can add increasingly fine-grained tuning for performance.
+
+cache: true for Rule top-level exprs
+t_bufferout: for the first subexpr of a sequence, for any lookahead, and whenever `cache` is set[1,2]
+pushpos: anything with m_emitlength set[3], anything that can fail without failing the containing expression, any lookahead
+t_emitstate: any rule that is entered in streaming mode[5]
+m_emitstate: rule for which t_emitstate is not set
+m_emitclose: union of t_emitstate and m_emitstate[8]
+m_emitanon: definition of an expr that produces an anonymous node
+m_emitlength: union of m_emitclose, m_emitanon
+m_resetpos: positive lookaheads only
+m_emitbuf: commit points corresponding to a preceding t_bufferout[9,10]
+m_tossbuf: positive lookaheads only[11]
+f_tossbuf: sequence subexprs before a commit point[12]
+
+[1] turning this on for the sequence, instead of the first subexpr, would be just as good
+[2] t_bufferout can always be turned off if the expression can't generate any child nodes (bufferout should be called buffer_child_nodes since that is actually what it does)
+[3] i.e. that emits a node, whether named or anon
+[5] by default this will never be set, but some intelligence can be used to determine when this is and is not safe
+[8] but not m_emitanon, since anon nodes are self-closing
+[9] these and t_bufferout should be paired
+[10] by default before doing any analysis, the commit point is the last expression in a sequence
+[11] when a negative lookahead succeeds, the subexpr failed, which means it emitted no children and did not advance the position, so only positive lookaheads require m_resetpos and m_tossbuf (which can probably be combined)
+[12] there may be more than one fail point per t_bufferout, but only one commit point
+
+So, to find reasonable defaults:
+
+cache: for top-level exprs of each named rule
+t_bufferout: for top-level exprs[13], for the first subexpr of a (non-singleton) sequence, and for lookaheads
+pushpos: for any top-level rule, any anonymous node, any lookahead, and any proper sequence[14]
+t_emitstate: every top-level expr[15]
+m_emitstate: never set[16]
+m_emitclose: same as m_emitstate[18]
+m_emitanon: true for anonymous nodes[19]
+m_emitlength: union of m_emitstate (== m_emitclose) and m_emitanon
+m_resetpos: positive lookaheads
+m_emitbuf: top-level exprs, commit points, i.e. the last expression in a proper sequence (by default in lieu of any deeper analysis)
+m_tossbuf: any lookahead
+f_tossbuf: set on every subexpression of a proper sequence, and on any lookahead
+
+[13] this is set because t_emitstate is currently set on every top-level expression, but this can be optimized
+[14] pushpos also implies that the position is popped on match or failure (these could be separated if there were a need of course)
+[15] "top-level" here means the expression at the top level of a rule (which is always a sequence in the v6 codegen)
+[16] this could be set on rules which are streamable (i.e. don't buffer input) but can also fail without failing the entire parse; it is only suitable for rules which cannot have children, as otherwise the start will be emitted after the child nodes
+[18] note that a rule must emit the start, then emit the child nodes, then emit the close, which means that m_emitstate, m_emitbuf, and m_emitclose must come in that order
+[19] an anonymous expression is any expression that can emit an anonymous node, i.e. any expression which can match non-zero-length input and also can have at least one named rule sibling.
+
+To determine which expressions are "anonymous expressions" (i.e. can generate an anonymous node) first we consider atomic expressions.
+Once string literals are replaced with sequences of csets, there are only three kinds of atomic expressions: named references, csets, and ϵ.
+Of these, named references can consume input, but always emit nodes, so the input that they consume is accounted for in the output stream.
+The empty expression ϵ cannot consume input, and so never contributes an output node, and can be ignored here.
+Character primitives, however, can consume input, but do not generate output nodes, so in some cases, anonymous nodes need to be generated in the output.
+We can classify expressions as either 'consuming anonymously' or not.
+Any character literal consumes anonymously.
+Named references do not consume anonymously.
+An ordered choice consumes anonymously (potentially) if any subexpression consumes anonymously.
+A sequence consumes anonymously if it has at least one sub-expression which consumes anonymously, but does not have any named references.
+If a sequence contains a named reference, and has a sub-expression which consumes anonymously, then that sub-expression is marked as anonymous-emitting, and the sequence itself does not consume anonymously.
+
+So, there's now some code here that hopefully more or less works, and which nobody fully understands.
+Fortunately, getting anonymous nodes wrong only means that the output will be partly wrong, not that the entire parse will catastrophically fail.
+
+So the two ways of assigning t_bufferout and m_emitbuf and f_tossbuf were not compatible.
+...actually that's not quite obvious to me.
+
+So the issue is what happens with rules that do not contain a proper sequence at top level, but which have t_emitstate set (as all rules currently do).
+Example:
+S ← " "+
+This becomes:
+S ← (seq U+0020 (rep U+0020))
+The full derived rule given by the current codegen:
+S ← (S+0 seq (S+1 seq (S+2 cset 20) (S+3 rep (S+4 cset 20))))
+There is an extra sequence at the top, which is a quirk of the simplification rules.
+We can do away with this.
+
+So the issue is:
+When a rule is entered, the t_emitstate prevents the rule from coming after any children.
+If the rule is a proper sequence, we t_bufferout (this should just be called t_pushbuf).
+In this case, if the rule fails, the t_emitstate will get thrown away with the buf, by f_tossbuf on the sequence sub-expr which fails.
+But, if the top-level expr is not a proper sequence (as in S here), then when it is entered, the state gets pushed onto the existing buf, and then, even if the rule fails, there is no f_tossbuf, nor can there be since there was no corresponding t_pushbuf (nee t_bufferout).
+
+One solution is to have the pushbuf on the rule and on every proper sequence.
+This is the current solution, but it is not implemented correctly.
+Sequences need to have t_bufferout and m_emitbuf and f_tossbuf set.
+What if the subexpressions don't have any of these set and only proper sequences do the buffering?
+And top-level rules.
+This is inefficient (lots of needless buffering) but it should be correct.
+It does completely kill streaming however, but streaming needs to be added in with another analysis phase anyway.
+So, let's try to make this work, inefficient or not.
+
+When both cache and buffering flags are set on the same expression (as for top-level expressions) the order of operations matters.
+When entering an expression, the result may be pulled from the cache.
+If it is, it needs to have the same effect on the buffer state as if it had been actually played out rather than pulled from cache.
+When the result is known, the same buffer operations will be performed, whether the result came from the cache or not.
+
+We should admit the possibility of any combination of cache and buffering flags being set: either, neither, or both, without creating an erroneous parser.
+If there is no buffering, but there is a cache:
+when the ...
+ok, no.
+caching implies buffering, because the thing stored in the cache includes the buffer of child contents if any, and we currently only have one kind of caching (cache-all, as oppsed to cache-pos which works only when a node cannot have children).
+only if we ever cache "bachelor" nodes then this case might become relevant
+so if there is buffering but no cache, everything currently works
+if there is buffering and a cache:
+- when the expr is entered, t_bufferout implies that we always push a buffer, whether it is coming from the cache or not
+... so we just need to set t_bufferout itself whenever cache is set, which I already had written in the first set of rules above, and subsequently changed my mind about somehow by the secend set...
+... no, that's also wrong.  The flags generated by the code, and the second set of rules, are correct, the problem is in the order

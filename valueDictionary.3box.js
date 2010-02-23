@@ -1,4 +1,22 @@
-{cfunc:''
+{cfunc:'xxx',ciset:'',outfn:'',outct:''
+
+//,cfunc:'ES5_default_test',ciset:'ES5_test_small'
+
+//,cfunc:'peg_v6_test_streaming_arith_default'
+
+//,cfunc:'peg_benchmarks_upper_bound'
+
+//,cfunc:'peg_v5_gen',ciset:'arith_streaming_default_flags',outfn:'PEG_arith_streaming_default.js',outct:'text/javascript'
+
+
+//,cfunc:'peg_v5_gen',ciset:'arith_streaming',outfn:'PEG_arith_streaming.js',outct:'text/javascript'
+//,outfn:'scratch',outct:'text/plain'
+//,cfunc:'peg_v6_test_streaming_arith'
+
+//,cfunc:'peg_v5_gen',ciset:'PEG_features_v6'
+//,outfn:'PEG_features_streaming.js',outct:'application/x-javascript'
+
+
 //cfunc:'cset_prod',ciset:'cset_prod',outfn:'cset_prod.js',outct:'application/x-javascript'
 //,cfunc:'PEG_summarize',ciset:'ES5arith'
 //,cfunc:'PEG_summarize_tal',ciset:'ES5arith'
@@ -10,7 +28,13 @@
 
 //,cfunc:'abc_test',ciset:'test_abc'
 
-,cfunc:'streaming_test',ciset:'streaming_test'
+//,cfunc:'streaming_test',ciset:'streaming_test'
+//,cfunc:'streaming_revisited'
+
+//,cfunc:'peg_v6_hacked'
+//,cfunc:'peg_benchmarks_upper_bound'
+//,cfunc:'peg_benchmarks_test_arith_streaming'
+//,cfunc:'peg_benchmarks_array_push'
 
 /**************/
 /* Codegen v5 */
@@ -43,7 +67,12 @@
 /* Streaming */
 /*************/
 
-//,cfunc:'peg_v5_gen',ciset:'arith_streaming'
+//,cfunc:'peg_v5_gen',ciset:'arith_streaming',outfn:'PEG_arith_streaming.js',outct:'text/javascript'
+//,cfunc:'peg_v5_gen',ciset:'arith_streaming_default_flags',outfn:'PEG_arith_streaming_default.js',outct:'text/javascript'
+//,cfunc:'peg_v5_gen',ciset:'ES5_v6_default',outfn:'ES5_v6_default.js',outct:'text/javascript'
+//,outfn:'scratch',outct:'text/plain'
+//,cfunc:'peg_v6_test_streaming_arith'
+,cfunc:'peg_v6_test_streaming_arith_default'
 
 /************/
 /* FEATURES */
@@ -67,6 +96,8 @@
                ,'arith_v5_opts']
  ,arith_streaming:['file(PEG_arith.peg)'
                   ,'arith_streaming']
+ ,arith_streaming_default_flags:['file(PEG_arith.peg)'
+                                ,'arith_streaming_default_flags']
  ,arith_expr1:['arith_expr1']
  ,ES5arith:['file(PEG_ES5_arith.peg)','hide']
  ,ES5arith_gen_v5:['file(PEG_ES5_arith.peg)'
@@ -85,11 +116,16 @@
                      ,'PEGpeg_prefix_v5_1']
  ,'PEG_features_gen_v5':['file(PEG_features.peg)'
                         ,'emptyOpts']
+ ,'PEG_features_v6':['file(PEG_features.peg)'
+                    ,'features_streaming']
  ,'ES5_gen_v5':['file(ECMAScript_unified.peg)'
                ,'ES5_v5_opts']
  ,'ES5_gen_v5_opt':['file(ECMAScript_unified.peg)'
                    ,'ES5_v5_opt_opts']
+ ,'ES5_v6_default':['file(ECMAScript_unified.peg)'
+                   ,'ES5_v6_default']
  ,'ES5_test':['file(API.js)']
+ ,'ES5_test_small':['small_javascript']
  ,CodePointLit:['CodePointLit']
  ,profile_analyzer:['result(1252281266,ES5_test,ES5_test)']
  ,test_markdown:['file(tests/markdown.peg)']
@@ -115,19 +151,69 @@
        //,'NonTerminal'
        ,'HEXDIG'
        ]
+ ,small_javascript:'function f(a){var x;return a+x}'
  ,emptyOpts:{}
  ,arith_expr1:'42 * 3 + 1'
  ,arith_expr2:'7'
  ,CodePointLit:'C ← [a-z−z]'
  ,arith_v5_opts:{prefix:'p_arith_v5_'
                 ,nocache:['Expr']}
- ,arith_streaming:{prefix:'p_arith_streaming_'
+ ,arith_streaming:{prefix:'p_arith_streaming_v6_'
+                  ,cache:['S+0'
+                         ]
+                  ,t_bufferout:['Add+4'
+                               ,'Mult+4'
+                               ]
+                  ,pushpos:['Expr+0'
+                           ,'Add+0'
+                           ,'Mult+0'
+                           ,'Num+0'
+                           ,'S+0'
+                           ,'_+2'
+                           ,'Add+3'
+                           ,'Mult+3'
+                           ,'Add+7'
+                           ,'Mult+7'
+                           ]
+                  ,t_emitstate:['Expr+0'
+                               ,'Add+0'
+                               ,'Mult+0'
+                               ,'Num+0'
+                               ]
+                  ,m_emitstate:['S+0'
+                               ]
+                  ,m_emitclose:['Expr+0'
+                               ,'Add+0'
+                               ,'Mult+0'
+                               ,'Num+0'
+                               ,'S+0'
+                               ]
+                  ,m_emitanon:['Add+7'
+                              ,'Mult+7'
+                              ]
+                  ,m_resetpos:[]
+                  ,m_emitbuf:['Add+7'
+                             ,'Mult+7'
+                             ]
+                  ,m_tossbuf:[]
+                  ,f_tossbuf:['Add+4'
+                             ,'Mult+4'
+                             ,'Add+7'
+                             ,'Mult+7'
+                             ]
                   ,chunk:['Expr'
                          ,'Add'
                          ,'Mult'
                          ,'Num'
                          ,'S']
                   ,streaming:true}
+ ,arith_streaming_default_flags:
+     {prefix:'p_arith_streaming_v6_default_flags_'
+     ,streaming:true}
+ ,features_streaming:{prefix:'p_features_stream'
+                     ,streaming:true}
+ ,ES5_v6_default:{fname:'p_ES5_v6_default'
+                 ,streaming:true}
  ,ES5arith_v5_opts:{prefix:'p_ES5_arith_'}
  ,ES5arith_expr:'8 * 3 << ~-2'
  ,PEGpeg_v5_opts:{start:'RuleSet'
