@@ -49,24 +49,24 @@ function reTablePostProcess(inArr){
  function output(name,value){
   if(name in ret)throw Error("WTF") //XXX debugging only
   ret[name]=value}
- function inPS(x) PS.some(function(y) name(y)===x)
+ function inPS(x) PS.some(function(y){return name(y)===x})
  function handle_cycle_error(){
   unwind_with_error('cyclical dependency')}
  function unwind_with_error(msg){
   msg+=': '+PS.map(name).concat([D]).join(' → ')
   while(PS.length) output(name(PS.pop()),msg)}
- function output_lookup(x) ret[x]
- function success(x) typeof x!=='string'
- function substitute(re_kvpair,n,re) [name(re_kvpair),re_substitute(value(re_kvpair),n,re)]
+ function output_lookup(x){return ret[x]}
+ function success(x){return typeof x!=='string'}
+ function substitute(re_kvpair,n,re){return [name(re_kvpair),re_substitute(value(re_kvpair),n,re)]}
  function handle_dependency_error(){
   unwind_with_error('unsatisfiable dependency')}
  function handle_not_found_error(x){
   unwind_with_error('dependency not found')}
 }
 
-function name(re_kvpair) re_kvpair[0]
-function value(re_kvpair) re_kvpair[1]
-function dependency(re_kvpair) re_dependency(value(re_kvpair))
+function name(re_kvpair){return re_kvpair[0]}
+function value(re_kvpair){return re_kvpair[1]}
+function dependency(re_kvpair){return re_dependency(value(re_kvpair))}
 
 function reTableCodeGen(start,prefix,res,pfs,deps,elisionSet,elisionFlag){var r,p,s=[],RT={}
  r=f(start)
@@ -95,7 +95,7 @@ function reTableCodeGen(start,prefix,res,pfs,deps,elisionSet,elisionFlag){var r,
   else v=[0,o]
   RT[T]=v
   return v}
- function elidable(n) (elisionSet.indexOf(n)==-1)?elisionFlag:!elisionFlag
+ function elidable(n){return (elisionSet.indexOf(n)==-1)?elisionFlag:!elisionFlag}
  function add(a,b){for(var p in b)a[p]=b[p]}}
 
 function reWrap(re,name,prefix){

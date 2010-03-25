@@ -13,6 +13,7 @@ function showTree(t,names,str){
   return ret.replace(/\n/g,'\n ')}} // indent
 
 // dump a parse fail result in a slightly more human-friendly format
+// see also http://gist.github.com/312863
 function rawFailDump(fail,names){var ret=[],i,rules,j
  for(i=0;i<fail.length;i++){
   ret.push('pos: '+i)

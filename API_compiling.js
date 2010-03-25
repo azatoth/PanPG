@@ -15,7 +15,7 @@ function generateParserThrowing(peg,opts){var x
 function parsePEG(peg){var pt
  peg=peg.replace(/^[\n\r]+|[\n\r]+$/g,'') // TODO: regenerate the PEG parser and fix this
  pt=p_PEG_v5_RuleSet(peg)
- if(!pt[0])return [false,"Parse error in PEG input"] // TODO: provide useful parse errors
+ if(!pt[0])return [false,{error:"Parse error in PEG input",at:pt[1][0].RuleSet[1],fail:pt[1]}] // TODO: provide useful parse errors
  return pt}
 
 function patchPEG(original,patch){}
