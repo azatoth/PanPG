@@ -187,4 +187,7 @@ We're not yet doing the analysis that would allow it, so unless the flags are pa
 
 Generating the ES5 parser in the v6 streaming codegen (with default flags) took 85.402s.
 This can also be improved, but isn't as much of a priority.
-We are currently make a lot of passes over the ruleset to generate the parser.
+We currently make a lot of passes over the ruleset to generate the parser.
+Looking into this showed that almost all the time is spent in the TAL program which attaches re objects to the PEG AST.
+This is probably almost all due to the inefficiency of the current TAL implementation, which is very much unoptimized and optimized for correctness and development time over run-time performance.
+Probably TAL will change a lot before settling on a more practical semantics, and then an efficient implementation may be worth writing.

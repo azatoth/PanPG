@@ -5,8 +5,8 @@ function build_PEG_compiler(API_compiling,PEG_codegen_5,PEG_codegen_5_js,TAL_mat
       + ';(function(exports){\n\n'
       + 'exports.generateParser=generateParser\n'
       + 'exports.generateParserThrowing=generateParserThrowing\n'
-      + 'exports.showTree=showTree\n'
-      + 'exports.rawFailDump=rawFailDump\n'
+     // + 'exports.showTree=showTree\n'
+     // + 'exports.rawFailDump=rawFailDump\n'
       + '\n'
       + API_compiling
       + '\n\n /* PEG_v5 */ \n\n'
@@ -17,6 +17,7 @@ function build_PEG_compiler(API_compiling,PEG_codegen_5,PEG_codegen_5_js,TAL_mat
       + TAL_match_js
       + '\n\n/* re.js */\n\n'
       + re_js
+ // TODO: get Array.prototype.uniq out of here
       + '\n\n/* lists.js */\n\n'
       + lists_js
       + '\n\n/* CSET */\n\n'

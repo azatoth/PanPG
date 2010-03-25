@@ -3,7 +3,7 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
  debug2=false // debugging in the parser itself
  asserts=false // include assertions (for a slower, more debuggable parser)
  //debug=true
- //debug2=true // TOOD: make these options opts.debugLevel=0..2
+ debug2=true // TOOD: make these options opts.debugLevel=0..2
  //asserts=true
  //return pp(named_res)
  //opts=extend({},opts) // we mutate this argument
@@ -18,7 +18,6 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
  else{
   v6_calculate_flags(opts,rules)
   v6_calculate_streamability(opts,rules)}
-//return v6_sexp(rules)+'\n\n'+pp(rules)
  rules=v6_assign_ids(opts,rules)
  rules=v6_step_three(opts,rules) // assign T, M, and F states
  dbg=debug2?v6_dbg(opts,rules):function(){return ''}
@@ -95,11 +94,11 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
   + dbg('result')+'\n'
   + 'if(S=='+rules._.expr.S_flags+'){(R?emit:fail)();return}'
   + 'if(R){\n'
+  +  'if('+ft('S','cache')+'){tbl[posns[posns.length-1]][S]=[pos,buf];buf=buf.slice()}\n'
   +  'if('+ft('S','m_emitstate')+')buf.push(S>>>'+opts.flagbits+')\n'
   +  'if('+ft('S','m_emitclose')+')buf.push(-2)\n'
   +  'if('+ft('S','m_emitanon')+')buf.push(-1)\n'
   +  'if('+ft('S','m_emitlength')+')buf.push(pos-posns[posns.length-1])\n'
-  +  'if('+ft('S','cache')+')tbl[posns[posns.length-1]][S]=[pos,buf]\n'
   +  'if('+ft('S','m_resetpos')+')pos=posns[posns.length-1]\n'
   +  'if('+ft('S','pushpos')+')posns.pop()\n'
   +  'if('+ft('S','m_tossbuf')+')buf=bufs.pop()\n'
@@ -159,7 +158,7 @@ function v6_sexp(res){var name,ret=[]
   ret=[expr.id
       ,re_shortnames[expr.type]
       ]
-  if(expr.type==0) ret.push(CSET.show(expr.cset))
+  if(expr.type==0) ret.push(CSET.show(expr.cset).replace(/\n/g,' ').replace(/(.{16}).+/,"$1…"))
   //if(expr.type==0) ret.push(pp(expr.cset))
   if(expr.type==1) ret.push(expr.strLit)
   if(expr.type==4) ret[1]='rep' // we only have *-rep by this point
@@ -320,34 +319,39 @@ function v6_calculate_flags(opts,rules){var p
   ,m_tossbuf:false
   ,f_tossbuf:false}}
 
-function v6_calculate_flags_expr(rule){return function loop(parent){return function(expr,i){var ret={},sub_exprs_consuming_anon=[],sub_can_emit_named=false
+function v6_calculate_flags_expr(rule){return function loop(parent){return function(expr,i){var ret={},subs_anon_consume=[],sub_can_emit_named=false
+   function makeAnonEmit(sub){
+    sub.emits_anon=true
+    sub.flags.pushpos=true
+    sub.flags.m_emitanon=true
+    sub.flags.m_emitlength=true}
    if(isCset(expr.type)){
-    expr.consumes_anon=true}
+    expr.anon_consume=true}
    if(isNamedRef(expr.type)){
-    expr.can_emit_named_node=true}
+    expr.can_emit_named=true}
    ret.cache=!!expr.toplevel
    expr.subexprs.forEach(loop(expr))
    expr.subexprs.forEach(function(sub){
-    if(sub.consumes_anon) sub_exprs_consuming_anon.push(sub)
-    if(sub.can_emit_named_node) sub_can_emit_named=true})
+    if(sub.anon_consume) subs_anon_consume.push(sub)
+    if(sub.can_emit_named) sub_can_emit_named=true})
+   if(isLookahead(expr.type)){
+    expr.consumes_anon=false
+    expr.can_emit_named=false}
    if(isOrdC(expr.type)){
-    expr.consumes_anon = sub_exprs_consuming_anon.length>0
-    expr.can_emit_named_node = sub_can_emit_named}
+    expr.anon_consume = !!subs_anon_consume.length
+    expr.can_emit_named = sub_can_emit_named
+    if(expr.anon_consume && expr.can_emit_named){
+     subs_anon_consume.forEach(makeAnonEmit)
+     expr.anon_consume=false}}
    if(isSequence(expr.type)){
-    if(sub_can_emit_named && sub_exprs_consuming_anon.length){
-     sub_exprs_consuming_anon.forEach(function(sub){
-      sub.emits_anon=true
-      sub.flags.m_emitanon=true
-      sub.flags.m_emitlength=true})
-     expr.consumes_anon=false}
-    else{
-     expr.consumes_anon = sub_exprs_consuming_anon.length>0}
-    expr.can_emit_named_node = sub_can_emit_named}
+    expr.anon_consume = !!subs_anon_consume.length
+    expr.can_emit_named = sub_can_emit_named
+    if(expr.anon_consume && expr.can_emit_named){
+     subs_anon_consume.forEach(makeAnonEmit)
+     expr.anon_consume=false}}
    ret.t_bufferout=!!(  isLookahead(expr.type)
                      || expr.toplevel
                      || isProperSequence(expr)
-//                     || isProperSequence(parent)
-//                     || (isProperSequence(parent) && i==0)
                      )
    ret.pushpos=!!(  expr.toplevel
                  || isLookahead(expr.type)
@@ -359,10 +363,8 @@ function v6_calculate_flags_expr(rule){return function loop(parent){return funct
    ret.m_emitanon=false // will only be set by parent expression
    ret.m_emitlength=ret.m_emitclose
    ret.m_resetpos=isPositiveLookahead(expr.type)
-   ret.m_emitbuf=!!( //(isProperSequence(parent) && i==parent.subexprs.length-1)
-         //        || expr.streamable
-                   isProperSequence(expr)
-                 || expr.toplevel )
+   ret.m_emitbuf=!!(  isProperSequence(expr)
+                   || expr.toplevel )
    ret.m_tossbuf=isLookahead(expr.type)
    ret.f_tossbuf=!!(//isProperSequence(parent)
                    isProperSequence(expr)

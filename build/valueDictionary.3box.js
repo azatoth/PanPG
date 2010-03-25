@@ -1,6 +1,6 @@
 {cfunc:'build_PEG_compiler',ciset:'build',outfn:'PEG_generator.js',outct:'text/javascript'
 
-,cfunc:'build_support',ciset:'support',outfn:'PEG_util.js',outct:'text/javascript'
+//,cfunc:'build_support',ciset:'support',outfn:'PEG_util.js',outct:'text/javascript'
 
 ,isets:
  {build:['file(../API_compiling.js)'
@@ -15,6 +15,6 @@
  ,support:['file(../API_support.js)']
  }
 
-,const:
+,'const':
  {}
 }

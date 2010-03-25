@@ -12,7 +12,7 @@ I guess strings can be used as lists of 16-bit words with arbitrary values.  Giv
 
 /* A partially constructed cset (pcset) consists of an array which will become a cset, an open state (true when the length of the array is odd), and the most recent (i.e. highest) codepoint added. */
 
-function start() [[],false,undefined]
+function start(){return [[],false,undefined]}
 
 /* push pushes a new codepoint onto the pcset.  The pcset is always in the open state after a call to push(). */
 

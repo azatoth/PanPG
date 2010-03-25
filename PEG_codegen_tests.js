@@ -1,17 +1,13 @@
 function peg_v5_gen_tal(s){var pt,hide,force
- //pt=tree(p_RuleSet,s)[1]
  pt=p_PEG_v5_RuleSet(s)[1]
- //return showTree(pt)
- //return pp(pt)
  PEG_codegen_5(pt)
  hide=['S','LB','IdentStartChar','IdentChar']
  force=['nm','f1','named_re','re','cset','cp']
  return showPTNodeTreeAttrs(pt,hide,force)}
 
 function peg_v5_gen(s,opts){var pt
- //pt=tree(p_RuleSet,s)[1]
- //return pp(opts)
  pt=p_PEG_v5_RuleSet(s)[1]
+//return pp(pt)
  PEG_codegen_5(pt)
  return pt.code_v5()(opts)}
 
@@ -106,6 +102,21 @@ function ES5_default_test(s){var p,pt=[],messages=[],tree
  return pp(pt)
  return showPTNodeTreeAttrs(pt,[],[])}
 
+function ES5_default_test_identifier(s){var p,pt=[],messages=[],tree,failed=false
+ s='foo_$xxx'
+ p=p_ES5_v6_default_identifier(function(m,x){
+  messages.push(m+' '+x)
+  if(m=='tree segment')pt=pt.concat(x)
+  if(m=='fail')failed=true})
+ p('chunk',s)
+ p('eof')
+ if(!failed)tree=treeFromEvents(pt)
+ else return pp(messages)
+ return s + '\n\n'
+      + pp(messages) + '\n\n'
+ //     + pp(tree) + '\n\n'
+      + showTree(tree,p_ES5_v6_default_identifier.names,s)}
+
 // here we create a 1024-character string, reach each character from it, and compare this to an existing character.
 // this gives us a theoretical maximum for any parser (assuming this is the fastest way to read the characters from a string)
 function peg_benchmarks_upper_bound(){var ret=[],l,ms
@@ -113,13 +124,13 @@ function peg_benchmarks_upper_bound(){var ret=[],l,ms
  ms=8000 // ms to run test
  //l=4096,ms=4000
  //l=2048,ms=2000
- //l=1024,ms=1000
- l=128,ms=125
+ l=1024,ms=1000
+ //l=128,ms=125
  // a ratio of 1024 : 1000 means that the results are in KiB/s
  ret.push(simple(peg_benchmarks_test_chars(l),ms,"test chars (charCodeAt)"))
  //ret.push(simple(peg_benchmarks_test_chars_bkt(l),ms,"test chars (bracket notation)"))
  //ret.push(simple(peg_benchmarks_test_chars_charat(l),ms,"test chars (charAt)"))
- //ret.push(simple(peg_benchmarks_test_chars_re(l),ms,"test chars (regex)"))
+ ret.push(simple(peg_benchmarks_test_chars_re(l),ms,"test chars (regex)"))
  //ret.push(simple(peg_benchmarks_test_arith_streaming(l),ms,"streaming revisited"))
  ret.push(simple(peg_benchmarks_test_arith_fast(l),ms,"streaming fast"))
  ret.push(simple(peg_benchmarks_test_arith_v6(l),ms,"streaming v6"))
