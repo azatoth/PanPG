@@ -90,14 +90,11 @@ Streaming parse tree output
 ---------------------------
 
 The streaming parser API allows input to be parsed in chunks.
-Grammar annotations on the PEG define chunk points at which parsing is guaranteed not to backtrack, and the accumulated parse tree can be returned to the caller at these points.
 Each chunk is returned as a single array of integers.
 
-When a node is opened, the rule index is given, followed by either a length, if known, or -1, if the length is not yet known when the chunk is returned.
-Leaf nodes will always include a length, and the length of a higher node can be determined by summing the lengths of the child nodes that have been seen when the node is closed.
 A node may be opened in one chunk, its children returned in several separate chunks, and finally closed in another chunk.
 This means that inclusion of a node's children in the array that defines the node, as in the non-streaming tree format, is not possible.
-Instead each node is explicitly closed by the integer -2 appearing in the stream.
+Instead each node is explicitly closed.
 
 The caller can construct a tree or tree fragment from the stream, or process the stream directly.
 Since the parser is streaming, it is entirely possible for the parse to fail in the middle of the input after many events have already been generated.
@@ -109,32 +106,7 @@ Constructing a parse tree from the streaming output
 
 The main differences between the streaming output and the non-streaming output are:
 - the streaming output does not use arrays for child node containment, but indicates the end of a node explicitly.
-- the streaming output does not contain lengths for all nodes, since when open nodes are emitted the length is not yet known.
+- the streaming output indicates the length of a node at the end, when it is closed, since when the node is opened the length may not yet be known.
 
-Both of these can be fixed up easily enough after the fact once the entire tree is known.
-
-We provide a utility function which takes a stream of parse tree events and reconstructs a full parse tree from them at the end.
-
-This function emits a "ready" event when it is ready for further chunks, or "tree" when it has constructed a finished tree.
-If there no tree event is emitted, then the chunks provided to the function do not constitute a complete tree.
-If there are events after what should be the end of the stream (i.e. more nodes after the top-level node has been closed) then the function will throw an exception.
-
-When the function sees a tree chunk, it acts on each element in the array as follows:
-
-Initially:
-The current string position is 0.
-The current array position is 0.
-
-When a node is opened, call a helper function with the current position.
-The helper function has a local array to hold the child nodes.
-The helper function reads the rule index and advances the array position.
-If the next element is -1, this must be a named rule and the length will be derived from the length of its child nodes.
-- If this is the case and the rule was anonymous, it is an error.
-Otherwise, increment the current string position by the length of the node.
-If the next element is -2:
-- if this node had no children, i.e. is a leaf node, then advance the string position by the length of this node
-- return a new node, as [<index>, <current string position - start position>, <children>]
-Otherwise, until -2 is seen:
-- call the helper function recursively with the current string position
-- add the return value to the child array
-- when it returns the current string position will have already been advanced
+We provide a utility function which takes a complete sequence of parse tree events and reconstructs a full parse tree from them.
+This can then be passed to showTree

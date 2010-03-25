@@ -1,6 +1,12 @@
-{cfunc:'xxx',ciset:'',outfn:'',outct:''
+{cfunc:'xyzzy',ciset:'',outfn:'',outct:''
 
-//,cfunc:'ES5_default_test',ciset:'ES5_test_small'
+//,cfunc:'peg_v5_gen',ciset:'ES5_v6_default_identifier',outfn:'ES5_v6_default_identifier.js',outct:'text/javascript'
+
+,cfunc:'ES5_default_test',ciset:'ES5_test_small'
+
+//,outfn:'parse_trace',outct:'text/plain'
+
+//,cfunc:'ES5_default_test_identifier',ciset:'ES5_test_small'
 
 //,cfunc:'peg_v6_test_streaming_arith_default'
 
@@ -72,7 +78,7 @@
 //,cfunc:'peg_v5_gen',ciset:'ES5_v6_default',outfn:'ES5_v6_default.js',outct:'text/javascript'
 //,outfn:'scratch',outct:'text/plain'
 //,cfunc:'peg_v6_test_streaming_arith'
-,cfunc:'peg_v6_test_streaming_arith_default'
+//,cfunc:'peg_v6_test_streaming_arith_default'
 
 /************/
 /* FEATURES */
@@ -124,6 +130,8 @@
                    ,'ES5_v5_opt_opts']
  ,'ES5_v6_default':['file(ECMAScript_unified.peg)'
                    ,'ES5_v6_default']
+ ,'ES5_v6_default_identifier':['file(PEG_ES5_Identifier.peg)'
+                              ,'ES5_v6_default_identifier']
  ,'ES5_test':['file(API.js)']
  ,'ES5_test_small':['small_javascript']
  ,CodePointLit:['CodePointLit']
@@ -135,7 +143,7 @@
  }
 
 
-,const:
+,'const':
  {force:['x'
         ,'y'
         ,'nm'
@@ -151,7 +159,7 @@
        //,'NonTerminal'
        ,'HEXDIG'
        ]
- ,small_javascript:'function f(a){var x;return a+x}'
+ ,small_javascript:'function f(a){}'
  ,emptyOpts:{}
  ,arith_expr1:'42 * 3 + 1'
  ,arith_expr2:'7'
@@ -214,6 +222,8 @@
                      ,streaming:true}
  ,ES5_v6_default:{fname:'p_ES5_v6_default'
                  ,streaming:true}
+ ,ES5_v6_default_identifier:{fname:'p_ES5_v6_default_identifier'
+                            ,streaming:true}
  ,ES5arith_v5_opts:{prefix:'p_ES5_arith_'}
  ,ES5arith_expr:'8 * 3 << ~-2'
  ,PEGpeg_v5_opts:{start:'RuleSet'

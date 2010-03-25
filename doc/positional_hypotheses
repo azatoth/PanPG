@@ -1,6 +1,10 @@
-In reasoning about a PEG, we can construct hypotheses about the reachability of certain parser states from certain other states on given input.
+In reasoning about a PEG, we can construct hypotheses about the relationships between expressions in the grammar, e.g. the reachability of certain parser states from certain other states.
 
-Formalizing these hypotheses gives us a way to construct reasoners that can prove certain characteristics of a grammar, e.g. to prove the correctness of a particular transformation of a simple and obviously correct parser to a more efficient parser which is correct only because of characteristics of the grammar which is being parsed.
+Formalizing these hypotheses gives us a way to construct reasoners that can prove certain characteristics, e.g. to prove the correctness of a particular transformation to a more efficient parser for a particular grammar.
+
+There are a class of optimizations that are valid only in the context of a particular complete grammar, e.g. to generate a parser as efficient as an LR(1) parser with a separate tokenizer, we first have to recognize that the language expressed can be correctly parsed by the reduced power of an LR parser.
+
+What is desired is a framework in which we can put forward hypotheses about expressions in a grammar, and validate them with proofs, or disconfirm them with counterexamples, whereby such reductions in parsing power can be justified and more efficient parsers generated automatically.
 
 The earlier work on retry sets made use of ad-hoc hypotheses about possible past and future states of a recursive descent parser, based on a hypothesized position result, namely the failure of a particular occurrence of a nonterminal.
 By completing this set of possible future states, the algorithm can determine whether a rule failure allows for the possibility that the same rule will be tried again at the same position.
@@ -17,6 +21,12 @@ B ← 'b' C
 C ← ...
 
 Given that C appears nowhere but A and B, we can easily prove that if A ← 'a' · C is reached and fails, C will never be tested again at that same input position.
+
+But we can make a much more radical optimization than simply not caching the failure result of C here.
+Instead, we can recognize that this grammar will only match inputs beginning with 'a' or 'b', and on that basis we can place the result of the entire parse in one of three categories, based on a single test of the first input character, as a bottom-up parser would do.
+If the first character is 'a', the parse will either match (S (A ('a' C))) or it will fail, and similarly for 'b'.
+Otherwise the parse has already failed.
+A recursive descent or packrat parser will first descend into the A rule, then test 'a', then, if that fails, descend into B and test for 'b', and then if that fails, see that there are no further alternatives and fail the entire parse.
 
 We can construct such a proof algorithmically as follows:
 By hypothesis, we have the position result (A ← 'a' · C, false, X), indicating that the rule C has been tested at some position X and has failed.

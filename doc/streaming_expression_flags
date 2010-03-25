@@ -112,8 +112,142 @@ An ordered choice consumes anonymously (potentially) if any subexpression consum
 A sequence consumes anonymously if it has at least one sub-expression which consumes anonymously, but does not have any named references.
 If a sequence contains a named reference, and has a sub-expression which consumes anonymously, then that sub-expression is marked as anonymous-emitting, and the sequence itself does not consume anonymously.
 
-So, there's now some code here that hopefully more or less works, and which nobody fully understands.
-Fortunately, getting anonymous nodes wrong only means that the output will be partly wrong, not that the entire parse will catastrophically fail.
+In the case of mixed ordered choice, we can make all anonymously-consuming sub-expressions emit anonymous nodes.
+The named references will not emit anonymous nodes.
+The entire mixed ordered choice then becomes a non-anonymously-consuming and a can-emit-named-node expression.
+
+So there are atomic expressions for which the choice is simple.
+There are repetitions, which are anonymously consuming if the sub-expression is anonymously consuming, and otherwise not.
+There are lookaheads, which never consume any input or emit any nodes.
+Finally there are sequences and ordered choices which are the interesting cases.
+
+Lookaheads and ϵ never emit nodes and never consume input, we will call these 'non-emitting, non-consuming'.
+Character classes always consume and never emit named nodes, we call these 'anonymously consuming'.
+Named references always emit nodes, we call these 'always emitting'.
+Ordered choice productions can contain expressions which can emit named references but might emit nothing.
+We call these last two together the 'can-emit-named' expressions, including any which always emit named nodes and those which sometimes do.
+When a node would otherwise consume anonymously, but can have a named sibling, we cause it to emit an anonymous node.
+Exactly one of these four classes (no-consume, anon-consume, can-emit-named, and anon-emit) should apply to any expression in any grammar.
+This means that no can-emit-named expression can be permitted to consume anonymously.
+This is the reason why this rule may introduce additional anonymous nodes that are strictly unnecessary.
+
+The problem in the output is if there is a named node child node N1 which has no named node sibling, but is shorter than the parent node N2, then the output format becomes insufficient to determine the begin and end position of N1 within N2.
+To prevent this problem we insert anonymous nodes into the output stream.
+
+Example:
+
+NegativeInteger ← "-" Digits
+
+When parsing "-123" the desired parse tree is:
+
+NegativeInteger 0-4
+  anonymous 0-1
+  Digits 1-4
+
+If some extraneous anonymous nodes are produced in the output, that is an acceptable error.
+The current bug is much worse and results in an incorrect tree.
+
+The rules:
+
+CharLit → anon-consume
+ϵ → no-consume
+Named → can-emit-named
+Lookahead → no-consume
+Repetition,
+Sequence,
+OrdC        → see below
+
+A repetition is either can-emit-named, or anon-consume, according to the type of its subexpression.
+
+A sequence of only can-emit-named, and no-consume is can-emit-named.
+A sequence of only anon-consume and no-consume is anon-consume.
+Otherwise the sequence is mixed.
+Without intervention such a sequence would be able to emit either named nodes or consume anonymously, which we do not allow.
+Therefore in such a case we set each anon-consume subexpr to anon-emit.
+This becomes a sequence of anon-emit and can-emit-named, which becomes itself a can-emit-named expression.
+Because of this rule, no can-emit-named expression will ever consume anonymously.
+
+Observations:
+A no-consume sub-expression has no effect on the type of the parent and can be ignored.
+There will never be an anon-emit expression unless created by this algorithm (they do not arise from the properties of atomic elements but from the ways in which they are combined) so there will never be a sequence which contains an anon-emit without a can-emit-named.
+
+An ordered choice of only can-emit-named or no-consume becomes can-emit-named.
+An ordered choice of only anon-consume or no-consume becomes anon-consume.
+(This means that an expression marked 'anon-consume' can also succeed without consuming, which is why before emitting an anonymous node we test for non-zero length.)
+Otherwise the ordered choice is mixed.
+Without intervention, a mixed ordered choice could consume anonymously or it could emit a named node.
+This would be fine in some circumstances, however, it breaks the desired constraint that we can determine, at compile time, which of the four categories each expression is in.
+If we desired to maintain this information at runtime, by keeping track of which sub-expression succeeded, we could eliminate some unnecessary anonymous nodes, however, we prefer the solution which makes the runtime behavior per expression deterministic, regardless of how that expression came to succeed.
+We handle a mixed ordered choice similarly to a mixed sequence.
+Each sub-expression which is marked anon-consume, is changed to anon-emit.
+The entire OrdC then becomes can-emit-named, and the constraint that every can-emit-named expression 'looks after' what it consumes (i.e. generates nodes that fully cover the input it matches) is preserved.
+
+We would also like to be sure that no anonymous node can ever be emitted as a child of another anonymous node.
+To verify this, we consider that only anon-emit expressions ever emit anonymous nodes, and anon-emit nodes are only created as children of an OrdC or a sequence which also has a can-emit-named sub-expression.
+Any OrdC or sequence which has at least one can-emit-named sub-expression, will become a can-emit-named expression itself.
+Therefore the parent of every anon-emit expression will be a can-emit-named expression, and since that can-emit-named expression can never emit an anonymous node, we can be satisfied.
+
+The current implementation:
+
+anon-consume
+no-consume (does not affect parent and does not need to appear in code)
+can-emit-named
+anon-emit
+
+function v6_calculate_flags_expr(rule){return function loop(parent){return function(expr,i){var ret={},subs_anon_consume=[],sub_can_emit_named=false
+   function makeAnonEmit(sub){
+    sub.emits_anon=true
+    sub.flags.pushpos=true
+    sub.flags.m_emitanon=true
+    sub.flags.m_emitlength=true}
+   if(isCset(expr.type)){
+    expr.anon_consume=true}
+   if(isNamedRef(expr.type)){
+    expr.can_emit_named=true}
+   ret.cache=!!expr.toplevel
+   expr.subexprs.forEach(loop(expr))
+   expr.subexprs.forEach(function(sub){
+    if(sub.anon_consume) subs_anon_consume.push(sub)
+    if(sub.can_emit_named) sub_can_emit_named=true})
+   if(isLookahead(expr.type)){
+    expr.consumes_anon=false
+    expr.can_emit_named=false}
+   if(isOrdC(expr.type)){
+    expr.anon_consume = !!subs_anon_consume.length
+    expr.can_emit_named = sub_can_emit_named
+    if(expr.anon_consume && expr.can_emit_named){
+     subs_anon_consume.forEach(makeAnonEmit)
+     expr.anon_consume=false}}
+   if(isSequence(expr.type)){
+    expr.anon_consume = !!subs_anon_consume.length
+    expr.can_emit_named = sub_can_emit_named
+    if(expr.anon_consume && expr.can_emit_named){
+     subs_anon_consume.forEach(makeAnonEmit)
+     expr.anon_consume=false}}
+   ret.t_bufferout=!!(  isLookahead(expr.type)
+                     || expr.toplevel
+                     || isProperSequence(expr)
+                     )
+   ret.pushpos=!!(  expr.toplevel
+                 || isLookahead(expr.type)
+                 || expr.emits_anon
+                 || isProperSequence(expr) )
+   ret.t_emitstate=!!expr.toplevel
+   ret.m_emitstate=false // used only in streaming
+   ret.m_emitclose=!!expr.toplevel
+   ret.m_emitanon=false // will only be set by parent expression
+   ret.m_emitlength=ret.m_emitclose
+   ret.m_resetpos=isPositiveLookahead(expr.type)
+   ret.m_emitbuf=!!(  isProperSequence(expr)
+                   || expr.toplevel )
+   ret.m_tossbuf=isLookahead(expr.type)
+   ret.f_tossbuf=!!(//isProperSequence(parent)
+                   isProperSequence(expr)
+                   || isLookahead(expr.type)
+                   || expr.toplevel
+                   )
+   expr.flags=ret}}}
+
 
 So the two ways of assigning t_bufferout and m_emitbuf and f_tossbuf were not compatible.
 ...actually that's not quite obvious to me.

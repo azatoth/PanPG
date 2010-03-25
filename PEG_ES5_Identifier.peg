@@ -1,0 +1,19 @@
+IdentifierName                  ← IdentifierStart IdentifierPart*
+
+IdentifierPart                  ← IdentifierStart
+                                / [ [:Mn:] [:Mc:]
+                                    [:Nd:]
+                                    [:Pc:] ]
+
+IdentifierStart                 ← Letter
+                                / "$"
+                                / "_"
+                                / RS UnicodeEscapeSequence
+
+Letter                          ← [ a-z ]
+
+RS                              ← [U+005C]
+
+UnicodeEscapeSequence           ← "u" HexDigit{4}
+
+HexDigit                        ← [ 0-9 a-f A-F ]

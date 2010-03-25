@@ -12,9 +12,9 @@ function cset_prod(text,unicat,forEach,filter){
  text=text+';'
  return text}
 
-function stripJSComments(s) s.replace(/\/\*.*?\*\//gm,'').replace(/\/\/.*/g,'')
+function stripJSComments(s){return s.replace(/\/\*.*?\*\//gm,'').replace(/\/\/.*/g,'')}
 
-function cleanupWS(s) s.replace(/[\t ]+\n/g,'\n').replace(/^\n+|\n(?=\n(?!function))|\n+$/g,'')
+function cleanupWS(s){return s.replace(/[\t ]+\n/g,'\n').replace(/^\n+|\n(?=\n(?!function))|\n+$/g,'')}
 
 function insertUnicodeCategories(s,x){
  var y=s.split('\n')

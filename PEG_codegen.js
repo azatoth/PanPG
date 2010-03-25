@@ -1,4 +1,4 @@
-if('_CSET'in this) _CSET().import('cset_')
+if('_CSET'in this) _CSET()['import']('cset_')
 
 function _all(cn,attr){
  return(cn
@@ -37,19 +37,19 @@ function sequence_peg_cg(opts,children){var
  if(all.length==0)throw Error('sequence_peg_cg: no children')
  return "seq("+all.join(',')+")"}
 
-function charset_peg_cg(opts,re) _wrap_re(re_serialize(re))
+function charset_peg_cg(opts,re){return _wrap_re(re_serialize(re))}
 
 function charsetdiff_cset(opts,cn){var
  all=_all(cn,'cset')
- return all.slice(1).reduce(function(r,e) cset_difference(r,e),all[0])}
+ return all.slice(1).reduce(function(r,e){return cset_difference(r,e)},all[0])}
 
 function charsetintersection_cset(opts,cn){var
  all=_all(cn,'cset')
- return all.reduce(function(r,e) cset_intersection(r,e),cset_universe)}
+ return all.reduce(function(r,e){return cset_intersection(r,e)},cset_universe)}
 
 function charsetunion_cset(opts,cn){var
  all=_all(cn,'cset')
- return all.reduce(function(r,e) cset_union(r,e),cset_nil)}
+ return all.reduce(function(r,e){return cset_union(r,e)},cset_nil)}
 
 function codepointrange_cset(opts,from,to){
  return cset_fromIntRange(from,to)}
@@ -57,7 +57,7 @@ function codepointrange_cset(opts,from,to){
 function codepoint_cset(opts,codepoint){
  return cset_fromInt(codepoint)}
 
-function upluscodepoint_peg_codepoint(opts,match) parseInt(match.slice(2),16)
+function upluscodepoint_peg_codepoint(opts,match){return parseInt(match.slice(2),16)}
 
 function strlit_peg_cg(opts,match){
  return "strLit("+match+")"}
