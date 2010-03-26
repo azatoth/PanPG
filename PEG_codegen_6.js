@@ -3,7 +3,7 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
  debug2=false // debugging in the parser itself
  asserts=false // include assertions (for a slower, more debuggable parser)
  //debug=true
- debug2=true // TOOD: make these options opts.debugLevel=0..2
+ //debug2=true // TODO: make these options opts.debugLevel=0..2
  //asserts=true
  //return pp(named_res)
  //opts=extend({},opts) // we mutate this argument
@@ -27,15 +27,15 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
       ,'T','M','F','R'
       ,'tbl=[]','x'
       ,'pos=0','offset=0'
-      ,'buf=[]','bufs=[]','states=[]','posns=[]','chr']
+      ,'buf=[]','bufs=[]','states=[]','posns=[]','c']
  if(debug2) vars.push('S_map=[\''+opts.S_map.join('\',\'')+'\']')
  ft=v6_flag_test(opts)
  function_emit='function emit(){var x='
   + 'bufs.length?bufs[0]:buf;'
   + 'if(x.length){out(\'tree segment\',x);'
   +  'if(bufs.length)bufs[0]=[];else buf=[]}}'
- function_fail='function fail(){'
-  + 'out(\'fail\',pos)'
+ function_fail='function fail(s){'
+  + 'out(\'fail\',pos,s)'
   + '}'
  function_m_x='function(m,x){'
   + 'switch(m){\n'
@@ -67,8 +67,8 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
   + 'if('+v6_is_prim_test(opts)('S')+'){\n' // prim test state
   +  v6_ε_ifstmt(opts)('S','R')
   +  'else{\n'
-  +   'chr=s.charCodeAt(pos);'
-  +   'if(isNaN(chr)){'
+  +   'c=s.charCodeAt(pos);'
+  +   'if(isNaN(c)){'
   +    'if(eof)R=false;'
   +    'else{'
   +     'emit();'
@@ -81,10 +81,30 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
   +    '}\n'
   +   'else switch(S){\n'
  //    + v6_ε_case(opts)('pos','R')
-  +    v6_prim_test_case_statements(opts)('chr','R')
+  +    v6_prim_test_case_statements_BMP(opts)('c','R')
   +    '}\n'
   +   'if(R)pos++\n'
-  +   'if(chr>=0xD800&&chr<=0xDFFF)throw new Error(\'surrogate characters not yet handled here\');'
+  +   'else if(c>=0xD800&&c<=0xDFFF){' // surrogate code unit
+  +    'if(c<0xDB80){' // high surrogate case
+  +     'if(pos+1==l){' // no more characters available
+  +      'if(eof)return fail(\'unmatched surrogate at EOF\');'
+  +      'else{'
+  +       'emit();'
+  +       'R=undefined;'
+  +       dbg('waiting (surrogate pair)')
+  +       'out(\'ready\');'
+  +       'return}}'
+  +     'else{' // the next code unit is available
+  +      'c=(c&0x3FF)<<10 | s.charCodeAt(pos+1)&0x3FF | 0x10000\n'
+  +      'switch(S){'
+  +       v6_prim_test_case_statements_supplementary(opts)('c','R')
+  +       '\ndefault:R=false'
+  +       '}\n'
+  +      'if(R)pos+=2\n' // we matched a supplementary character
+  +      '}' // end else
+  +     '}' // end high surrogate case
+  +    'else return fail(\'UTF-16 decoding error: unmatched low surrogate\')' // if not high surrogate, we saw a leading low surrogate which cannot be valid UTF-16
+  +    '}' // end if surrogate code unit
   +   '}\n' // end else
   +  (asserts?'assert(R==true||R==false,\'have result\')\n':'')
   +  'S=states.pop()'
@@ -137,7 +157,7 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
 
 function v6_dbg(opts,rules){return function(msg){
   return 'out(\''+msg+'\',\'S:\'+(S_map[S>>>'+opts.flagbits+']||\'unknown state \'+S>>>'+opts.flagbits+')'
- + '+\' pos:\'+pos'
+ + '+\' pos:\'+pos+\' \'+s.charAt(pos)'
  + '+\' R:\'+R'
  + '+\' stack:\'+states.map(function(s){return s>>>'+opts.flagbits+'})'
  + '+\' posns:\'+posns'
@@ -515,11 +535,24 @@ function v6_is_not_prim_test(opts){return function(id_S){
   return id_S+'>'+(opts.highest_prim_test)
     +'||'+id_S+'<'+(opts.lowest_prim_test)}}
 
-function v6_prim_test_case_statements(opts){return function(id_c,id_R){var ret=[],p,cset
+function v6_prim_test_case_statements_BMP(opts){return function(id_c,id_R){var ret=[],p,cset,BMP_no_surrogates,surrogates
+  surrogates=CSET.fromIntRange(0xD800,0xDFFF)
+  BMP_no_surrogates=CSET.difference(CSET.fromIntRange(0,0xFFFF),surrogates)
   for(p in opts.prim_test_reverse){
-   cset=opts.prim_test_reverse[p]
-   ret.push('case '+p+':'+id_R+'='+cset_to_expr(cset,id_c)+';break')}
+   cset=CSET.intersection(opts.prim_test_reverse[p],BMP_no_surrogates)
+   ret.push(v6_cset_to_case_stmt(opts)(id_c,id_R,p,cset))}
   return ret.join('\n')}}
+
+function v6_prim_test_case_statements_supplementary(opts){return function(id_c,id_R){var ret=[],p,cset,supplementary
+  supplementary=CSET.fromIntRange(0x10000,0x10FFFF)
+  for(p in opts.prim_test_reverse){
+   cset=CSET.intersection(opts.prim_test_reverse[p],supplementary)
+   if(CSET.empty(cset))continue
+   else ret.push(v6_cset_to_case_stmt(opts)(id_c,id_R,p,cset))}
+  return ret.join('\n')}}
+
+function v6_cset_to_case_stmt(opts){return function(id_c,id_R,_case,cset){
+  return 'case '+_case+':'+id_R+'='+cset_to_expr(cset,id_c)+';break'}}
 
 function v6_ε_case(opts){return function(id_pos,id_R){
   return 'case '+opts.S_ε+':'+id_R+'=true;'+id_pos+'--;break\n'}}
