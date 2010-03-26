@@ -2,8 +2,8 @@
 
 //,cfunc:'peg_v5_gen',ciset:'ES5_v6_default_identifier',outfn:'ES5_v6_default_identifier.js',outct:'text/javascript'
 
-,cfunc:'ES5_default_test',ciset:'ES5_test_small'
-,ciset:'scratch'
+//,cfunc:'ES5_default_test',ciset:'ES5_test_small'
+//,ciset:'scratch'
 
 //,outfn:'parse_trace',outct:'text/plain'
 
@@ -75,7 +75,7 @@
 /*************/
 
 //,cfunc:'peg_v5_gen',ciset:'arith_streaming',outfn:'PEG_arith_streaming.js',outct:'text/javascript'
-//,cfunc:'peg_v5_gen',ciset:'arith_streaming_default_flags',outfn:'PEG_arith_streaming_default.js',outct:'text/javascript'
+,cfunc:'peg_v5_gen',ciset:'arith_streaming_default_flags',outfn:'PEG_arith_streaming_default.js',outct:'text/javascript'
 //,cfunc:'peg_v5_gen',ciset:'ES5_v6_default',outfn:'ES5_v6_default.js',outct:'text/javascript'
 //,outfn:'scratch',outct:'text/plain'
 //,cfunc:'peg_v6_test_streaming_arith'
@@ -219,7 +219,11 @@
                   ,streaming:true}
  ,arith_streaming_default_flags:
      {prefix:'p_arith_streaming_v6_default_flags_'
-     ,streaming:true}
+     ,streaming:true
+     //,debug:true
+     //,asserts:true
+     //,trace:true
+     }
  ,features_streaming:{prefix:'p_features_stream'
                      ,streaming:true}
  ,ES5_v6_default:{fname:'p_ES5_v6_default'
