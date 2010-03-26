@@ -3,6 +3,7 @@
 //,cfunc:'peg_v5_gen',ciset:'ES5_v6_default_identifier',outfn:'ES5_v6_default_identifier.js',outct:'text/javascript'
 
 ,cfunc:'ES5_default_test',ciset:'ES5_test_small'
+,ciset:'scratch'
 
 //,outfn:'parse_trace',outct:'text/plain'
 
@@ -134,6 +135,7 @@
                               ,'ES5_v6_default_identifier']
  ,'ES5_test':['file(API.js)']
  ,'ES5_test_small':['small_javascript']
+ ,'scratch':['file(scratch)']
  ,CodePointLit:['CodePointLit']
  ,profile_analyzer:['result(1252281266,ES5_test,ES5_test)']
  ,test_markdown:['file(tests/markdown.peg)']

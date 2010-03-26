@@ -1,1 +1,9 @@
-function f(a){var x;return a+x} 
+// Basic Multilingual Plane
+
+function ϵ(){return "ϵ"} // ϵ U+03F5 LUNATE EPSILON SYMBOL
+function ε(){return "ε"} // ε U+03B5 GREEK SMALL LETTER EPSILON
+
+// Supplementary Characters
+
+function 𝑎(𝑎){return 𝑎} // 𝑎 U+1D44E MATHEMATICAL ITALIC SMALL A
+function 𝒻(){return "𝒻"} // 𝒻 U+1D4BB MATHEMATICAL SCRIPT SMALL F
