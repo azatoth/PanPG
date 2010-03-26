@@ -1,10 +1,7 @@
-function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,ft,function_emit,debug,debug2,asserts,dbg,function_fail,nameline
- debug=false // human semi-readable output from the codegen
- debug2=false // debugging in the parser itself
- asserts=false // include assertions (for a slower, more debuggable parser)
- //debug=true
- //debug2=true // TODO: make these options opts.debugLevel=0..2
- //asserts=true
+function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,ft,function_emit,dbg,function_fail,function_assert,nameline,asserts
+ //opts.debug=true
+ //opts.trace=true
+ //opts.asserts=true
  //return pp(named_res)
  //opts=extend({},opts) // we mutate this argument
  opts.S_map=[]
@@ -20,7 +17,8 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
   v6_calculate_streamability(opts,rules)}
  rules=v6_assign_ids(opts,rules)
  rules=v6_step_three(opts,rules) // assign T, M, and F states
- dbg=debug2?v6_dbg(opts,rules):function(){return ''}
+ dbg=opts.trace?v6_dbg(opts,rules):function(){return ''}
+ asserts=opts.asserts
  vars=['eof=false'
       ,'s=\'\'','l=0'
       ,'S='+rules._.expr.S_flags
@@ -28,7 +26,7 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
       ,'tbl=[]','x'
       ,'pos=0','offset=0'
       ,'buf=[]','bufs=[]','states=[]','posns=[]','c']
- if(debug2) vars.push('S_map=[\''+opts.S_map.join('\',\'')+'\']')
+ if(opts.trace) vars.push('S_map=[\''+opts.S_map.join('\',\'')+'\']')
  ft=v6_flag_test(opts)
  function_emit='function emit(){var x='
   + 'bufs.length?bufs[0]:buf;'
@@ -44,6 +42,7 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
   + 'case \'eof\':eof=true;mainloop();break\n'
   + 'default:throw new Error(\'unhandled message: \'+m)'
   + '}}\n'
+ function_assert='function assert(x,msg){if(!x)throw new Error(\'assertion failed\'+(msg?\': \'+msg:\'\'))}'
  mainloop='function mainloop(){for(;;){'
   + dbg('main')+'\n'
   + 'if('+v6_is_not_prim_test(opts)('S')+')t_block:{\n'
@@ -140,11 +139,11 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
   + ';'+dbg('res_end')+'\n'
   + '}' // end has_result loop
   + '}}'
- return (debug?(v6_sexp(rules)+'\n\n'
+ return (opts.debug?(v6_sexp(rules)+'\n\n'
                + pp(opts)+'\n\n'
                + pp(opts.prim_test_assignments)+'\n\n'
                + pp(rules)+'\n\n'):'')
-      + (debug2?v6_legend(opts,rules)+'\n':'')
+      + (opts.trace?v6_legend(opts,rules)+'\n':'')
       + nameline+'\n'
       + 'function '+opts.fname+'(out){'
           +varstmt(vars)+'\n'
@@ -153,6 +152,7 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
           +mainloop+'\n'
           +function_emit+'\n'
           +function_fail
+          +(asserts?'\n'+function_assert:'')
           +'}\n'}
 
 function v6_dbg(opts,rules){return function(msg){
