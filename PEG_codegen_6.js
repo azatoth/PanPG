@@ -1,4 +1,4 @@
-function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,ft,function_emit,dbg,function_fail,function_assert,nameline,asserts
+function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,function_emit,dbg,function_fail,function_assert,nameline,asserts,single_call_special_case
  //opts.debug=true
  //opts.trace=true
  //opts.asserts=true
@@ -43,6 +43,12 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
   + 'default:throw new Error(\'unhandled message: \'+m)'
   + '}}\n'
  function_assert='function assert(x,msg){if(!x)throw new Error(\'assertion failed\'+(msg?\': \'+msg:\'\'))}'
+ single_call_special_case='if(typeof out==\'string\'){s=out;out=[];'
+  +  'x='+opts.fname+'(function(m,x,y){if(m==\'fail\')out=[false,x,y];'
+  +    'if(m==\'tree segment\')out=out.concat(x)});'
+  +  'x(\'chunk\',s);'
+  +  'x(\'eof\');'
+  +  'return out[0]===false?out:[true,out]}'
  mainloop='function mainloop(){for(;;){'
   + dbg('main')+'\n'
   + 'if('+v6_is_not_prim_test(opts)('S')+')t_block:{\n'
@@ -148,6 +154,7 @@ function codegen_v6(opts,names,named_res){var vars,rules,function_m_x,mainloop,f
       + 'function '+opts.fname+'(out){'
           +varstmt(vars)+'\n'
           +v6_TMF_tables(opts,rules)
+          +single_call_special_case+'\n'
           +'return '+function_m_x
           +mainloop+'\n'
           +function_emit+'\n'

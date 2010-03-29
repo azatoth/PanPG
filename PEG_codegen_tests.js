@@ -7,7 +7,6 @@ function peg_v5_gen_tal(s){var pt,hide,force
 
 function peg_v5_gen(s,opts){var pt
  pt=p_PEG_v5_RuleSet(s)[1]
-//return pp(pt)
  PEG_codegen_5(pt)
  return pt.code_v5()(opts)}
 
@@ -40,12 +39,9 @@ function peg_v6_test_streaming_arith(){var s,messages=[],parser,parse=[],tree,ch
 function peg_v6_test_streaming_arith_default(){var s,messages=[],parser,parse=[],tree,chunks
  chunks=['1+','2*3']
  chunks=['1+','2','*3']
- //chunks=['1+']
- //chunks=['1+1']
- //chunks=['1+','1']
- //chunks=['1+2*3']
- //chunks=['1']
  chunks=['1+2','*','3']
+ //chunks=['4 * 3 + 2']
+ s=chunks.join('')
  parser=p_arith_streaming_v6_default_flags_Expr(out)
  chunks.forEach(function(chunk){parser('chunk',chunk)})
  parser('eof')
@@ -54,9 +50,56 @@ function peg_v6_test_streaming_arith_default(){var s,messages=[],parser,parse=[]
   + p_arith_streaming_v6_default_flags_Expr.legend + '\n\n'
   + pp(messages) + '\n\n'
   + pp(parse) + '\n\n'
-  + showTree(tree,p_arith_streaming_v6_Expr.names,s)
+  + showTree(tree,p_arith_streaming_v6_Expr.names,s) + '\n\n'
+  + showEvents(parse,p_arith_streaming_v6_Expr.names,s)
  function out(m,x){messages.push(m+' '+x)
   if(m=='tree segment')parse=parse.concat(x)}}
+
+function test_showEvents(){var events,s,state,out=[],a,names
+ s='1+2*3'
+ events=p_arith_streaming_v6_default_flags_Expr(s)
+ names=p_arith_streaming_v6_default_flags_Expr.names
+ //events==[true,[1,2,3,4,-2,1,-2,1,-1,1,3,4,-2,1,-1,1,4,-2,1,-2,3,-2,5,-2,5]]
+ out.push('input: '+s)
+ a=showEvents([1,2,3])
+ out.push(a[0])//;out.push(pp(a[1]))
+ a=showEvents([4,-2,1],undefined,s,a[1])
+ out.push(a[0])//;out.push(pp(a[1]))
+ a=showEvents([-2,1,-1,1],names,s,a[1])
+ out.push(a[0])//;out.push(pp(a[1]))
+ a=showEvents([3,4,-2,1],names,undefined,a[1])
+ out.push(a[0])//;out.push(pp(a[1]))
+ a=showEvents([-1,1,4,-2,1,-2,3,-2,5,-2,5],names,s,a[1])
+ out.push(a[0])//;out.push(pp(a[1]))
+ out.push('all together:')
+ out.push(showEvents(events[1],names,s)[0])
+ return out.join('\n\n')}
+
+function test_showError(){var s,error,out=[]
+ s='1+2x3' // 'x' is a parse error
+ error=p_arith_streaming_v6_default_flags_Expr(s)
+ assert(error[0]==false,'parse failed')
+ out.push(showError(error[1],error[2],s))
+ s='function f(){}\nfunction g(x) x*x\nfunction h(){}'
+ error=p_ES5_v6_default(s)
+ assert(error[0]==false,'ES5 parse failed')
+ out.push(showError(error[1],error[2],s))
+ return out.join('\n\n')}
+
+function test_showResult(){var s1,s2,out=[],parser
+ parser=p_arith_streaming_v6_default_flags_Expr
+ s1="1+2+3"
+ out.push(s1)
+ out.push(showResult(parser(s1),parser.names,s1))
+ s2="1+2x3"
+ out.push(s2)
+ out.push(showResult(parser(s2),parser.names,s2))
+ return out.join('\n\n')}
+
+function peg_v6_test_streaming_arith_single_call(){var x
+ s='1+2*4'
+ x=p_arith_streaming_v6_default_flags_Expr(s)
+ return pp(x)}
 
 function peg_v6_hacked(){var s,p,msgs=[],i,l,prof,ls=[]
  s=Array(257).join('1*2+')+'3'

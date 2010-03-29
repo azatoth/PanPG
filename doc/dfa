@@ -1,0 +1,11 @@
+notes on deterministic finite automata
+
+A DFA is a 5-tuple (Q, Σ, δ, q₀, F)
+
+Q is a set of states,
+Σ is the alphabet,
+δ is the transition function Q × Σ → Q,
+q₀ is the start state, and
+F is the set of accepting states (F ⊆ Q)
+
+We wish to opportunistically construct a set of DFAs matching a regular part of a PEG when it is likely to improve the efficiency of the parser.
