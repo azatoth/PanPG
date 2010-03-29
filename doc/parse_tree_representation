@@ -1,9 +1,14 @@
-Updated: 2009-12-16
+Updated: 2010-03-29 for version 0.0.5
 
 A successful parse produces an array of integers representing a stream of events.
 This format is documented here.
 
-The stream is a sequence of three kinds of events: opening a named node, closing a named node, and anonymous nodes, which are both opened and closed at the same time.
+This format can be processed directly, similarly to how events from a SAX-style parser are handled, or it can be used to construct a parse tree which can be displayed or manipulated as desired.
+
+This format also supports streaming output from streaming parsers, in which case a parse tree node may be opened in one chunk of output and closed in another, later chunk.
+The only difference in the streaming parser case is that the parser will return the output in chunks as a series of arrays, rather than a single array representing the entire parse tree.
+
+The sequence of integers making up the parse tree format represent three different kinds of events: opening a named node, closing a named node, and anonymous nodes, which are both opened and closed at the same time.
 
 A named node corresponds to a match of one of the rules appearing in the PEG.
 Each rule is identified by the 1-based index of the position in the PEG where the rule appears.
@@ -42,97 +47,12 @@ Expr 0-9 "4 * 3 + 2"
    Num 8-9 "2"
 
 Looking at the beginning of the array, we have [1,2,3,4,-2,1], corresponding to the first five events in the parse: first the 1, 2, 3, and 4 serve to open the Expr, the Add, the Mult, and the Num nodes (which are rules 1-4 respectively in the grammar) and then -2,1 closes the Num node with length 1.
-
-The parse tree is returned as a root node.
-Nodes are described below and may contain other nodes as children.
-A node is represented as a JavaScript array of three elements: a rule index, a length, and a child node array.
-
-The rule index is the 0-based index at which the matched rule appeared in the PEG given to the code generator.
-For example if the start rule is the first rule in the PEG (as it often is) then the root node in a successful parse will have the rule index 0.
-Nodes may also be anonymous, corresponding to terminals appearing with non-terminals in the same rule.
-As an example, a successful parse of the rule Mult ← Num "*" Num will generate a Mult node with three child nodes.
-The first and third nodes correspond to the Num rule, but the middle node matched only the literal string "*" which does not have any name in the grammar, hence this creates an anonymous node.
-Rules which only match terminal symbols and do not also contain non-terminal rules do not generate anonymous nodes, e.g. if the rule above were rewritten as Mult ← Num MultOp Num; MultOp ← "*" then no anonymous node would be generated.
-Anonymous nodes have -1 in place of the rule index.
-
-The second element in each parse node is the length, which is the number of terminal symbols (e.g. characters) matched by that application of the rule.
-If "2*2" is parsed by the Mult rule given above, the length of the Mult node will be 3, and the length of each Num node, and of the anonymous node matching the asterisk, will be 1.
-To find the position of a node in the input string, it is necessary to accumulate the lengths of the nodes while descending into the tree.
-
-Finally, the child node array contains the node's children in the same format.
+After the S node is both opened and closed (by 5,-2,1), there is an anonymous node of length one (-1,1) corresponding to the asterisk in the Mult rule.
 
 
-Finding a tree path from an offset
-----------------------------------
+Anonymous Nodes
+---------------
 
-If we have a position p in the input, and wish to find the corresponding path into the parse tree, we apply this algorithm, beginning with the root node, a running offset of 0, and an empty result path:
-
-- Increase the running offset by the length of this node.
-- If the running offset is greater than p then this node contains the position.
-  - push this node onto the result path.
-  - run this algorithm on each child node until one returns true or there are no more child nodes.
-  - return true.
-- otherwise return false.
-
-This means that finding a path into a parse tree is linear in the number of left-siblings of the path.
-That is, for each node on the path, each of its sibling nodes to the left (previous in the input string) must be visited and one addition operation performed.
-If the parse tree represents a typical program in a typical programming language, this means one would skip over any blocks, statements, function declarations, or whatever other top-level rules the grammar may have, which appear previous to the top-level rule containing the position of interest.
-Average runtime to generate a path, then, can be expected to be linear in the input position, with some factor that varies with the "chunkiness" of the grammar and the input.
-
-
-Replacing a subtree
--------------------
-
-Assume we have a change to the input and wish to apply the corresponding change to the parse tree directly, without reparsing the entire input.
-Assume that the change is provided as a path into the tree to a node which exists, and a new node to insert at that position, replacing the node already present.
-The provided node may have a different length than the replaced node, so the rest of the tree may need to be updated to remain consistent.
-The start offset of the new node is taken to be the same as that of the one being replaced.
-
-First, we locate the old node by following the path, keeping a reference to each node on the path.
-Let d be the difference between the length of the new and old node.
-Set the start offset of the new node to that of the old node.
-Replace the old node with the new node in the tree.
-For each parent node seen along the path, add d to its length.
-
-
-Building the parse tree
------------------------
-
-We build a parse tree from a result table which is generated by the packrat parser.
-In this table we have, for each successful rule match, an end position and a set of rule indices and start positions for the child matches.
-For each match in the table we produce a new array.
-The first element is the rule index.
-The second element is the length.
-The third element is the children of this node, if any, each of which may be anonymous or named.
-If the node has at least one child match, we insert anonymous child nodes, using -1 for the rule index, such that the sum of the lengths of the anonymous and named children is equal to the length of the node itself, and that the sum of the lengths of the left-siblings of any node are equal to the offset of that node's match relative to the match of its parent.
-If there are no named rule matches, we do not insert an anonymous child node.
-So the constraint holds that every node N is either a leaf node having no children, or has child nodes such that the sum of their lengths is equal to the length of N.
-Anonymous nodes are always leaf nodes.
-An anonymous node always has at least one non-anonymous sibling.
-Two anonymous nodes are never adjacent siblings.
-
-
-Streaming parse tree output
----------------------------
-
-The streaming parser API allows input to be parsed in chunks.
-Each chunk is returned as a single array of integers.
-
-A node may be opened in one chunk, its children returned in several separate chunks, and finally closed in another chunk.
-This means that inclusion of a node's children in the array that defines the node, as in the non-streaming tree format, is not possible.
-Instead each node is explicitly closed.
-
-The caller can construct a tree or tree fragment from the stream, or process the stream directly.
-Since the parser is streaming, it is entirely possible for the parse to fail in the middle of the input after many events have already been generated.
-The only guarantee is that if the entire input parses successfully, the parse tree returned will be the correct one.
-
-
-Constructing a parse tree from the streaming output
----------------------------------------------------
-
-The main differences between the streaming output and the non-streaming output are:
-- the streaming output does not use arrays for child node containment, but indicates the end of a node explicitly.
-- the streaming output indicates the length of a node at the end, when it is closed, since when the node is opened the length may not yet be known.
-
-We provide a utility function which takes a complete sequence of parse tree events and reconstructs a full parse tree from them.
-This can then be passed to showTree
+The reason for anonymous nodes in the output format is that node positions are relative, determined by the length of sibling nodes.
+When interpreting the results it is necessary to keep track of the position in the input while reading the events.
+As an example, in the grammar above, without the anonymous node matching the "*" in the Mult rule, there would be no way to tell that the S match which follows it begins at position 3 rather than position 2.
