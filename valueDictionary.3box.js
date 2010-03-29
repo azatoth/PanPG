@@ -1,5 +1,9 @@
 {cfunc:'xyzzy',ciset:'',outfn:'',outct:''
 
+//,cfunc:'test_showEvents'
+,cfunc:'test_showError'
+//,cfunc:'test_showResult'
+
 //,cfunc:'peg_v5_gen',ciset:'ES5_v6_default_identifier',outfn:'ES5_v6_default_identifier.js',outct:'text/javascript'
 
 //,cfunc:'ES5_default_test',ciset:'ES5_test_small'
@@ -70,16 +74,17 @@
 
 //,cfunc:'peg_profile_analyzer',ciset:'profile_analyzer'
 
-/*************/
-/* Streaming */
-/*************/
+/**************/
+/* v6 codegen */
+/**************/
 
 //,cfunc:'peg_v5_gen',ciset:'arith_streaming',outfn:'PEG_arith_streaming.js',outct:'text/javascript'
-,cfunc:'peg_v5_gen',ciset:'arith_streaming_default_flags',outfn:'PEG_arith_streaming_default.js',outct:'text/javascript'
+//,cfunc:'peg_v5_gen',ciset:'arith_streaming_default_flags',outfn:'PEG_arith_streaming_default.js',outct:'text/javascript'
 //,cfunc:'peg_v5_gen',ciset:'ES5_v6_default',outfn:'ES5_v6_default.js',outct:'text/javascript'
 //,outfn:'scratch',outct:'text/plain'
 //,cfunc:'peg_v6_test_streaming_arith'
 //,cfunc:'peg_v6_test_streaming_arith_default'
+//,cfunc:'peg_v6_test_streaming_arith_single_call'
 
 /************/
 /* FEATURES */
@@ -161,7 +166,7 @@
        //,'NonTerminal'
        ,'HEXDIG'
        ]
- ,small_javascript:'function f(a){}'
+ ,small_javascript:'function f(x){return x*x}'
  ,emptyOpts:{}
  ,arith_expr1:'42 * 3 + 1'
  ,arith_expr2:'7'
