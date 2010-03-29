@@ -8,7 +8,7 @@ function codegen_v5(opts,names,named_res){var ctx,nameline
  opts.start=opts.start||names[0]
  opts.fname=opts.fname||opts.prefix+opts.start
  if(opts.streaming){
-  return codegen_v6(opts,names,named_res)}
+  return codegen_v6(opts,named_res)}
  nameline=opts.fname+'.names='+'[\''+names.join('\',\'')+'\'];'
  return ['function '+opts.fname+'(str){'
  , 'var tbl=[],pos=0,l=str.length+1;'
