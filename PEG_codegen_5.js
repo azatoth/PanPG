@@ -7,7 +7,7 @@ function codegen_v5(opts,names,named_res){var ctx,nameline
  opts.prefix=opts.prefix||''
  opts.start=opts.start||names[0]
  opts.fname=opts.fname||opts.prefix+opts.start
- if(opts.streaming){
+ if(opts.codegen=='v6'){
   return codegen_v6(opts,named_res)}
  nameline=opts.fname+'.names='+'[\''+names.join('\',\'')+'\'];'
  return ['function '+opts.fname+'(str){'

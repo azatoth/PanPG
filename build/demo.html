@@ -3,26 +3,40 @@
 <title>PEG demo</title>
 
 <style>
-body,html {margin:0;padding:0}
-fieldset {width:100%;border:0;padding:0;margin:0;background:#888;position:relative}
-label {display:inline-block;border:2px solid black;width:45%;margin:1em 2%;position:relative;background:#AAA}
+body,html {margin:0;padding:0;background:#bbb}
+fieldset {width:96%;border:0;padding:0 2%;margin:0;position:relative}
+label {display:inline-block;width:40%;border:2px solid black;margin:1em 4.5%;position:relative;background:#AAA}
 textarea {width:100%;height:24em;border:0}
+h1,p,pre {width:80%;margin:1em auto}
+h1 {margin-bottom:1.5em}
+#status {height:8em;overflow:auto}
+#choose_grammar select {float:right;display:block}
 </style>
 
 <script src=PEG_generator.js></script>
+<script src=PEG_util.js></script>
 
-<h1>PEG demo 2009-12-14</h1>
+<h1>PEG demo 2010-03-29</h1>
 
 <p>This is a very simple demo that demonstrates the PEG parser generator API.
-We load a PEG from a file, construct a JavaScript parser from it, and use that parser to parse some input and display the resulting parse tree.
+We load a PEG from a file, generate a parser, use that parser to parse some input, and finally display the resulting parse tree.
 You can edit the arithmetic expression below and see the different parse trees generated.
+You can also edit the grammar, and the parser will be regenerated and the input parsed again.
 
 <p>Though this demo doesn't show it, the parser generator also has Unicode support, including characters outside the BMP.
 
-<p id=status></p>
+<pre id=status></pre>
+
+<!--
+<fieldset id=choose_grammar>
+<label>Choose a grammar to load:<select>
+ <option>arithmetic grammar
+</select></label>
+</fieldset>
+-->
 
 <fieldset>
-<label>Grammar: <br><textarea readonly id=PEG spellcheck=false></textarea></label>
+<label>Grammar: <br><textarea id=PEG spellcheck=false></textarea></label>
 <label>Input: <br><textarea id=text spellcheck=false></textarea></label>
 <label>Generated parser: <br><textarea readonly id=parser></textarea></label>
 <label>Parse tree: <br><textarea readonly id=parse_tree></textarea></label>
@@ -34,51 +48,70 @@ var inputPEG_el=document.getElementById('PEG')
   , parser_el=document.getElementById('parser')
   , parseTree_el=document.getElementById('parse_tree')
   , status_el=document.getElementById('status')
-  , compilerOpts
+  , ms
+  , the_grammar
+  , the_parser
+  , the_input
+  , sample_input='arith_test_expr'
 
-// TODO: make the grammar textarea live like the input is, and add meaningful error messages
-
-function status(s){status_el.innerHTML+=s+'<br>'}
+// report what we are doing and how long it takes:
+function start(s){status_el.innerHTML+=s+'... ';ms=+new Date}
+function finish(){status_el.innerHTML+=(+new Date-ms)+'ms\n';status_el.scrollTop=status_el.scrollHeight}
 
 function xhr(method,uri,body,callback){var headers,p
-  // instead of a method string, the first argument can be an object with method and headers properties
-  if(typeof method==='object'){headers=method.headers;method=method.method}
-  var x=new XMLHttpRequest()
-  x.onreadystatechange=function(){if (x.readyState==4){callback(x)}}
-  x.open(method,uri,true)
-  if(headers) for(p in headers){x.setRequestHeader(p,headers[p])}
-  x.send(body)}
+ // instead of a method string, the first argument can be an object with method and headers properties
+ if(typeof method==='object'){headers=method.headers;method=method.method}
+ var x=new XMLHttpRequest()
+ x.onreadystatechange=function(){if (x.readyState==4){callback(x)}}
+ x.open(method,uri,true)
+ if(headers) for(p in headers){x.setRequestHeader(p,headers[p])}
+ x.send(body)}
 
-status('fetching grammar file...')
-xhr('GET','../PEG_arith.peg',null,function(x){
- inputPEG_el.value=x.responseText
- status('generating parser...')
+start('fetching grammar file')
+xhr('GET','../PEG_arith.peg',null,function(x){finish();updateParser(x.responseText)})
+
+function updateParser(peg){var result,compilerOpts,parser
+ the_grammar=peg
+ inputPEG_el.value=the_grammar
+ start('generating parser')
  compilerOpts=
  {} // see the API documentation for the available options, here we just accept the defaults
- // since the input is known, we don't expect any error here and use generateParserThrowing() in preference to generateParser()
- parser_el.value=generateParserThrowing(inputPEG_el.value,compilerOpts)
- status('loading the parser...')
- eval(parser_el.value) // here we use eval, but more commonly the generated parser will be written to a file and used many times
- window.Expr=Expr // put Expr, the generated parser, in the global scope
- status('fetching the input file...')
- xhr('GET','arith_test_expr',null,function(x){
-  inputText_el.value=x.responseText
-  status('parsing...')
-  parseTree_el.value=parseAndShowArithExpr(inputText_el.value)
-  status('done')})})
+ result=generateParser(the_grammar,compilerOpts)
+ finish()
+ if(result[0])parser_el.value=result[1]
+ else{parser_el.value='Error: '+result[1];return}
+ start('loading the parser...')
+ eval(parser_el.value) // here we use eval, but more commonly the generated parser will be written to a file and used more than once
+ the_parser=Expr // put Expr, the generated parser, in the outer scope
+ finish()
+ if(inputText_el.value==''){ // if there is no input to parse, then fetch the sample file
+  start('fetching the input file')
+  xhr('GET',sample_input,null,function(x){
+   inputText_el.value=x.responseText
+   finish()
+   updateParseTree()})}
+ else{
+  updateParseTree()}}
 
-function parseAndShowArithExpr(s){var pt
-  pt=Expr(s) // TODO: display parse errors
-  return (pt[0] ? showTree(pt[1],Expr.names) : 'parse error')}
+function updateParseTree(){var result
+ the_input=inputText_el.value
+ start('parsing')
+ result=the_parser(the_input)
+ finish()
+ start('rendering the parser output')
+ parseTree_el.value=showResult(result,the_parser.names,the_input)
+ finish()}
 
-function updateParseTree(){
-  parseTree_el.value=parseAndShowArithExpr(inputText_el.value)}
+function updateIfChanged(){if(the_input!=inputText_el.value) updateParseTree()}
+
+function updateParserIfChanged(){if(the_grammar!=inputPEG_el.value) updateParser(inputPEG_el.value)}
 
 function delay(f,ms){return function(){
-  if(f.pending) clearTimeout(f.pending)
-  f.pending = setTimeout(f,ms)}}
+ if(f.pending) clearTimeout(f.pending)
+ f.pending = setTimeout(f,ms)}}
 
-inputText_el.onkeydown=inputText_el.onkeyup=inputText_el.onclick=delay(updateParseTree,50)
+inputText_el.onkeydown=inputText_el.onkeyup=inputText_el.onclick=delay(updateIfChanged,50)
+inputPEG_el.onkeydown=inputPEG_el.onkeyup=inputPEG_el.onclick=delay(updateParserIfChanged,50)
 inputText_el.focus()
 
 </script>

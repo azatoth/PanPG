@@ -31,7 +31,6 @@ function re_pos_lookahead(re){return [7,re]}
 
 /* the following needs a correctness proof. */
 function re_serialize(re){
- assert(this.CSET)
  return f(re)
  function f(re){return h(re,1)}// wants parens
  function g(re){return h(re,0)}// doesn't

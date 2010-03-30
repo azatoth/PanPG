@@ -1,8 +1,10 @@
 {cfunc:'xyzzy',ciset:'',outfn:'',outct:''
 
 //,cfunc:'test_showEvents'
-,cfunc:'test_showError'
+//,cfunc:'test_showError'
 //,cfunc:'test_showResult'
+
+,cfunc:'generateParser',ciset:'ES5_gen_v6'
 
 //,cfunc:'peg_v5_gen',ciset:'ES5_v6_default_identifier',outfn:'ES5_v6_default_identifier.js',outct:'text/javascript'
 
@@ -140,6 +142,7 @@
                               ,'ES5_v6_default_identifier']
  ,'ES5_test':['file(API.js)']
  ,'ES5_test_small':['small_javascript']
+ ,'ES5_gen_v6':['file(ECMAScript_unified.peg)','emptyOpts']
  ,'scratch':['file(scratch)']
  ,CodePointLit:['CodePointLit']
  ,profile_analyzer:['result(1252281266,ES5_test,ES5_test)']
