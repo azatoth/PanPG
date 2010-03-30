@@ -4,7 +4,7 @@
 //,cfunc:'test_showError'
 //,cfunc:'test_showResult'
 
-,cfunc:'test_streamHandler'
+,cfunc:'test_nodeHandler'
 
 //,cfunc:'generateParser',ciset:'ES5_gen_v6'
 
