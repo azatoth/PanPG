@@ -6,6 +6,8 @@ function peg_v5_gen_tal(s){var pt,hide,force
  return showPTNodeTreeAttrs(pt,hide,force)}
 
 function peg_v5_gen(s,opts){var pt
+return generateParser(s,opts)
+return pp(opts)
  pt=p_PEG_v5_RuleSet(s)[1]
  PEG_codegen_5(pt)
  return pt.code_v5()(opts)}

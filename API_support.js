@@ -62,5 +62,5 @@ function showError(pos,msg,str){var line_number,col,lines,line,start,end,prefix,
  return msg+' at line '+line_number+' column '+col+'\n'+line+'\n'+arrow}
 
 function showResult(r,names,str){
- if(r[0])return showEvents(r[1],names,str)
+ if(r[0])return showTree(r[1],names,str)
  return showError(r[1],r[2],str)}

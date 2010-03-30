@@ -36,7 +36,8 @@ Until this is properly documented, see the [self-describing PEG grammar][PEG.peg
 The following API is used to produce a parser from a PEG.
 To use it, include the file [PEG_generator.js][lib].
 The generated parsers are pure JavaScript and have no dependencies, the library is only required to generate a parser.
-This API is demonstrated in the [arithmetic parser demo][demo].
+In most cases, rather than compiling the parser at the point of use, which is slow and requires the parser generator and its dependencies, the parser will instead be compiled once and then included where it will be used.
+The parser generator API is demonstrated in the [arithmetic parser demo][demo].
 
 [demo]: build/demo.html
 [lib]: build/PEG_generator.js
