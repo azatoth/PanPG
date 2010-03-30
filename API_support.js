@@ -38,11 +38,13 @@ function showTree(a,names,str,state){var i,l,indent,name,x,out=[],output_positio
   }
  if(state_was_passed || state.stack.length) return [out.join(''),state]
  else return out.join('')
- function err(s){return ['showEvents: '+s]}
+ function err(s){return ['showTree: '+s]}
  function show(state,node){var text=''
   if(node.end!=undefined && str){
-   text='"'+str.slice(node.start,node.end)+'"'}
-  return state.indent+node.name+' '+node.start+'-'+(node.end||'?')+' '+text+'\n'}}
+   text=show_str(str.slice(node.start,node.end))}
+  return state.indent+node.name+' '+node.start+'-'+(node.end||'?')+' '+text+'\n'}
+ function show_str(s){
+  return '"'+s.replace(/\n/g,'\\n').replace(/(.{16}).{8,}/,"$1…")+'"'}}
 
 // inspired by: http://gist.github.com/312863
 function showError(pos,msg,str){var line_number,col,lines,line,start,end,prefix,suffix,arrow
