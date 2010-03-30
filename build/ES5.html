@@ -2,29 +2,41 @@
 <title>ECMAScript 5 parser</title>
 
 <style>
-body,html {margin:0;padding:0}
-fieldset {width:100%;border:0;padding:0;margin:0;background:#888;position:relative}
+body,html {margin:0;padding:0;background:#bbb}
+fieldset {width:90%;border:0;padding:0;margin:0;position:relative;left:5%}
 label {display:inline-block;border:2px solid black;width:90%;margin:1em 2%;position:relative;background:#AAA}
 textarea {width:100%;height:24em;border:0}
+h1,p,pre {width:80%;margin:1em auto}
+h1 {margin-bottom:1.5em}
+#status {height:8em;overflow:auto}
 </style>
 
-<script src=../ES5_v5_1.js></script>
+<!-- the parser itself -->
+<script src=../ES5_v6_default.js></script>
+
+<!-- the showResult function to pretty-print the parse tree -->
 <script src=PEG_util.js></script>
 
 <!-- for displaying the raw parse tree with JSON.stringify -->
 <script src=../../compat/json2.js></script>
 
-<h1>ECMAScript 5 Parser 2009-12-14</h1>
+<h1>ECMAScript 5 Parser 2010-03-30</h1>
 
-<p>Updated 2009-12-31 (nicer showTree output, added raw parse tree, added links)</p>
+<p>The <a href=http://boshi.inimino.org/3box/asof/1269629763069/PEG/build/ES5.html>previous version</a> is faster by about 5x on this grammar.
+The reason for the slowdown is the new v6 codegen, which is currently completely unoptimized, unlike the v5 codegen which had some optimizations enabled.
+The benefit of this release is the new output format, which supports streaming, and the new codegen, which, while currently slower, should eventually be much faster than the old.
+See <a href=http://inimino.org/~inimino/blog/peg_readmap>the project roadmap</a> for the details.
+</p>
 
-<p>See the <a href=http://inimino.org/~inimino/blog/peg_first_release>related blog post</a>.
-You may also want to look at the <a href=../ECMAScript_unified.peg>PEG input</a> from which the parser is generated.</p>
+<p>You can also look at the <a href=../ECMAScript_unified.peg>PEG input</a> from which the parser is generated.</p>
 
-<p id=status></p>
+<p>Generating the ES5 parser from the PEG takes about a minute of CPU time, which is why it isn't part of this demo.
+The <a href=demo.html>arithmetic demo</a> includes generating the parser from the (much smaller) grammar.
+
+<pre id=status></pre>
 
 <fieldset>
-<label>Input: <textarea id=text readonly></textarea></label>
+<label>Input: <textarea id=text></textarea></label>
 <label>Parse Tree pretty-printed by showTree(): <textarea id=parse_tree readonly></textarea></label>
 <label>Parse Tree (raw) (see <a href=../doc/parse_tree_representation>documentation</a>): <textarea id=parse_tree_raw readonly></textarea></label>
 </fieldset>
@@ -35,49 +47,50 @@ var inputText_el=document.getElementById('text')
   , parseTree_el=document.getElementById('parse_tree')
   , parseTreeRaw_el=document.getElementById('parse_tree_raw')
   , status_el=document.getElementById('status')
+  , the_input
 
-function status(s){var ms,now
- now=+new Date
- ms=status.prev ? ' '+(now-status.prev)+'ms' : ''
- status.prev=now
- status_el.innerHTML+=ms+'<br>'+s}
+// report what we are doing and how long it takes:
+function start(s){status_el.innerHTML+=s+'... ';ms=+new Date}
+function finish(){status_el.innerHTML+=(+new Date-ms)+'ms\n';status_el.scrollTop=status_el.scrollHeight}
 
 function xhr(method,uri,body,callback){var headers,p
-  if(typeof method==='object'){headers=method.headers;method=method.method}
-  var x=new XMLHttpRequest()
-  x.onreadystatechange=function(){if (x.readyState==4){callback(x)}}
-  x.open(method,uri,true)
-  if(headers) for(p in headers){x.setRequestHeader(p,headers[p])}
-  x.send(body)}
+ if(typeof method==='object'){headers=method.headers;method=method.method}
+ var x=new XMLHttpRequest()
+ x.onreadystatechange=function(){if (x.readyState==4){callback(x)}}
+ x.open(method,uri,true)
+ if(headers) for(p in headers){x.setRequestHeader(p,headers[p])}
+ x.send(body)}
 
-status('fetching input...')
+start('fetching input')
 //xhr('GET','../ES5_v5_1.js',null,function(x){
 xhr('GET','Y.js',null,function(x){
  inputText_el.value=x.responseText
- //inputText_el.value="function f(){return 42}"
- parseAndShow(inputText_el.value)
- status('done')})
+ finish()
+ parseAndShow(inputText_el.value)})
 
-function parseAndShow(s){var pt
-  status('parsing...')
-  pt=p_ES5_v5_Program(s)
-  //return s+'\n\n'+uneval(pt) // TODO: display parse errors
-  if(pt[0]){
-    status('pretty-printing parse tree...')
-    parseTree_el.value=showTree(pt[1],p_ES5_v5_Program.names,s)
-    status('displaying raw parse tree...')
-    parseTreeRaw_el.value=JSON.stringify(pt[1])}
-  else{
-    parseTree_el.value='parse error'}}
+function parseAndShow(s){var result,parser
+ the_input=s
+ parser=p_ES5_v6_default
+ start('parsing')
+ result=parser(s)
+ finish()
+ start('rendering parser output')
+ parseTree_el.value=showResult(result,parser.names,s)
+ finish()
+ if(result[0]){
+  start('displaying raw parse tree')
+  parseTreeRaw_el.value=JSON.stringify(result[1])
+  finish()}}
 
-//function updateParseTree(){
-//  parseTree_el.value=parseAndShow(inputText_el.value)}
+function updateParseTree(){
+ if(the_input==inputText_el.value)return
+ parseAndShow(inputText_el.value)}
 
-//function delay(f,ms){return function(){
-//  if(f.pending) clearTimeout(f.pending)
-//  f.pending = setTimeout(f,ms)}}
+function delay(f,ms){return function(){
+ if(f.pending) clearTimeout(f.pending)
+ f.pending = setTimeout(f,ms)}}
 
-//inputText_el.onkeydown=inputText_el.onkeyup=inputText_el.onclick=delay(updateParseTree,50)
-//inputText_el.focus()
+inputText_el.onkeydown=inputText_el.onkeyup=inputText_el.onclick=delay(updateParseTree,250)
+inputText_el.focus()
 
 </script>
