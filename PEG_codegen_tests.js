@@ -47,13 +47,11 @@ function peg_v6_test_streaming_arith_default(){var s,messages=[],parser,parse=[]
  parser=p_arith_streaming_v6_default_flags_Expr(out)
  chunks.forEach(function(chunk){parser('chunk',chunk)})
  parser('eof')
- tree=treeFromEvents(parse)
  return pp(chunks) + '\n\n'
   + p_arith_streaming_v6_default_flags_Expr.legend + '\n\n'
   + pp(messages) + '\n\n'
   + pp(parse) + '\n\n'
-  + showTree(tree,p_arith_streaming_v6_Expr.names,s) + '\n\n'
-  + showEvents(parse,p_arith_streaming_v6_Expr.names,s)
+  + showTree(parse,p_arith_streaming_v6_Expr.names,s)
  function out(m,x){messages.push(m+' '+x)
   if(m=='tree segment')parse=parse.concat(x)}}
 

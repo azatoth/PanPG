@@ -4,7 +4,9 @@
 //,cfunc:'test_showError'
 //,cfunc:'test_showResult'
 
-,cfunc:'generateParser',ciset:'ES5_gen_v6'
+,cfunc:'test_streamHandler'
+
+//,cfunc:'generateParser',ciset:'ES5_gen_v6'
 
 //,cfunc:'peg_v5_gen',ciset:'ES5_v6_default_identifier',outfn:'ES5_v6_default_identifier.js',outct:'text/javascript'
 
