@@ -44,7 +44,7 @@ function showTree(a,names,str,state){var i,l,indent,name,x,out=[],output_positio
    text=show_str(str.slice(node.start,node.end))}
   return state.indent+node.name+' '+node.start+'-'+(node.end||'?')+' '+text+'\n'}
  function show_str(s){
-  return '"'+s.replace(/\n/g,'\\n').replace(/(.{16}).{8,}/,"$1…")+'"'}}
+  return '"'+s.replace(/\n/g,'\\n').replace(/\r/g,'\\r').replace(/(.{16}).{8,}/,"$1…")+'"'}}
 
 // inspired by: http://gist.github.com/312863
 function showError(pos,msg,str){var line_number,col,lines,line,start,end,prefix,suffix,arrow

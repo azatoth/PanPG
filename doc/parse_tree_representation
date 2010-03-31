@@ -3,10 +3,11 @@ Updated: 2010-03-29 for version 0.0.5
 A successful parse produces an array of integers representing a stream of events.
 This format is documented here.
 
-This format can be processed directly, similarly to how events from a SAX-style parser are handled, or it can be used to construct a parse tree which can be displayed or manipulated as desired.
+This format can be processed directly, or it can be used to construct a parse tree which can be displayed or manipulated as desired.
+Most users will pass the parse result to an API such as showResult or traverseResult, and should never need to know the details documented here.
 
-This format also supports streaming output from streaming parsers, in which case a parse tree node may be opened in one chunk of output and closed in another, later chunk.
-The only difference in the streaming parser case is that the parser will return the output in chunks as a series of arrays, rather than a single array representing the entire parse tree.
+The format supports streaming output from streaming parsers, in which case a parse tree node may be opened in one chunk of output and closed in a later chunk.
+The only difference in the streaming parser case is that the parser will return the output in chunks as a series of arrays, rather than as a single array representing the entire parse tree.
 
 The sequence of integers making up the parse tree format represent three different kinds of events: opening a named node, closing a named node, and anonymous nodes, which are both opened and closed at the same time.
 
