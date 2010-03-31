@@ -1,5 +1,7 @@
 /* PEG → JavaScript parser generator, with its dependencies.
- * See http://inimino.org/~inimino/blog/peg_first_release */
+ * See http://inimino.org/~inimino/blog/peg_v0.0.5
+ * MIT Licensed
+ */
 
 ;(function(exports){
 
@@ -1527,6 +1529,10 @@ function min(a){
 function sum(a){
  return foldl(f,a,0)
  function f(a,b){return a+b}}
+
+function product(a){
+ return foldl(f,a,1)
+ function f(a,b){return a*b}}
 
 /* [[name,value]] → Object */
 function objectFromList(a){var o={}
