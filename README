@@ -119,17 +119,17 @@ The return value is an array, either of the form [true, &lt;parse events>], or [
 The format of the parse event array is described below.
 In the case of a parse error, the <pos> is the position in the input at which parsing failed, and the <error> is a human-readable description of the error.
 Currently this will be empty except in the case of UTF-16 decoding errors.
-Better error reporting is high on the TODO list.
+(Better error reporting should be coming in a future version as a side benefit of the work on commit point analysis.)
 
 ### Parse Tree Format ###
 
 Rather than embedded code which is executed on parser rules, the generated parser simply returns a parse tree which can be processed further as desired.
 When parsing large inputs with a complex grammar, such as when parsing a moderately sized JavaScript library using the ES5 parser, the generated parse tree can be quite large, so the format is designed to be efficient in terms of memory.
-Streaming parsing is in the works, see the [project roadmap] for more on this.
+Streaming parsing is in the works, see the [project roadmap][] for more on this.
 
 [project roadmap]: http://inimino.org/~inimino/blog/peg_roadmap
 
-For complete details on the parse tree format see the [documentation].
+For complete details on the parse tree format see the [documentation][].
 
 [documentation]: doc/parse_tree_representation
 
