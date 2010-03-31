@@ -1,7 +1,7 @@
 function build_PEG_compiler(API_compiling,PEG_codegen_5,PEG_codegen_5_js,PEG_codegen_6_js,TAL_match_js,PEG_v5,re_js,lists_js,cset_prod_js,assert_js){var tree,talProg
  tree=PTNodeTALDict.fnParse(PEG_codegen_5)
  talProg=PTNodeTALDict.fnCompile(tree,{functionName:'PEG_codegen_5'})
- return '/* PEG → JavaScript parser generator, with its dependencies.\n * See http://inimino.org/~inimino/blog/peg_first_release */\n\n'
+ return '/* PEG → JavaScript parser generator, with its dependencies.\n * See http://inimino.org/~inimino/blog/peg_v0.0.5\n * MIT Licensed\n */\n\n'
       + ';(function(exports){\n\n'
       + 'exports.generateParser=generateParser\n'
      // + 'exports.generateParserThrowing=generateParserThrowing\n'
