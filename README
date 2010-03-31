@@ -1,6 +1,6 @@
 ## Introduction ##
 
-This is a PEG parser generator in JavaScript, which generates pure JavaScript packrat parsers from a PEG description of a grammar.
+PanPG is a PEG parser generator in JavaScript, which generates pure JavaScript packrat parsers from a PEG description of a grammar.
 
 There is an API for compiling a parser from a grammar, and some helpful convenience functions for dealing with the parse trees that a parser produces.
 
