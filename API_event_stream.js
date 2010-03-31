@@ -6,7 +6,11 @@ function nodeHandler(dict,names){var p,any,anon,fail,index,cb={},stack=[],frame,
   index=names.indexOf(p)
   if(index==-1) err('rule not found in rule names: '+name)
   cb[index]=dict[p]}
- return function(events,str){var i,l,x,retval
+ return function(result,str){var i,l,x,retval,events
+  if(!result[0]){
+   if(fail) fail(result[1],result[2])
+   return}
+  events=result[1]
   for(i=0,l=events.length;i<l;i++){x=events[i]
    if(x>0){ // named rule start
     stack.push(frame)
