@@ -11,5 +11,5 @@ function test_nodeHandler(){var dict,out=[],res,names,parser,s
   ,Mult:function(_,cn){return product(cn)}
   ,Num:function(m){return parseInt(m.text(),10)}
   }
- nodeHandler(dict,names)(res[1],s)
+ nodeHandler(dict,names)(res,s)
  return out.join('')}

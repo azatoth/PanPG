@@ -87,3 +87,7 @@ cn: the collected return values of the callbacks for the direct children of the 
 For anonymous nodes the only argument is `m`.
 
 For the `fail` callbacks, the arguments are the position in the input and the parse failure message if any.
+
+This is now done.
+There is no fail callback, because the API takes a success result only... but I think that's a mistake.
+It should take the same type the parser returns.
