@@ -1,4 +1,6 @@
-/* Useful functions on PEG parse trees. */
+/* Useful functions on PEG parse trees.
+ * http://inimino.org/~inimino/blog/peg_v0.0.5
+ */
 
 // (event array (can be partial), [name array], [input string], [state]) → [ascii-art tree, state]
 // -or-

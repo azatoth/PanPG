@@ -206,8 +206,11 @@ The following example shows a short JavaScript program, the raw parse tree retur
 
 ## Handling Parse Trees ##
 
+All these functions are contained in [PEG_util.js][].
 The `showTree` function displays a parse tree in ASCII-art form, while `showError` displays an error, with the offending line and column highlighted.
 Rather than using `showTree` or `showError` directly, it is often more convenient to call `showResult`, which takes the output of a parser, which may be either an error or a parse tree, and calls either `showTree` or `showError` as appropriate.
+
+[PEG_util.js]: build/PEG_util.js
 
 ### `showTree(tree, names, string)` ###
 
