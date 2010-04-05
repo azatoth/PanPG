@@ -4,6 +4,11 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
  //opts.asserts=true
  //return pp(named_res)
  //opts=extend({},opts) // we mutate this argument
+ opts.elide=opts.elide||[]
+ opts.drop=opts.drop||[]
+ opts.prefix=opts.prefix||''
+ opts.start=opts.start||named_res[0][0]
+ opts.fname=opts.fname||opts.prefix+opts.start
  opts.S_map=[]
  rules=v6_named_res_to_rules(opts,named_res)
  rules=v6_expr_fixups(opts,rules)
@@ -331,7 +336,7 @@ function v6_expr_apply_flags(opts,expr){var ret={}
 function v6_calculate_flags(opts,rules){var p
  for(p in rules)
   if(p != '_')
-   v6_calculate_flags_expr(rules[p])({})(rules[p].expr)
+   v6_calculate_flags_expr(opts,rules[p])({})(rules[p].expr)
  // special cases for the shadow start rule
  rules._.expr.flags=
   {cache:false
@@ -346,7 +351,7 @@ function v6_calculate_flags(opts,rules){var p
   ,m_tossbuf:false
   ,f_tossbuf:false}}
 
-function v6_calculate_flags_expr(rule){return function loop(parent){return function(expr,i){var ret={},subs_anon_consume=[],sub_can_emit_named=false
+function v6_calculate_flags_expr(opts,rule){return function loop(parent){return function(expr,i){var ret={},subs_anon_consume=[],sub_can_emit_named=false
    function makeAnonEmit(sub){
     sub.emits_anon=true
     sub.flags.pushpos=true
@@ -354,8 +359,10 @@ function v6_calculate_flags_expr(rule){return function loop(parent){return funct
     sub.flags.m_emitlength=true}
    if(isCset(expr.type)){
     expr.anon_consume=true}
-   if(isNamedRef(expr.type)){
-    expr.can_emit_named=true}
+   if(isNamedRef(expr.type))
+    if(opts.elide.indexOf(expr.ref)==-1)
+     expr.can_emit_named=true
+    else expr.anon_consume=true
    ret.cache=!!expr.toplevel
    expr.subexprs.forEach(loop(expr))
    expr.subexprs.forEach(function(sub){
@@ -384,9 +391,9 @@ function v6_calculate_flags_expr(rule){return function loop(parent){return funct
                  || isLookahead(expr.type)
                  || expr.emits_anon
                  || isProperSequence(expr) )
-   ret.t_emitstate=!!expr.toplevel
+   ret.t_emitstate=!!(expr.toplevel&&opts.elide.indexOf(rule.name)==-1)
    ret.m_emitstate=false // used only in streaming
-   ret.m_emitclose=!!expr.toplevel
+   ret.m_emitclose=ret.t_emitstate
    ret.m_emitanon=false // will only be set by parent expression
    ret.m_emitlength=ret.m_emitclose
    ret.m_resetpos=isPositiveLookahead(expr.type)
