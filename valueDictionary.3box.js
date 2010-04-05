@@ -4,17 +4,13 @@
 //,cfunc:'test_showError'
 //,cfunc:'test_showResult'
 
-//,cfunc:'test_nodeHandler'
+//,cfunc:'test_treeWalker'
 
-//,cfunc:'generateParserThrowing',ciset:'PEG.peg_gen_v6',outfn:'parsePEG.js',outct:'text/javascript'
+,cfunc:'generateParserThrowing',ciset:'PEG.peg_gen_v6',outfn:'parsePEG.js',outct:'text/javascript'
 
 //,cfunc:'generateParser2',ciset:'PEG.peg_gen_v6'
 
-//,cfunc:'benchmarkPEGParsers',ciset:'PEG.peg'
-
-//,cfunc:'benchmarkParserGenerator',ciset:'PEG.peg'
-
-,cfunc:'generateParser2',ciset:'ES5_gen_v6'
+//,cfunc:'generateParser',ciset:'ES5_gen_v6'
 
 //,cfunc:'peg_v5_gen',ciset:'ES5_v6_default_identifier',outfn:'ES5_v6_default_identifier.js',outct:'text/javascript'
 
@@ -29,10 +25,7 @@
 
 //,cfunc:'peg_benchmarks_upper_bound'
 
-//,cfunc:'peg_v5_gen',ciset:'arith_streaming_default_flags',outfn:'PEG_arith_streaming_default.js',outct:'text/javascript'
 
-
-//,cfunc:'peg_v5_gen',ciset:'arith_streaming',outfn:'PEG_arith_streaming.js',outct:'text/javascript'
 //,outfn:'scratch',outct:'text/plain'
 //,cfunc:'peg_v6_test_streaming_arith'
 
@@ -45,8 +38,6 @@
 //,cfunc:'PEG_summarize_tal',ciset:'ES5arith'
 //,cfunc:'peg_arith_test',ciset:'arith_expr1'
 
-//,cfunc:'peg_generator',ciset:'peg_generator',outfn:'peg_generated.js',outct:'application/x-javascript'
-
 //,cfunc:'rawFailDump',ciset:'buildFailTree'
 
 //,cfunc:'abc_test',ciset:'test_abc'
@@ -58,33 +49,6 @@
 //,cfunc:'peg_benchmarks_upper_bound'
 //,cfunc:'peg_benchmarks_test_arith_streaming'
 //,cfunc:'peg_benchmarks_array_push'
-
-/**************/
-/* Codegen v5 */
-/**************/
-
-//,cfunc:'cset_to_js_v5_test'
-
-//,cfunc:'peg_v5_gen_tal',ciset:'arith'
-
-//,cfunc:'peg_v5_gen',ciset:'arith_gen_v5',outfn:'PEG_arith_v5.js',outct:'application/x-javascript'
-
-//,cfunc:'peg_v5_gen',ciset:'PEG.peg_gen_v5',outfn:'PEG_v5.js',outct:'application/x-javascript'
-
-//,cfunc:'peg_v5_gen',ciset:'ES5arith_gen_v5',outfn:'PEG_ES5_arith_v5.js',outct:'application/x-javascript'
-
-//,cfunc:'peg_v5_gen',ciset:'ES5_gen_v5_opt',outfn:'ES5_v5_1.js',outct:'application/x-javascript'
-
-//,cfunc:'ES5_test',ciset:'ES5_test'
-
-//,cfunc:'PEG_ES5_arith_Expr_test',ciset:'PEG_ES5_arith_Expr_test'
-
-//,cfunc:'peg_benchmarks',ciset:'PEG.peg'
-//,cfunc:'peg_benchmarks',ciset:'CodePointLit'
-//,cfunc:'peg_benchmarks_re_vs_loop',ciset:'PEG.peg'
-//,cfunc:'peg_benchmarks_fcall_vs_loop'
-
-//,cfunc:'peg_profile_analyzer',ciset:'profile_analyzer'
 
 /**************/
 /* v6 codegen */

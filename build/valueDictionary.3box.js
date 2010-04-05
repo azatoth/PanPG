@@ -4,16 +4,13 @@
 
 ,isets:
  {build:['file(../API_compiling.js)'
-        ,'file(../PEG_codegen_5)'
-        ,'file(../PEG_codegen_5.js)'
+        ,'file(../PEG_codegen_6_attr.js)'
         ,'file(../PEG_codegen_6.js)'
-        ,'file(../../TAL/match.js)'
-        ,'file(../PEG_v5.js)'
+        ,'file(../parsePEG.js)'
         ,'file(../re.js)'
         ,'file(../../3box/lists.js)'
         ,'file(../cset_prod.js)'
         ,'file(../../3box/assert.js)'
-        //,'file(../PTNode.js)'
         ]
  ,support:['file(../API_support.js)']
  }
