@@ -12,5 +12,5 @@ return showResult(result,names,s)
   ,Mult:function(_,cn){return product(cn)}
   ,Num:function(m){return parseInt(m.text(),10)}
   }
- nodeHandler(dict,names)(result,s)
+ walkTree(dict,names)(result,s)
  return out.join('')}

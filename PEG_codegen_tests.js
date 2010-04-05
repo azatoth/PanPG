@@ -12,6 +12,19 @@ return pp(opts)
  PEG_codegen_5(pt)
  return pt.code_v5()(opts)}
 
+function benchmarkPEGParsers(peg){var out=[],ms
+ ms=2000
+ out.push(simple(function(){p_PEG_v5_RuleSet(peg)},ms,'v5'))
+ out.push(simple(function(){parsePEG(peg)},ms,'v6'))
+ return out.join('\n')}
+
+function benchmarkParserGenerator(peg){var out=[],ms,opts
+ ms=8000
+ opts={start:'RuleSet'}
+ out.push(simple(function(){generateParser(peg,opts)},ms,'old'))
+ out.push(simple(function(){generateParser2(peg,opts)},ms,'new'))
+ return out.join('\n')}
+
 function peg_arith_test(s){var pt,pt2
  pt=tree(p_Expr,s)[1]
  pt2=p_arith_Expr(s)[1]
