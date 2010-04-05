@@ -90,7 +90,7 @@ CodePointFrom:transparent,
 CodePointTo:transparent
 
 }
- warnings=walkTree(dict,names)(tree,s)
+ warnings=treeWalker(dict,names)(tree,s)
  return ret
  return pp(ret)+'\n\n'+pp(warnings.slice(0,8))+'\n\n'+st
  function transparent(_,cn){return cn[0]}

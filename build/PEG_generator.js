@@ -6,1285 +6,121 @@
 ;(function(exports){
 
 exports.generateParser=generateParser
+exports.generateParserThrowing=generateParserThrowing
 
-function generateParser(peg,opts){var pt
+function generateParser(peg,opts){var pt,named_res
  pt=parsePEG(peg)
  if(!pt[0])return pt
- pt=pt[1]
- PEG_codegen_5(pt)
- opts=opts||{}
- opts.codegen=opts.codegen||"v6"
- try{return [true,pt.code_v5()(opts)]}
- catch(e){return [false,e.toString()]}}
+ named_res=v6_named_res(pt,parsePEG.names,peg)
+ try{return [1,codegen_v6(opts||{},named_res)]}
+ catch(e){return [0,e.toString()]}}
 
 function generateParserThrowing(peg,opts){var x
  x=generateParser(peg,opts)
  if(!x[0])throw new Error(x[1])
  return x[1]}
 
-// lower-level functions
-
-function parsePEG(peg){var pt
- peg=peg.replace(/^[\n\r]+|[\n\r]+$/g,'') // TODO: regenerate the PEG parser and fix this
- pt=p_PEG_v5_RuleSet(peg)
- if(!pt[0])return [false,showError(pt[1][0].RuleSet[1],"Parsing PEG input failed",peg)]
- return pt}
-
 function patchPEG(original,patch){}
 
- /* PEG_v5 */ 
+ /* parsePEG.js */ 
 
-function p_PEG_v5_RuleSet(str){
- var tbl=[],pos=0,l=str.length+1;while(l--)tbl.push({});l=str.length
- function PropSpec(a){var x,c,p=pos;if(x=tbl[p]['PropSpec']){pos=x[1];a.push([p,'PropSpec']);return 1}if(x==false)return 0;c=[];return fin(c,p,'PropSpec',_PropSpec(c),a)}
- function BinaryUnicodeProperty(a){var x,c,p=pos;if(x=tbl[p]['BinaryUnicodeProperty']){pos=x[1];a.push([p,'BinaryUnicodeProperty']);return 1}if(x==false)return 0;c=[];return fin(c,p,'BinaryUnicodeProperty',_BinaryUnicodeProperty(c),a)}
- function UnicodeProperty(a){var x,c,p=pos;if(x=tbl[p]['UnicodeProperty']){pos=x[1];a.push([p,'UnicodeProperty']);return 1}if(x==false)return 0;c=[];return fin(c,p,'UnicodeProperty',_UnicodeProperty(c),a)}
- function PropVal(a){var x,c,p=pos;if(x=tbl[p]['PropVal']){pos=x[1];a.push([p,'PropVal']);return 1}if(x==false)return 0;c=[];return fin(c,p,'PropVal',_PropVal(c),a)}
- function ScriptOrCatPropVal(a){var x,c,p=pos;if(x=tbl[p]['ScriptOrCatPropVal']){pos=x[1];a.push([p,'ScriptOrCatPropVal']);return 1}if(x==false)return 0;c=[];return fin(c,p,'ScriptOrCatPropVal',_ScriptOrCatPropVal(c),a)}
- function UPlusCodePoint(a){var x,c,p=pos;if(x=tbl[p]['UPlusCodePoint']){pos=x[1];a.push([p,'UPlusCodePoint']);return 1}if(x==false)return 0;c=[];return fin(c,p,'UPlusCodePoint',_UPlusCodePoint(c),a)}
- function PositiveSpec(a){var x,c,p=pos;if(x=tbl[p]['PositiveSpec']){pos=x[1];a.push([p,'PositiveSpec']);return 1}if(x==false)return 0;c=[];return fin(c,p,'PositiveSpec',_PositiveSpec(c),a)}
- function NegativeSpec(a){var x,c,p=pos;if(x=tbl[p]['NegativeSpec']){pos=x[1];a.push([p,'NegativeSpec']);return 1}if(x==false)return 0;c=[];return fin(c,p,'NegativeSpec',_NegativeSpec(c),a)}
- function CodePoint(a){var x,c,p=pos;if(x=tbl[p]['CodePoint']){pos=x[1];a.push([p,'CodePoint']);return 1}if(x==false)return 0;c=[];return fin(c,p,'CodePoint',_CodePoint(c),a)}
- function CodePointLit(a){var x,c,p=pos;if(x=tbl[p]['CodePointLit']){pos=x[1];a.push([p,'CodePointLit']);return 1}if(x==false)return 0;c=[];return fin(c,p,'CodePointLit',_CodePointLit(c),a)}
- function CodePointFrom(a){var x,c,p=pos;if(x=tbl[p]['CodePointFrom']){pos=x[1];a.push([p,'CodePointFrom']);return 1}if(x==false)return 0;c=[];return fin(c,p,'CodePointFrom',_CodePointFrom(c),a)}
- function CodePointTo(a){var x,c,p=pos;if(x=tbl[p]['CodePointTo']){pos=x[1];a.push([p,'CodePointTo']);return 1}if(x==false)return 0;c=[];return fin(c,p,'CodePointTo',_CodePointTo(c),a)}
- function CodePointRange(a){var x,c,p=pos;if(x=tbl[p]['CodePointRange']){pos=x[1];a.push([p,'CodePointRange']);return 1}if(x==false)return 0;c=[];return fin(c,p,'CodePointRange',_CodePointRange(c),a)}
- function UnicodePropSpec(a){var x,c,p=pos;if(x=tbl[p]['UnicodePropSpec']){pos=x[1];a.push([p,'UnicodePropSpec']);return 1}if(x==false)return 0;c=[];return fin(c,p,'UnicodePropSpec',_UnicodePropSpec(c),a)}
- function CodePointExpr(a){var x,c,p=pos;if(x=tbl[p]['CodePointExpr']){pos=x[1];a.push([p,'CodePointExpr']);return 1}if(x==false)return 0;c=[];return fin(c,p,'CodePointExpr',_CodePointExpr(c),a)}
- function CharSetUnion(a){var x,c,p=pos;if(x=tbl[p]['CharSetUnion']){pos=x[1];a.push([p,'CharSetUnion']);return 1}if(x==false)return 0;c=[];return fin(c,p,'CharSetUnion',_CharSetUnion(c),a)}
- function CharSetIntersection(a){var x,c,p=pos;if(x=tbl[p]['CharSetIntersection']){pos=x[1];a.push([p,'CharSetIntersection']);return 1}if(x==false)return 0;c=[];return fin(c,p,'CharSetIntersection',_CharSetIntersection(c),a)}
- function HEXDIG(a){var x,c,p=pos;if(x=tbl[p]['HEXDIG']){pos=x[1];a.push([p,'HEXDIG']);return 1}if(x==false)return 0;c=[];return fin(c,p,'HEXDIG',_HEXDIG(c),a)}
- function CharSetDifference(a){var x,c,p=pos;if(x=tbl[p]['CharSetDifference']){pos=x[1];a.push([p,'CharSetDifference']);return 1}if(x==false)return 0;c=[];return fin(c,p,'CharSetDifference',_CharSetDifference(c),a)}
- function CharEscape(a){var x,c,p=pos;if(x=tbl[p]['CharEscape']){pos=x[1];a.push([p,'CharEscape']);return 1}if(x==false)return 0;c=[];return fin(c,p,'CharEscape',_CharEscape(c),a)}
- function CharSetExpr(a){var x,c,p=pos;if(x=tbl[p]['CharSetExpr']){pos=x[1];a.push([p,'CharSetExpr']);return 1}if(x==false)return 0;c=[];return fin(c,p,'CharSetExpr',_CharSetExpr(c),a)}
- function StrLit(a){var x,c,p=pos;if(x=tbl[p]['StrLit']){pos=x[1];a.push([p,'StrLit']);return 1}if(x==false)return 0;c=[];return fin(c,p,'StrLit',_StrLit(c),a)}
- function CharSet(a){var x,c,p=pos;if(x=tbl[p]['CharSet']){pos=x[1];a.push([p,'CharSet']);return 1}if(x==false)return 0;c=[];return fin(c,p,'CharSet',_CharSet(c),a)}
- function PosCharSet(a){var x,c,p=pos;if(x=tbl[p]['PosCharSet']){pos=x[1];a.push([p,'PosCharSet']);return 1}if(x==false)return 0;c=[];return fin(c,p,'PosCharSet',_PosCharSet(c),a)}
- function NegCharSet(a){var x,c,p=pos;if(x=tbl[p]['NegCharSet']){pos=x[1];a.push([p,'NegCharSet']);return 1}if(x==false)return 0;c=[];return fin(c,p,'NegCharSet',_NegCharSet(c),a)}
- function Empty(a){var x,c,p=pos;if(x=tbl[p]['Empty']){pos=x[1];a.push([p,'Empty']);return 1}if(x==false)return 0;c=[];return fin(c,p,'Empty',_Empty(c),a)}
- function AtomicExpr(a){var x,c,p=pos;if(x=tbl[p]['AtomicExpr']){pos=x[1];a.push([p,'AtomicExpr']);return 1}if(x==false)return 0;c=[];return fin(c,p,'AtomicExpr',_AtomicExpr(c),a)}
- function ParenthExpr(a){var x,c,p=pos;if(x=tbl[p]['ParenthExpr']){pos=x[1];a.push([p,'ParenthExpr']);return 1}if(x==false)return 0;c=[];return fin(c,p,'ParenthExpr',_ParenthExpr(c),a)}
- function Replicand(a){var x,c,p=pos;if(x=tbl[p]['Replicand']){pos=x[1];a.push([p,'Replicand']);return 1}if(x==false)return 0;c=[];return fin(c,p,'Replicand',_Replicand(c),a)}
- function N(a){var x,c,p=pos;if(x=tbl[p]['N']){pos=x[1];a.push([p,'N']);return 1}if(x==false)return 0;c=[];return fin(c,p,'N',_N(c),a)}
- function M(a){var x,c,p=pos;if(x=tbl[p]['M']){pos=x[1];a.push([p,'M']);return 1}if(x==false)return 0;c=[];return fin(c,p,'M',_M(c),a)}
- function Optional(a){var x,c,p=pos;if(x=tbl[p]['Optional']){pos=x[1];a.push([p,'Optional']);return 1}if(x==false)return 0;c=[];return fin(c,p,'Optional',_Optional(c),a)}
- function MNRep(a){var x,c,p=pos;if(x=tbl[p]['MNRep']){pos=x[1];a.push([p,'MNRep']);return 1}if(x==false)return 0;c=[];return fin(c,p,'MNRep',_MNRep(c),a)}
- function PosRep(a){var x,c,p=pos;if(x=tbl[p]['PosRep']){pos=x[1];a.push([p,'PosRep']);return 1}if(x==false)return 0;c=[];return fin(c,p,'PosRep',_PosRep(c),a)}
- function AnyRep(a){var x,c,p=pos;if(x=tbl[p]['AnyRep']){pos=x[1];a.push([p,'AnyRep']);return 1}if(x==false)return 0;c=[];return fin(c,p,'AnyRep',_AnyRep(c),a)}
- function SeqUnit(a){var x,c,p=pos;if(x=tbl[p]['SeqUnit']){pos=x[1];a.push([p,'SeqUnit']);return 1}if(x==false)return 0;c=[];return fin(c,p,'SeqUnit',_SeqUnit(c),a)}
- function Sequence(a){var x,c,p=pos;if(x=tbl[p]['Sequence']){pos=x[1];a.push([p,'Sequence']);return 1}if(x==false)return 0;c=[];return fin(c,p,'Sequence',_Sequence(c),a)}
- function IdentChar(a){var x,c,p=pos;if(x=tbl[p]['IdentChar']){pos=x[1];a.push([p,'IdentChar']);return 1}if(x==false)return 0;c=[];return fin(c,p,'IdentChar',_IdentChar(c),a)}
- function IdentStartChar(a){var x,c,p=pos;if(x=tbl[p]['IdentStartChar']){pos=x[1];a.push([p,'IdentStartChar']);return 1}if(x==false)return 0;c=[];return fin(c,p,'IdentStartChar',_IdentStartChar(c),a)}
- function OrdChoice(a){var x,c,p=pos;if(x=tbl[p]['OrdChoice']){pos=x[1];a.push([p,'OrdChoice']);return 1}if(x==false)return 0;c=[];return fin(c,p,'OrdChoice',_OrdChoice(c),a)}
- function S(a){var x,c,p=pos;if(x=tbl[p]['S']){pos=x[1];a.push([p,'S']);return 1}if(x==false)return 0;c=[];return fin(c,p,'S',_S(c),a)}
- function SpaceAtom(a){var x,c,p=pos;if(x=tbl[p]['SpaceAtom']){pos=x[1];a.push([p,'SpaceAtom']);return 1}if(x==false)return 0;c=[];return fin(c,p,'SpaceAtom',_SpaceAtom(c),a)}
- function LB(a){var x,c,p=pos;if(x=tbl[p]['LB']){pos=x[1];a.push([p,'LB']);return 1}if(x==false)return 0;c=[];return fin(c,p,'LB',_LB(c),a)}
- function NonTerminal(a){var x,c,p=pos;if(x=tbl[p]['NonTerminal']){pos=x[1];a.push([p,'NonTerminal']);return 1}if(x==false)return 0;c=[];return fin(c,p,'NonTerminal',_NonTerminal(c),a)}
- function Comment(a){var x,c,p=pos;if(x=tbl[p]['Comment']){pos=x[1];a.push([p,'Comment']);return 1}if(x==false)return 0;c=[];return fin(c,p,'Comment',_Comment(c),a)}
- function Rule(a){var x,c,p=pos;if(x=tbl[p]['Rule']){pos=x[1];a.push([p,'Rule']);return 1}if(x==false)return 0;c=[];return fin(c,p,'Rule',_Rule(c),a)}
- function RuleSet(a){var x,c,p=pos;if(x=tbl[p]['RuleSet']){pos=x[1];a.push([p,'RuleSet']);return 1}if(x==false)return 0;c=[];return fin(c,p,'RuleSet',_RuleSet(c),a)}
- function PosLookahead(a){var x,c,p=pos;if(x=tbl[p]['PosLookahead']){pos=x[1];a.push([p,'PosLookahead']);return 1}if(x==false)return 0;c=[];return fin(c,p,'PosLookahead',_PosLookahead(c),a)}
- function NegLookahead(a){var x,c,p=pos;if(x=tbl[p]['NegLookahead']){pos=x[1];a.push([p,'NegLookahead']);return 1}if(x==false)return 0;c=[];return fin(c,p,'NegLookahead',_NegLookahead(c),a)}
- var _PropSpec=o(BinaryUnicodeProperty,q(UnicodeProperty,o(sl_0,sl_1),PropVal),q(ScriptOrCatPropVal,r(0,0,q(sl_2,ScriptOrCatPropVal))))
- var _BinaryUnicodeProperty=UnicodeProperty
- var _UnicodeProperty=r(1,0,cs_0)
- var _PropVal=r(1,0,cs_1)
- var _ScriptOrCatPropVal=r(1,0,cs_2)
- var _UPlusCodePoint=q(sl_3,r(4,6,HEXDIG))
- var _PositiveSpec=q(sl_4,PropSpec,sl_5)
- var _NegativeSpec=q(sl_6,PropSpec,sl_7)
- var _CodePoint=o(UPlusCodePoint,CodePointLit)
- var _CodePointLit=cs_3
- var _CodePointFrom=CodePoint
- var _CodePointTo=CodePoint
- var _CodePointRange=q(CodePointFrom,sl_8,CodePointTo)
- var _UnicodePropSpec=o(PositiveSpec,NegativeSpec)
- var _CodePointExpr=o(UnicodePropSpec,CodePointRange,CodePoint)
- var _CharSetUnion=r(1,0,q(CodePointExpr,r(0,1,S)))
- var _CharSetIntersection=q(CharSetUnion,r(0,0,q(r(0,1,S),sl_9,r(0,1,S),CharSetUnion)))
- var _HEXDIG=cs_4
- var _CharSetDifference=q(CharSetIntersection,r(0,0,q(r(0,1,S),cs_5,r(0,1,S),CharSetIntersection)))
- var _CharEscape=o(q(cs_6,r(4,4,HEXDIG)),q(cs_7,cs_8))
- var _CharSetExpr=q(CharSetDifference,r(0,1,S))
- var _StrLit=q(cs_9,r(0,0,o(CharEscape,cs_10)),cs_11)
- var _CharSet=o(NegCharSet,PosCharSet)
- var _PosCharSet=q(sl_10,r(0,1,S),o(CharSetExpr,e),sl_11)
- var _NegCharSet=q(sl_12,r(0,1,S),o(CharSetExpr,e),sl_13)
- var _Empty=sl_14
- var _AtomicExpr=o(Empty,CharSet,NonTerminal,StrLit)
- var _ParenthExpr=q(sl_15,OrdChoice,sl_16)
- var _Replicand=o(ParenthExpr,AtomicExpr)
- var _N=r(0,0,cs_12)
- var _M=r(0,0,cs_13)
- var _Optional=q(Replicand,sl_17)
- var _MNRep=q(Replicand,sl_18,M,r(0,1,q(sl_19,N)),sl_20)
- var _PosRep=q(Replicand,sl_21)
- var _AnyRep=q(Replicand,sl_22)
- var _SeqUnit=o(AnyRep,PosRep,MNRep,Optional,ParenthExpr,PosLookahead,NegLookahead,AtomicExpr)
- var _Sequence=r(1,0,q(SeqUnit,r(0,1,S)))
- var _IdentChar=cs_14
- var _IdentStartChar=cs_15
- var _OrdChoice=q(r(0,1,S),Sequence,r(0,1,S),r(0,0,q(sl_23,r(0,1,S),Sequence,r(0,1,S))))
- var _S=r(1,0,SpaceAtom)
- var _SpaceAtom=o(sl_24,q(LB,sl_25))
- var _LB=o(q(cs_16,cs_17),cs_18)
- var _NonTerminal=q(IdentStartChar,r(0,0,IdentChar))
- var _Comment=q(sl_26,r(0,0,cs_19))
- var _Rule=q(NonTerminal,S,sl_27,S,OrdChoice)
- var _RuleSet=o(q(o(Comment,Rule),r(0,0,q(r(1,0,LB),o(Comment,Rule)))),e)
- var _PosLookahead=q(sl_28,OrdChoice,sl_29)
- var _NegLookahead=q(sl_30,OrdChoice,sl_31)
- function cs_0(){var c,x;if(pos==l)return false;c=g();x=c<65?c<33?c<32?0:1:c<45?0:c<46?1:0:c<96?c<91?1:c<95?0:1:c<97?0:c<123?1:0;if(x){pos++;return true}return false}
- function cs_1(){var c,x;if(pos==l)return false;c=g();x=c<65?c<33?c<32?0:1:c<45?0:c<46?1:0:c<96?c<91?1:c<95?0:1:c<97?0:c<123?1:0;if(x){pos++;return true}return false}
- function cs_2(){var c,x;if(pos==l)return false;c=g();x=c<65?c<33?c<32?0:1:c<45?0:c<46?1:0:c<96?c<91?1:c<95?0:1:c<97?0:c<123?1:0;if(x){pos++;return true}return false}
- function cs_3(){var c,x;if(pos==l)return false;c=g();x=c<6159?c<94?c<32?c<0?0:1:c<33?0:c<93?1:0:c<5760?c<160?1:c<161?0:1:c<5761?0:c<6158?1:0:c<8287?c<8203?c<8192?1:0:c<8239?1:c<8240?0:1:c<8723?c<8288?0:c<8722?1:0:c<12288?1:c<12289?0:1;if(x){pos++;return true}return false}
- function cs_4(){var c,x;if(pos==l)return false;c=g();x=c<58?c<48?0:1:c<65?0:c<71?1:0;if(x){pos++;return true}return false}
- function cs_5(){var c,x;if(pos==l)return false;c=g();x=c<8722?0:c<8723?1:0;if(x){pos++;return true}return false}
- function cs_6(){var c,x;if(pos==l)return false;c=g();x=c<92?0:c<93?1:0;if(x){pos++;return true}return false}
- function cs_7(){var c,x;if(pos==l)return false;c=g();x=c<92?0:c<93?1:0;if(x){pos++;return true}return false}
- function cs_8(){var c,x;if(pos==l)return false;c=g();x=c<114?c<103?c<102?0:1:c<110?0:c<111?1:0:c<117?c<115?1:c<116?0:1:c<118?0:c<119?1:0;if(x){pos++;return true}return false}
- function cs_9(){var c,x;if(pos==l)return false;c=g();x=c<34?0:c<35?1:0;if(x){pos++;return true}return false}
- function cs_10(){var c,x;if(pos==l)return false;c=g();x=c<35?c<0?0:c<34?1:0:c<92?1:c<93?0:1;if(x){pos++;return true}return false}
- function cs_11(){var c,x;if(pos==l)return false;c=g();x=c<34?0:c<35?1:0;if(x){pos++;return true}return false}
- function cs_12(){var c,x;if(pos==l)return false;c=g();x=c<48?0:c<58?1:0;if(x){pos++;return true}return false}
- function cs_13(){var c,x;if(pos==l)return false;c=g();x=c<48?0:c<58?1:0;if(x){pos++;return true}return false}
- function cs_14(){var c,x;if(pos==l)return false;c=g();x=c<91?c<58?c<48?0:1:c<65?0:1:c<96?c<95?0:1:c<97?0:c<123?1:0;if(x){pos++;return true}return false}
- function cs_15(){var c,x;if(pos==l)return false;c=g();x=c<65?0:c<91?1:0;if(x){pos++;return true}return false}
- function cs_16(){var c,x;if(pos==l)return false;c=g();x=c<13?0:c<14?1:0;if(x){pos++;return true}return false}
- function cs_17(){var c,x;if(pos==l)return false;c=g();x=c<10?0:c<11?1:0;if(x){pos++;return true}return false}
- function cs_18(){var c,x;if(pos==l)return false;c=g();x=c<11?c<10?0:1:c<13?0:c<14?1:0;if(x){pos++;return true}return false}
- function cs_19(){var c,x;if(pos==l)return false;c=g();x=c<11?c<0?0:c<10?1:0:c<13?1:c<14?0:1;if(x){pos++;return true}return false}
- function sl_0(){var p=pos;if(str.charCodeAt(p)==61){pos+=1;return true}return false}
- function sl_1(){var p=pos;if(str.charCodeAt(p)==8800){pos+=1;return true}return false}
- function sl_2(){var p=pos;if(str.charCodeAt(p)==124){pos+=1;return true}return false}
- function sl_3(){var p=pos;if(str.charCodeAt(p++)==85&&str.charCodeAt(p)==43){pos+=2;return true}return false}
- function sl_4(){var p=pos;if(str.charCodeAt(p++)==91&&str.charCodeAt(p)==58){pos+=2;return true}return false}
- function sl_5(){var p=pos;if(str.charCodeAt(p++)==58&&str.charCodeAt(p)==93){pos+=2;return true}return false}
- function sl_6(){var p=pos;if(str.charCodeAt(p++)==91&&str.charCodeAt(p++)==58&&str.charCodeAt(p)==94){pos+=3;return true}return false}
- function sl_7(){var p=pos;if(str.charCodeAt(p++)==58&&str.charCodeAt(p)==93){pos+=2;return true}return false}
- function sl_8(){var p=pos;if(str.charCodeAt(p)==45){pos+=1;return true}return false}
- function sl_9(){var p=pos;if(str.charCodeAt(p)==8745){pos+=1;return true}return false}
- function sl_10(){var p=pos;if(str.charCodeAt(p)==91){pos+=1;return true}return false}
- function sl_11(){var p=pos;if(str.charCodeAt(p)==93){pos+=1;return true}return false}
- function sl_12(){var p=pos;if(str.charCodeAt(p++)==91&&str.charCodeAt(p)==94){pos+=2;return true}return false}
- function sl_13(){var p=pos;if(str.charCodeAt(p)==93){pos+=1;return true}return false}
- function sl_14(){var p=pos;if(str.charCodeAt(p)==1013){pos+=1;return true}return false}
- function sl_15(){var p=pos;if(str.charCodeAt(p)==40){pos+=1;return true}return false}
- function sl_16(){var p=pos;if(str.charCodeAt(p)==41){pos+=1;return true}return false}
- function sl_17(){var p=pos;if(str.charCodeAt(p)==63){pos+=1;return true}return false}
- function sl_18(){var p=pos;if(str.charCodeAt(p)==123){pos+=1;return true}return false}
- function sl_19(){var p=pos;if(str.charCodeAt(p)==44){pos+=1;return true}return false}
- function sl_20(){var p=pos;if(str.charCodeAt(p)==125){pos+=1;return true}return false}
- function sl_21(){var p=pos;if(str.charCodeAt(p)==43){pos+=1;return true}return false}
- function sl_22(){var p=pos;if(str.charCodeAt(p)==42){pos+=1;return true}return false}
- function sl_23(){var p=pos;if(str.charCodeAt(p)==47){pos+=1;return true}return false}
- function sl_24(){var p=pos;if(str.charCodeAt(p)==32){pos+=1;return true}return false}
- function sl_25(){var p=pos;if(str.charCodeAt(p)==32){pos+=1;return true}return false}
- function sl_26(){var p=pos;if(str.charCodeAt(p)==59){pos+=1;return true}return false}
- function sl_27(){var p=pos;if(str.charCodeAt(p)==8592){pos+=1;return true}return false}
- function sl_28(){var p=pos;if(str.charCodeAt(p++)==38&&str.charCodeAt(p)==40){pos+=2;return true}return false}
- function sl_29(){var p=pos;if(str.charCodeAt(p)==41){pos+=1;return true}return false}
- function sl_30(){var p=pos;if(str.charCodeAt(p++)==33&&str.charCodeAt(p)==40){pos+=2;return true}return false}
- function sl_31(){var p=pos;if(str.charCodeAt(p)==41){pos+=1;return true}return false}
- function fin(c,p,n,r,a){if(r)a.push([p,n]);tbl[p][n]=r?[true,pos,c]:false;return r}
- function e(){return true}
- function o(){var args=arguments;return function(c){var i,l;for(i=0,l=args.length;i<l;i++)if(args[i](c))return true;return false}}
- function q(){var args=arguments;return function(c){var i,l,cp=pos,cl=c.length;for(i=0,l=args.length;i<l;i++)if(!args[i](c)){pos=cp;t(c,cl);return false}return true}}
- function r(m,n,f){return function(c){var i=0,cp=pos,cl=c.length;while(i<m){i++;if(!f(c)){pos=cp;t(c,cl);return false}}cl=c.length;while(i++<n||n==0)if(!f(c))return true;return true}}
- function n(f){return function(){var p=pos,x=f([]);pos=p;return !x}}
- function p(f){return function(){var p=pos,x=f([]);pos=p;return x}}
- function t(a,n){while(a.length>n)a.pop()}
- function g(){var c=str.charCodeAt(pos);return c}
- function b(p,n){var i,l,x=tbl[p][n],c=x[2],o={name:n,start:p,end:x[1],cn:[],_str:str};for(i=0,l=c.length;i<l;i++){o.cn.push(b(c[i][0],c[i][1]))}return o}
- return RuleSet([])&&pos==l?[true,b(0,'RuleSet')]:[false,tbl]}
+parsePEG.names=['','PropSpec','BinaryUnicodeProperty','UnicodeProperty','PropVal','ScriptOrCatPropVal','UPlusCodePoint','PositiveSpec','NegativeSpec','CodePoint','CodePointLit','CodePointFrom','CodePointTo','CodePointRange','UnicodePropSpec','CodePointExpr','CharSetUnion','CharSetIntersection','HEXDIG','CharSetDifference','CharEscape','CharSetExpr','StrLit','CharSet','PosCharSet','NegCharSet','Empty','AtomicExpr','ParenthExpr','Replicand','N','M','Optional','MNRep','PosRep','AnyRep','SeqUnit','Sequence','IdentChar','IdentStartChar','OrdChoice','S','SpaceAtom','LB','NonTerminal','Comment','Rule','RuleSet','PosLookahead','NegLookahead','_'];
+function parsePEG(out){var eof=false,s='',l=0,S=204800,T,M,F,R,tbl=[],x,pos=0,offset=0,buf=[],bufs=[],states=[],posns=[],c;
+T=[,860160,917504,924166,940550,956934,1034758,834246,973510,1019904,1097728,1015808,1101824,1003520,819200,802816,756230,708608,1093632,663552,1163264,647168,1138688,593920,1106116,608966,589824,569344,557252,544768,1265664,1257472,1273856,1220608,1212416,536576,499712,453126,319488,315392,381124,326150,339968,360448,303104,270336,282624,208896,1282244,1290436,1298432,215558,217088,221184,187055,191151,236038,240326,241664,178695,249856,178695,258048,187055,191151,322,323,278528,324,182959,170503,325,170503,166575,162311,311296,158215,326,327,327680,174599,335872,174599,344064,328,352256,178695,328,367110,368640,329,330,331,385024,170503,322,154287,401408,170503,322,416262,417988,332,425984,170503,322,154287,442368,170503,322,457222,458752,150191,466944,170503,322,481798,483328,150191,491520,170503,322,503808,146095,141999,137903,133807,117423,199343,203439,113327,121519,333,548864,117423,113327,334,166575,335,573440,109231,96943,182959,92847,336,598016,105135,101039,610304,337,338,622592,170503,322,634880,88751,322,339,80559,655360,170503,322,72367,674310,676036,679936,170503,322,340,696320,170503,322,72367,68271,719366,721092,724992,170503,322,341,741376,170503,322,68271,760326,761856,64175,770048,170503,322,784902,786432,64175,794624,170503,322,806912,60079,55983,39599,823296,31407,35503,835584,337,342,6831,851968,342,339,864256,10927,872448,15023,880640,343,344,19119,897024,23215,907782,909508,345,23215,15023,925696,346,933888,346,942080,346,950272,346,958464,346,966656,346,974848,337,342,338,6831,995328,342,339,47791,347,51887,39599,1024000,27311,43695,1036288,348,349,1048576,76295,76295,76295,76295,1071622,1073152,76295,1081344,76295,322,322,350,351,39599,337,1114112,170503,322,1126400,88751,322,339,352,1146880,1150976,84655,353,352,1169926,1171456,354,1179648,76295,76295,76295,76295,322,1204224,354,355,121519,349,121519,356,129711,1239558,1241284,357,125615,322,358,1261568,359,1269760,359,121519,360,361,150191,362,150191,195247,1306624,363]
+M=[,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,229376,320,320,320,236038,253952,245760,320,249856,320,320,320,320,274432,320,278528,286916,291012,295108,299008,320,307200,320,311296,320,320,320,331776,320,335872,320,320,320,356352,320,320,320,372736,320,320,393216,320,320,397508,409600,320,320,320,416262,422084,434176,320,320,438468,320,320,320,320,475136,463044,320,320,320,320,481798,487620,320,320,320,320,320,320,320,320,320,320,320,320,540868,320,320,320,320,561152,565444,320,320,320,320,320,320,320,320,320,320,618692,614400,320,630784,320,320,643268,320,320,320,651460,320,320,320,667648,320,674310,688324,320,320,692420,704512,320,320,320,712704,320,719366,733380,320,320,737476,749568,320,320,320,320,778240,766148,320,320,320,320,784902,790724,320,320,320,320,320,320,320,320,320,320,843776,839680,320,850630,320,856064,320,320,320,320,876740,888832,320,320,320,320,901120,320,907782,913408,320,320,320,929792,320,933888,320,946176,320,950272,320,962560,320,966656,987136,978944,983040,320,993990,320,999424,320,1007812,1011712,320,320,320,320,320,1047046,1040384,320,320,1052672,1056768,1060864,1064960,320,320,1077248,320,320,320,320,320,320,320,1110212,1122304,320,320,1134788,320,320,320,1142784,1159168,1146880,320,320,320,320,320,1178118,320,1183744,1187840,1191936,1196032,320,320,1208320,320,1216708,320,1224900,1228800,1232896,1253572,320,1245184,320,320,320,320,1261568,320,1269760,1278148,320,1286144,320,1294336,320,1302528,320,321]
+F=[,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,266240,321,225280,321,321,320,321,321,321,320,321,262144,321,321,321,321,320,321,321,321,321,321,321,321,320,321,321,321,321,321,320,321,350726,321,321,321,321,376832,321,321,321,321,389120,321,321,321,405504,321,321,320,321,321,430080,321,321,321,446464,321,321,321,321,321,471040,321,321,320,321,321,495616,321,321,507904,512000,516096,520192,524288,528384,532480,321,321,321,321,552960,321,321,321,321,321,577536,581632,585728,321,321,321,602112,321,321,321,321,321,626688,321,321,638976,321,321,321,321,659456,321,321,321,320,321,684032,321,321,321,700416,321,321,321,321,320,321,729088,321,321,321,745472,321,321,321,321,321,321,774144,321,321,320,321,321,798720,321,321,811008,815104,321,321,827392,321,321,321,321,321,321,321,321,321,870918,895494,321,321,884736,321,321,321,321,321,320,321,321,321,321,321,321,320,321,321,321,320,321,321,321,320,321,321,321,321,321,321,321,321,321,321,321,321,321,1028096,321,321,321,321,321,321,321,321,321,321,1089536,321,321,1085440,321,321,321,321,321,321,321,1118208,321,321,1130496,321,321,321,321,320,1155268,321,321,321,1202694,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,1249280,321,321,321,321,321,320,321,320,321,321,321,321,321,321,321,321,320]
+if(typeof out=='string'){s=out;out=[];x=parsePEG(function(m,x,y){if(m=='fail')out=[false,x,y];if(m=='tree segment')out=out.concat(x)});x('chunk',s);x('eof');return out[0]===false?out:[true,out]}
+return function(m,x){switch(m){
+case 'chunk':s+=x;l=s.length;while(tbl.length<l+1)tbl.push([]);mainloop();break
+case 'eof':eof=true;mainloop();break
+default:throw new Error('unhandled message: '+m)}}
+function mainloop(){for(;;){
+if(S>363||S<322)t_block:{
+if(S&4/*pushpos*/)posns.push(pos)
+if(S&2/*t_bufferout*/){bufs.push(buf);buf=[]}
+if(S&1/*cache*/&&(x=tbl[pos-offset][S])!=undefined){if(x){R=true;pos=x[0];buf=x[1]}else{R=false}break t_block}
+if(S&8/*t_emitstate*/){buf.push(S>>>12)}
+states.push(S)
+S=T[S>>>12]}
+if(S<364&&S>321){
+if(S==322)R=true
+else{
+c=s.charCodeAt(pos);if(isNaN(c)){if(eof)R=false;else{emit();R=undefined;out('ready');return}}
+else switch(S){
+case 323:R=c<59?0:c<60?1:0;break
+case 324:R=c<0?0:c<10?1:c<11?0:c<13?1:c<14?0:c<55296?1:c<57344?0:c<65536?1:0;break
+case 325:R=c<8592?0:c<8593?1:0;break
+case 326:R=c<65?0:c<91?1:0;break
+case 327:R=c<48?0:c<58?1:c<65?0:c<91?1:c<95?0:c<96?1:c<97?0:c<123?1:0;break
+case 328:R=c<32?0:c<33?1:0;break
+case 329:R=c<13?0:c<14?1:0;break
+case 330:R=c<10?0:c<11?1:0;break
+case 331:R=c<10?0:c<11?1:c<13?0:c<14?1:0;break
+case 332:R=c<47?0:c<48?1:0;break
+case 333:R=c<42?0:c<43?1:0;break
+case 334:R=c<40?0:c<41?1:0;break
+case 335:R=c<41?0:c<42?1:0;break
+case 336:R=c<1013?0:c<1014?1:0;break
+case 337:R=c<91?0:c<92?1:0;break
+case 338:R=c<94?0:c<95?1:0;break
+case 339:R=c<93?0:c<94?1:0;break
+case 340:R=c<8722?0:c<8723?1:0;break
+case 341:R=c<8745?0:c<8746?1:0;break
+case 342:R=c<58?0:c<59?1:0;break
+case 343:R=c<61?0:c<62?1:0;break
+case 344:R=c<8800?0:c<8801?1:0;break
+case 345:R=c<124?0:c<125?1:0;break
+case 346:R=c<32?0:c<33?1:c<45?0:c<46?1:c<65?0:c<91?1:c<95?0:c<96?1:c<97?0:c<123?1:0;break
+case 347:R=c<45?0:c<46?1:0;break
+case 348:R=c<85?0:c<86?1:0;break
+case 349:R=c<43?0:c<44?1:0;break
+case 350:R=c<48?0:c<58?1:c<65?0:c<71?1:0;break
+case 351:R=c<0?0:c<32?1:c<33?0:c<93?1:c<94?0:c<160?1:c<161?0:c<5760?1:c<5761?0:c<6158?1:c<6159?0:c<8192?1:c<8203?0:c<8239?1:c<8240?0:c<8287?1:c<8288?0:c<8722?1:c<8723?0:c<12288?1:c<12289?0:c<55296?1:c<57344?0:c<65536?1:0;break
+case 352:R=c<34?0:c<35?1:0;break
+case 353:R=c<0?0:c<34?1:c<35?0:c<92?1:c<93?0:c<55296?1:c<57344?0:c<65536?1:0;break
+case 354:R=c<92?0:c<93?1:0;break
+case 355:R=c<102?0:c<103?1:c<110?0:c<111?1:c<114?0:c<115?1:c<116?0:c<117?1:c<118?0:c<119?1:0;break
+case 356:R=c<123?0:c<124?1:0;break
+case 357:R=c<44?0:c<45?1:0;break
+case 358:R=c<125?0:c<126?1:0;break
+case 359:R=c<48?0:c<58?1:0;break
+case 360:R=c<63?0:c<64?1:0;break
+case 361:R=c<38?0:c<39?1:0;break
+case 362:R=c<33?0:c<34?1:0;break
+case 363:R=c<0?0:c<55296?1:c<57344?0:c<65536?1:0;break}
+if(R)pos++
+else if(c>=0xD800&&c<=0xDFFF){if(c<0xDB80){if(pos+1==l){if(eof)return fail('unmatched surrogate at EOF');else{emit();R=undefined;out('ready');return}}else{c=(c&0x3FF)<<10 | s.charCodeAt(pos+1)&0x3FF | 0x10000
+switch(S){case 324:R=c<65536?0:1;break
+case 351:R=c<65536?0:1;break
+case 353:R=c<65536?0:1;break
+case 363:R=c<65536?0:c<1114112?1:0;break
+default:R=false}
+if(R)pos+=2
+}}else return fail('UTF-16 decoding error: unmatched low surrogate')}}
+S=states.pop()}
+while(R!=undefined){
+if(S==204800){(R?emit:fail)();return}if(R){
+if(S&1/*cache*/){tbl[posns[posns.length-1]][S]=[pos,buf];buf=buf.slice()}
+if(S&16/*m_emitstate*/)buf.push(S>>>12)
+if(S&32/*m_emitclose*/)buf.push(-2)
+if(S&64/*m_emitanon*/)buf.push(-1)
+if(S&128/*m_emitlength*/)buf.push(pos-posns[posns.length-1])
+if(S&256/*m_resetpos*/)pos=posns[posns.length-1]
+if(S&4/*pushpos*/)posns.pop()
+if(S&1024/*m_tossbuf*/)buf=bufs.pop()
+if(S&512/*m_emitbuf*/)buf=bufs.pop().concat(buf)
+if(!bufs.length&&buf.length>64)emit()
+S=M[S>>>12]}
+else{
+if(S&1/*cache*/)tbl[posns[posns.length-1]][S]=false
+if(S&4/*pushpos*/)pos=posns.pop()
+if(S&2048/*f_tossbuf*/)buf=bufs.pop()
+S=F[S>>>12]}
+if(S==320){R=true;S=states.pop()}else if(S==321){R=false;S=states.pop()}else R=undefined;
+}}}
+function emit(){var x=bufs.length?bufs[0]:buf;if(x.length){out('tree segment',x);if(bufs.length)bufs[0]=[];else buf=[]}}
+function fail(s){out('fail',pos,s)}}
 
-/* generated code, do not edit */
-function PEG_codegen_5(tree){
- f(tree,[])
- return tree
- function cont0(ctx){return ctx}
- function c3(ctx){
-  ctx.back() // B
-  return c2(ctx)}
- function c4(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="Rule")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c3(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c(ctx){
-  // *
-  ctx.beginStarBinding()
-  return c2(ctx)}
- function c1(ctx){
-  ctx.commitStarBinding()
-  if(x=cont0(ctx))return x
-  ctx.uncommitStarBinding()}
- function c2(ctx){
-  return c4(ctx) || c1(ctx)}
- function c5(ctx){
-  n=ctx.currentNode
-  if(n.name!="RuleSet")return false
-  ctx.addBinding(n,'[')
-  if(x=c(ctx))return x
-  ctx.popBinding()}
- function c6(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="OrdChoice")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c7(ctx){
-  ctx.back() // B
-  return c6(ctx)}
- function c8(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="NonTerminal")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c7(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c9(ctx){
-  n=ctx.currentNode
-  if(n.name!="Rule")return false
-  ctx.addBinding(n,'[')
-  if(x=c8(ctx))return x
-  ctx.popBinding()}
- function c10(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="NonTerminal")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c11(ctx){
-  n=ctx.currentNode
-  if(n.name!="AtomicExpr")return false
-  ctx.addBinding(n,'[')
-  if(x=c10(ctx))return x
-  ctx.popBinding()}
- function c12(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="CharSet")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c13(ctx){
-  n=ctx.currentNode
-  if(n.name!="AtomicExpr")return false
-  ctx.addBinding(n,'[')
-  if(x=c12(ctx))return x
-  ctx.popBinding()}
- function c14(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="StrLit")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c15(ctx){
-  n=ctx.currentNode
-  if(n.name!="AtomicExpr")return false
-  ctx.addBinding(n,'[')
-  if(x=c14(ctx))return x
-  ctx.popBinding()}
- function c16(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="Empty")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c17(ctx){
-  n=ctx.currentNode
-  if(n.name!="AtomicExpr")return false
-  ctx.addBinding(n,'[')
-  if(x=c16(ctx))return x
-  ctx.popBinding()}
- function c21(ctx){
-  ctx.back() // B
-  return c20(ctx)}
- function c22(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="Sequence")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c21(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c18(ctx){
-  // *
-  ctx.beginStarBinding()
-  return c20(ctx)}
- function c19(ctx){
-  ctx.commitStarBinding()
-  if(x=cont0(ctx))return x
-  ctx.uncommitStarBinding()}
- function c20(ctx){
-  return c22(ctx) || c19(ctx)}
- function c23(ctx){
-  n=ctx.currentNode
-  if(n.name!="OrdChoice")return false
-  ctx.addBinding(n,'[')
-  if(x=c18(ctx))return x
-  ctx.popBinding()}
- function c27(ctx){
-  ctx.back() // B
-  return c26(ctx)}
- function c28(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="SeqUnit")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c27(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c24(ctx){
-  // *
-  ctx.beginStarBinding()
-  return c26(ctx)}
- function c25(ctx){
-  ctx.commitStarBinding()
-  if(x=cont0(ctx))return x
-  ctx.uncommitStarBinding()}
- function c26(ctx){
-  return c28(ctx) || c25(ctx)}
- function c29(ctx){
-  n=ctx.currentNode
-  if(n.name!="Sequence")return false
-  ctx.addBinding(n,'[')
-  if(x=c24(ctx))return x
-  ctx.popBinding()}
- function c30(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c31(ctx){
-  n=ctx.currentNode
-  if(n.name!="SeqUnit"&&n.name!="Replicand"&&n.name!="ParenthExpr")return false
-  ctx.addBinding(n,'[')
-  if(x=c30(ctx))return x
-  ctx.popBinding()}
- function c32(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="N")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c33(ctx){var x
-  ctx.checkpoint() // !
-  x=c32(ctx)
-  ctx.rollback()
-  if(x)return false
-  return cont0(ctx)}
- function c34(ctx){
-  ctx.back() // B
-  return c33(ctx)}
- function c35(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="M")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c34(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c36(ctx){
-  ctx.back() // B
-  return c35(ctx)}
- function c37(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="Replicand")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c36(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c38(ctx){
-  n=ctx.currentNode
-  if(n.name!="MNRep")return false
-  ctx.addBinding(n,'[')
-  if(x=c37(ctx))return x
-  ctx.popBinding()}
- function c39(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="N")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c40(ctx){
-  ctx.back() // B
-  return c39(ctx)}
- function c41(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="M")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c40(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c42(ctx){
-  ctx.back() // B
-  return c41(ctx)}
- function c43(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="Replicand")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c42(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c44(ctx){
-  n=ctx.currentNode
-  if(n.name!="MNRep")return false
-  ctx.addBinding(n,'[')
-  if(x=c43(ctx))return x
-  ctx.popBinding()}
- function c45(ctx){
-  n=ctx.currentNode
-  if(n.name!="M"&&n.name!="N")return false
-  ctx.addBinding(n,'[')
-  if(x=cont0(ctx))return x
-  ctx.popBinding()}
- function c46(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c47(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="Replicand")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c46(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c48(ctx){
-  n=ctx.currentNode
-  if(n.name!="Optional")return false
-  ctx.addBinding(n,'[')
-  if(x=c47(ctx))return x
-  ctx.popBinding()}
- function c49(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c50(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="Replicand")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c49(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c51(ctx){
-  n=ctx.currentNode
-  if(n.name!="AnyRep")return false
-  ctx.addBinding(n,'[')
-  if(x=c50(ctx))return x
-  ctx.popBinding()}
- function c52(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c53(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="Replicand")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c52(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c54(ctx){
-  n=ctx.currentNode
-  if(n.name!="PosRep")return false
-  ctx.addBinding(n,'[')
-  if(x=c53(ctx))return x
-  ctx.popBinding()}
- function c55(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="OrdChoice")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c56(ctx){
-  n=ctx.currentNode
-  if(n.name!="NegLookahead")return false
-  ctx.addBinding(n,'[')
-  if(x=c55(ctx))return x
-  ctx.popBinding()}
- function c57(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="OrdChoice")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c58(ctx){
-  n=ctx.currentNode
-  if(n.name!="PosLookahead")return false
-  ctx.addBinding(n,'[')
-  if(x=c57(ctx))return x
-  ctx.popBinding()}
- function c59(ctx){
-  n=ctx.currentNode
-  if(n.name!="StrLit")return false
-  ctx.addBinding(n,'[')
-  if(x=cont0(ctx))return x
-  ctx.popBinding()}
- function c60(ctx){
-  n=ctx.currentNode
-  if(n.name!="PropSpec")return false
-  ctx.addBinding(n,'[')
-  if(x=cont0(ctx))return x
-  ctx.popBinding()}
- function c61(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c62(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="CodePointTo")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c61(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c63(ctx){
-  ctx.back() // B
-  return c62(ctx)}
- function c64(ctx){
-  ctx.back() // B
-  return c63(ctx)}
- function c65(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c64(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c66(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="CodePointFrom")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c65(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c67(ctx){
-  n=ctx.currentNode
-  if(n.name!="CodePointRange")return false
-  ctx.addBinding(n,'[')
-  if(x=c66(ctx))return x
-  ctx.popBinding()}
- function c68(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c69(ctx){
-  n=ctx.currentNode
-  if(n.name!="CodePointExpr")return false
-  ctx.addBinding(n,'[')
-  if(x=c68(ctx))return x
-  ctx.popBinding()}
- function c70(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="PropSpec")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c71(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="PositiveSpec")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c70(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c72(ctx){
-  n=ctx.currentNode
-  if(n.name!="UnicodePropSpec")return false
-  ctx.addBinding(n,'[')
-  if(x=c71(ctx))return x
-  ctx.popBinding()}
- function c73(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="PropSpec")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c74(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="NegativeSpec")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c73(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c75(ctx){
-  n=ctx.currentNode
-  if(n.name!="UnicodePropSpec")return false
-  ctx.addBinding(n,'[')
-  if(x=c74(ctx))return x
-  ctx.popBinding()}
- function c76(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c77(ctx){
-  n=ctx.currentNode
-  if(n.name!="CodePoint")return false
-  ctx.addBinding(n,'[')
-  if(x=c76(ctx))return x
-  ctx.popBinding()}
- function c78(ctx){
-  n=ctx.currentNode
-  if(n.name!="UPlusCodePoint")return false
-  ctx.addBinding(n,'[')
-  if(x=cont0(ctx))return x
-  ctx.popBinding()}
- function c79(ctx){
-  n=ctx.currentNode
-  if(n.name!="CodePointLit")return false
-  ctx.addBinding(n,'[')
-  if(x=cont0(ctx))return x
-  ctx.popBinding()}
- function c83(ctx){
-  ctx.back() // B
-  return c82(ctx)}
- function c84(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="CodePointExpr")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c83(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c80(ctx){
-  // *
-  ctx.beginStarBinding()
-  return c82(ctx)}
- function c81(ctx){
-  ctx.commitStarBinding()
-  if(x=cont0(ctx))return x
-  ctx.uncommitStarBinding()}
- function c82(ctx){
-  return c84(ctx) || c81(ctx)}
- function c85(ctx){
-  n=ctx.currentNode
-  if(n.name!="CharSetUnion")return false
-  ctx.addBinding(n,'[')
-  if(x=c80(ctx))return x
-  ctx.popBinding()}
- function c89(ctx){
-  ctx.back() // B
-  return c88(ctx)}
- function c90(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="CharSetUnion")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c89(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c86(ctx){
-  // *
-  ctx.beginStarBinding()
-  return c88(ctx)}
- function c87(ctx){
-  ctx.commitStarBinding()
-  if(x=cont0(ctx))return x
-  ctx.uncommitStarBinding()}
- function c88(ctx){
-  return c90(ctx) || c87(ctx)}
- function c91(ctx){
-  n=ctx.currentNode
-  if(n.name!="CharSetIntersection")return false
-  ctx.addBinding(n,'[')
-  if(x=c86(ctx))return x
-  ctx.popBinding()}
- function c95(ctx){
-  ctx.back() // B
-  return c94(ctx)}
- function c96(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="CharSetIntersection")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c95(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c92(ctx){
-  // *
-  ctx.beginStarBinding()
-  return c94(ctx)}
- function c93(ctx){
-  ctx.commitStarBinding()
-  if(x=cont0(ctx))return x
-  ctx.uncommitStarBinding()}
- function c94(ctx){
-  return c96(ctx) || c93(ctx)}
- function c97(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="CharSetDifference")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c92(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c98(ctx){
-  n=ctx.currentNode
-  if(n.name!="CharSetExpr")return false
-  ctx.addBinding(n,'[')
-  if(x=c97(ctx))return x
-  ctx.popBinding()}
- function c99(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="CharSetExpr")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c100(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="PosCharSet")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c99(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c101(ctx){
-  n=ctx.currentNode
-  if(n.name!="CharSet")return false
-  ctx.addBinding(n,'[')
-  if(x=c100(ctx))return x
-  ctx.popBinding()}
- function c102(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="CharSetExpr")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c103(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="NegCharSet")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c102(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c104(ctx){
-  n=ctx.currentNode
-  if(n.name!="CharSet")return false
-  ctx.addBinding(n,'[')
-  if(x=c103(ctx))return x
-  ctx.popBinding()}
- function c105(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="CharSetExpr")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c106(ctx){var x
-  ctx.checkpoint() // !
-  x=c105(ctx)
-  ctx.rollback()
-  if(x)return false
-  return cont0(ctx)}
- function c107(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="PosCharSet")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c106(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c108(ctx){
-  n=ctx.currentNode
-  if(n.name!="CharSet")return false
-  ctx.addBinding(n,'[')
-  if(x=c107(ctx))return x
-  ctx.popBinding()}
- function c109(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="CharSetExpr")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=cont0(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c110(ctx){var x
-  ctx.checkpoint() // !
-  x=c109(ctx)
-  ctx.rollback()
-  if(x)return false
-  return cont0(ctx)}
- function c111(ctx){var n,n1,i,l,x
-  n=ctx.currentNode // D
-  for(i=0,l=n.cn.length;i<l;i++){
-   n1=n.cn[i]
-   if(ctx.alreadyBound(n1))continue
-   if(n1.name!="NegCharSet")continue
-   ctx.backstack.push(ctx.currentNode)
-   ctx.currentNode=n1
-   ctx.addBinding(n1,'D')
-   if(x=c110(ctx))return x
-   ctx.popBinding()
-   ctx.backstack.pop()}
-  ctx.currentNode=n}
- function c112(ctx){
-  n=ctx.currentNode
-  if(n.name!="CharSet")return false
-  ctx.addBinding(n,'[')
-  if(x=c111(ctx))return x
-  ctx.popBinding()}
- function f(n,ancestors){var ctx,i,l
-  ctx=new BindingContext(n,ancestors)
-  if(c5(ctx)){
-   lazyAttr(n,"code_v5",function(b0,b1){return function(){return function(opts){return codegen_v5(opts,b0.filter(function(b){return b[1]=="D"}).map(function(b){return b[0].nm()}),b1.filter(function(b){return b[1]=="D"}).map(function(b){return b[0].named_re()}))}}}(ctx.bindings[1],ctx.bindings[1]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c9(ctx)){
-   lazyAttr(n,"nm",function(b0){return function(){return b0._str.substring(b0.start,b0.end)}}(ctx.bindings[1][0]))
-   lazyAttr(n,"named_re",function(b0,b1){return function(){return [b0.nm(),b1.re()]}}(n,ctx.bindings[2][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c11(ctx)){
-   lazyAttr(n,"re",function(b0){return function(){return re_reference(b0._str.substring(b0.start,b0.end))}}(ctx.bindings[1][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c13(ctx)){
-   lazyAttr(n,"re",function(b0){return function(){return re_from_cset(b0.cset())}}(ctx.bindings[1][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c15(ctx)){
-   lazyAttr(n,"re",function(b0){return function(){return re_from_str(b0.str())}}(ctx.bindings[1][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c17(ctx)){
-   n.re=function(){return re_from_str("")}}
-  ctx=new BindingContext(n,ancestors)
-  if(c23(ctx)){
-   lazyAttr(n,"re",function(b0){return function(){return re_union(b0.filter(function(b){return b[1]=="D"}).map(function(b){return b[0].re()}))}}(ctx.bindings[1]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c29(ctx)){
-   lazyAttr(n,"re",function(b0){return function(){return re_sequence(b0.filter(function(b){return b[1]=="D"}).map(function(b){return b[0].re()}))}}(ctx.bindings[1]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c31(ctx)){
-   lazyAttr(n,"re",function(b0){return function(){return b0.re()}}(ctx.bindings[1][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c38(ctx)){
-   lazyAttr(n,"re",function(b0,b1,b2){return function(){return re_rep(b0.n(),b1.n(),b2.re())}}(ctx.bindings[2][0],ctx.bindings[2][0],ctx.bindings[1][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c44(ctx)){
-   lazyAttr(n,"re",function(b0,b1,b2){return function(){return re_rep(b0.n(),b1.n(),b2.re())}}(ctx.bindings[2][0],ctx.bindings[3][0],ctx.bindings[1][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c45(ctx)){
-   lazyAttr(n,"n",function(b0){return function(){return parseInt(b0._str.substring(b0.start,b0.end))}}(n))}
-  ctx=new BindingContext(n,ancestors)
-  if(c48(ctx)){
-   lazyAttr(n,"re",function(b0){return function(){return re_rep(0,1,b0.re())}}(ctx.bindings[1][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c51(ctx)){
-   lazyAttr(n,"re",function(b0){return function(){return re_rep(0,0,b0.re())}}(ctx.bindings[1][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c54(ctx)){
-   lazyAttr(n,"re",function(b0){return function(){return re_rep(1,0,b0.re())}}(ctx.bindings[1][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c56(ctx)){
-   lazyAttr(n,"re",function(b0){return function(){return re_neg_lookahead(b0.re())}}(ctx.bindings[1][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c58(ctx)){
-   lazyAttr(n,"re",function(b0){return function(){return re_pos_lookahead(b0.re())}}(ctx.bindings[1][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c59(ctx)){
-   lazyAttr(n,"str",function(b0){return function(){return b0._str.substring(b0.start,b0.end).slice(1,-1)}}(n))}
-  ctx=new BindingContext(n,ancestors)
-  if(c60(ctx)){
-   lazyAttr(n,"cset",function(b0){return function(){return CSET.fromUnicodeGeneralCategory(b0._str.substring(b0.start,b0.end))}}(n))}
-  ctx=new BindingContext(n,ancestors)
-  if(c67(ctx)){
-   lazyAttr(n,"cset",function(b0,b1){return function(){return CSET.fromIntRange(b0.cp(),b1.cp())}}(ctx.bindings[2][0],ctx.bindings[4][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c69(ctx)){
-   lazyAttr(n,"cset",function(b0){return function(){return b0.cset()}}(ctx.bindings[1][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c72(ctx)){
-   lazyAttr(n,"cset",function(b0){return function(){return b0.cset()}}(ctx.bindings[2][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c75(ctx)){
-   lazyAttr(n,"cset",function(b0){return function(){return CSET.complement(b0.cset())}}(ctx.bindings[2][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c77(ctx)){
-   lazyAttr(n,"cset",function(b0){return function(){return CSET.fromInt(b0.cp())}}(ctx.bindings[1][0]))
-   lazyAttr(n,"cp",function(b0){return function(){return b0.cp()}}(ctx.bindings[1][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c78(ctx)){
-   lazyAttr(n,"cp",function(b0){return function(){return parseInt(b0._str.substring(b0.start,b0.end).slice(2),16)}}(n))}
-  ctx=new BindingContext(n,ancestors)
-  if(c79(ctx)){
-   lazyAttr(n,"cp",function(b0){return function(){return b0._str.substring(b0.start,b0.end).charCodeAt(0)}}(n))}
-  ctx=new BindingContext(n,ancestors)
-  if(c85(ctx)){
-   lazyAttr(n,"cset",function(b0){return function(){return foldl1(CSET.union, b0.filter(function(b){return b[1]=="D"}).map(function(b){return b[0].cset()}))}}(ctx.bindings[1]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c91(ctx)){
-   lazyAttr(n,"cset",function(b0){return function(){return foldl1(CSET.intersection, b0.filter(function(b){return b[1]=="D"}).map(function(b){return b[0].cset()}))}}(ctx.bindings[1]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c98(ctx)){
-   lazyAttr(n,"cset",function(b0){return function(){return foldl1(CSET.difference, b0.filter(function(b){return b[1]=="D"}).map(function(b){return b[0].cset()}))}}(ctx.bindings[2]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c101(ctx)){
-   lazyAttr(n,"cset",function(b0){return function(){return b0.cset()}}(ctx.bindings[2][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c104(ctx)){
-   lazyAttr(n,"cset",function(b0){return function(){return CSET.complement(b0.cset())}}(ctx.bindings[2][0]))}
-  ctx=new BindingContext(n,ancestors)
-  if(c108(ctx)){
-   n.cset=function(){return CSET.nil}}
-  ctx=new BindingContext(n,ancestors)
-  if(c112(ctx)){
-   n.cset=function(){return CSET.universe}}
-  ancestors=[n].concat(ancestors)
-  for(i=0,l=n.cn.length;i<l;i++)
-   f(n.cn[i],ancestors)}
- function lazyAttr(n,attr,f){
-  n[attr]=function(){var v
-   n[attr]=cycle(n,attr)
-   try{v=f()}
-   catch(e){
-    v=e.toString()
-    n[attr]=function(){return v}
-    throw e}
-   n[attr]=function(){return v}
-   return v}}
- function cycle(n,attr){return function(){
-  n[attr]="cyclical dependency"
-  throw new Error("cyclical dependency on "+attr)}}}
-
-/* TAL supporting code */
-
-function BindingContext(n,a){
- this.distinguished=n
- this.currentNode=n
- this.highWaterMark=n
- this.ancestors=[n].concat(a)
- this.checkpoints=[]
- this.bindings=[]
- this.starbindingstack=[]
- this.backstack=[]}
-
-BindingContext.prototype=
-{constructor:BindingContext
-,highWaterParent:function(){var i,l
- for(i=0,l=this.ancestors.length-1;i<l;i++){
-  if(this.ancestors[i]==this.highWaterMark)
-   return this.ancestors[i+1]}}
-,checkpoint:function(){
- this.checkpoints.push(
- [this.currentNode
- ,this.highWaterMark
- ,this.bindings.slice()
- ,this.starbindingstack.slice()
- ,this.backstack.slice()])}
-,rollback:function(){var x
- x=this.checkpoints.pop()
- this.currentNode=x[0]
- this.highWaterMark=x[1]
- this.bindings=x[2]
- this.starbindingstack=x[3]
- this.backstack=x[4]}
-,alreadyBound:function(n){
- return f(n,this.bindings)
- function f(n,a){var i,l
-  for(i=0,l=a.length;i<l;i++)
-   if(a[i]==n || a[i].constructor==Array && f(n,a[i])) return true
-  return false}}
-,addBinding:function(n,s){
- this.bindings.push([n,s])}
-,popBinding:function(){
- this.bindings.pop()}
-,back:function(){
- this.currentNode=this.backstack.pop()}
-,beginStarBinding:function(){
- this.starbindingstack.push(this.bindings)
- this.bindings=this.bindings.slice()}
-,commitStarBinding:function(){var x
- x=this.starbindingstack.pop()
- x.push(this.bindings.slice(x.length))
- this.bindings=x}
-,uncommitStarBinding:function(){var x
- x=this.bindings.pop()
- this.starbindingstack.push(this.bindings.slice())
- this.bindings=this.bindings.concat(x)}
-,getBinding:function(s){
- if(s=='')return this.distinguished
- return this.bindings[s.length-1][0]}}
 
 /* re.js */
 
@@ -1842,222 +678,115 @@ return {'import':function(prefix,object){object=object||g
  for(i=0,l=es.length;i<l,e=es[i];i++)
   object[(prefix||'')+e[0]]=e[1]}}
 }();
+CSET.import('',CSET)
 
-/* PEG_codegen_5.js */ 
+/* PEG_codegen_6_attr.js */ 
 
-CSET['import']('',CSET)
+function v6_named_res(tree,names,s){var dict,ret,hide,warnings,st
+ hide=
+  ['anonymous']
+ st=showTree(tree[1],names,s,{hide:hide})
+ dict={
+RuleSet:
+  function(_,cn){ret=cn},
 
-function codegen_v5(opts,names,named_res){var ctx,nameline
- ctx={csets:[],strlits:[]}
- opts.drop=opts.drop||[]
- opts.nocache=opts.nocache||[]
- opts.prefix=opts.prefix||''
- opts.start=opts.start||names[0]
- opts.fname=opts.fname||opts.prefix+opts.start
- if(opts.codegen=='v6'){
-  return codegen_v6(opts,named_res)}
- nameline=opts.fname+'.names='+'[\''+names.join('\',\'')+'\'];'
- return ['function '+opts.fname+'(str){'
- , 'var tbl=[],pos=0,l=str.length+1;'
- + (opts.debug?'var i=0;while(i<l)tbl.push({_:i++});'
-              :'while(l--)tbl.push([]);')
- + 'l=str.length;'
- + (opts.profile?'var profile_log=[]'
-                :'')
- ]
- .concat(names.map(ntof))
- .concat(named_res.map(named_re_to_fdecl(ctx)))
- .join('\n ')
- +'\n '
- +ctx.csets.map(snd)
- .concat(ctx.strlits.map(snd))
- .join('\n ')
+Rule:
+  function(_,cn){return [cn[0][1],cn[1]]},
 
- // fin()
- +['\n function fin(c,p,x,r,a){'
- ,'if(r)a.push([p,x]);' // pointer style
- ,'tbl[p][x]='
- ,'r?[true,pos,c]:false;'
- //,'if(r)a.push(tbl[p][x]);' // direct reference
- ,'return r}'
- ].join('')
+NonTerminal:
+  function(m){return re_reference(m.text())},
 
- // empty()
- +['\n function e(){return true}'
- // ordChoice()
- ,'function o(){var args=arguments;return function(c){var i,l;for(i=0,l=args.length;i<l;i++)if(args[i](c))return true;return false}}'
- // seQuence()
- ,'function q(){var args=arguments;return function(c){var i,l,cp=pos,cl=c.length;for(i=0,l=args.length;i<l;i++)if(!args[i](c)){pos=cp;t(c,cl);return false}return true}}'
- // repetition()
- ,'function r(m,n,f){return function(c){var i=0,cp=pos,cl=c.length;while(i<m){i++;if(!f(c)){pos=cp;t(c,cl);return false}}cl=c.length;while(i++<n||n==0)if(!f(c))return true;return true}}'
- // negative lookahead
- ,'function n(f){return function(){var p=pos'
- +',x=f([]);pos=p;return !x}}'
- // positive lookahead
- ,'function p(f){return function(){var p=pos'
- +',x=f([]);pos=p;return x}}'
- // truncate() an array
- ,'function t(a,n){if(a.length>n)a.splice(n)}'
- // get() the current Unicode character
- // XXX doesn't handle UTF-16 yet
- ,'function g(p){return str.charCodeAt(p)}'
- // build() a parse tree from the result table
- /*,'function b(p,n){var i,l,'
- +'x=tbl[p][n],c=x[2],cn=[],o=[n,p,x[1],cn];'
- +'for(i=0,l=c.length;i<l;i++){'
- +'cn.push(b(c[i][0],c[i][1]))}'
- +'return o}'*/
- ,'function b(p,n){var '
- + 'x=tbl[p][n],c=[],a=[n,x[1]-p,c],y=x[2],i=0,l=y.length,z;'
- + 'for(;i<l;i++){z=y[i];'
- +  'if(z[0]>p)c.push([-1,z[0]-p]);' // anonymous node
- +  'c.push(b(z[0],z[1]));' // named node
- +  'p=tbl[z[0]][z[1]][1]}' // new position
- + 'if(p<x[1]&&c.count)c.push([-1,x[1]-p]);'
- + 'return a}'
- , 'if(typeof str!=\'string\')throw new Error(\''+opts.fname+': argument is not a string\')'
- ].join('\n ')
- +'\n return '+opts.start+'([])&&pos==l?[true'
-  +(opts.profile?',profile_log'
-                :',b(0,'+names.indexOf(opts.start)+')')
-  +']:[false,pos,tbl]'
- //+'\n return '+opts.start+'([])&&pos==l?[true,b(0,\''+start+'\')]:[false,pos,tbl]'
- +'}'
- +'\n'+nameline
+OrdChoice:
+  function(_,cn){return re_union(cn)},
 
- function ntof(name){var drop,nocache,idx
-  drop=opts.drop.indexOf(name)>-1
-  nocache=opts.nocache.indexOf(name)>-1
-  idx=names.indexOf(name)
-  return 'function '+name
-  + (drop?'()'
-         :'(a)')
-  + '{'
-  + (drop&&nocache?''
-      :drop?'var x,p=pos;'
-        :nocache?'var c=[],p=pos;'
-          :'var x,p=pos,c;')
-  + (nocache?''
-            :'if(x=tbl[p]['+idx+']){'
-             + 'pos=x[1];'
-             +  (opts.profile?'profile_log.push([1,\''+name+'\']);'
-                             :'')
-             +  (drop?''
-                     :'a.push([p,'+idx+']);')
-             +  'return 1}'
-             + 'if(x==false){'
-             +  (opts.profile?'profile_log.push([2,\''+name+'\']);'
-                             :'')
-             +  'return 0}')
-  + (drop||nocache?''
-                  :'c=[];')
-  + (drop?nocache?'return _'+name+'([])'
-                 :'if(_'+name+'([])){'
-                    + 'tbl[p]['+idx+']=[true,pos];'
-                    + 'return 1}return 0'
-         :nocache?'if(_'+name+'(c)){'
-                    + 'a.push([p,'+idx+']);'
-                    + 'tbl[p]['+idx+']=[,pos,c];'
-                    + 'return 1}return 0'
-                 :opts.profile?'x=_'+name+'(c);'
-                                +'profile_log.push([0,\''+name+'\']);'
-                                +'return fin(c,p,'+idx+',x,a)'
-                              :'return fin(c,p,'+idx
-                                +',_'+name+'(c),a)')
-  + '}'}}
+AtomicExpr:transparent,
+SeqUnit:transparent,
+Replicand:transparent,
+ParenthExpr:transparent,
 
-function named_re_to_fdecl(ctx){return function(named_re){
- return 'var _'+named_re[0]+'='+re_to_function_v5(ctx)(named_re[1])}}
+AnyRep:
+  function(_,cn){return re_rep(0,0,cn[0])},
+M: function(m){return parseInt(m.text(),10)},
+N: function(m){return parseInt(m.text(),10)},
+MNRep:
+  function(_,cn){
+   if(cn.length==2)return re_rep(cn[1],cn[1],cn[0])
+   else return re_rep(cn[1],cn[2],cn[0])},
+Optional:
+  function(_,cn){return re_rep(0,1,cn[0])},
+PosRep:
+  function(_,cn){return re_rep(1,0,cn[0])},
 
-function re_to_function_v5(ctx){return function(re){
- return f(re)
- function f(re){
-  switch(re[0]){
-   case 0:
-    return 'cs_'+cset_ref(ctx,re[1])
-   case 1:
-    if(!re[1].length)return 'e'
-    return 'sl_'+strlit_ref(ctx,re[1])
-   case 2:
-    return 'q('+re[1].map(f).join(',')+')'
-   case 3:
-    return 'o('+re[1].map(f).join(',')+')'
-   case 4:
-    return 'r('+re[1]+','+re[2]+','+f(re[3])+')'
-   case 5:
-    return re[1]
-   case 6:
-    return 'n('+f(re[1])+')'
-   case 7:
-    return 'p('+f(re[1])+')'
-   }
-  return re}}
- function cset_ref(ctx,cset){var x
-  function cset_test(x){return CSET.equal(x[0],cset)}
-  x=first(ctx.csets,cset_test)
-  if(x>-1)return x
-  x=ctx.csets.length
-  ctx.csets[x]=[cset,cset_f(cset,x)]
-  return x}
- function first(xs,f){var i,l
-  for(i=0,l=xs.length;i<l;i++){
-   if(f(xs[i]))return i}
-  return -1}
- function cset_f(cset,n){
-  return 'function cs_'+n+'(){var c,x;'
-  + 'if(pos==l)return false;'
-  + 'c=g(pos);'
-  + cset_to_js_v5(cset,'c','x').replace('\n',';')+';'
-  + 'if(x){pos++;return true}'
-  + 'return false'
-  + '}'}
- function strlit_ref(ctx,str){
-  function strlit_test(x){return x[0]==str}
-  x=first(ctx.strlits,strlit_test)
-  if(x>-1)return x
-  x=ctx.strlits.length
-  ctx.strlits[x]=[str,strlit_f(str,x)]
-  return x}
- function strlit_f(str,n){var i,l,ret,ret2
-  l=str.length
-  if(l>8){
-   return 'function sl_'+n+'(){'
-   + 'var x=str.slice(pos,pos+' +l+ ');'
-   + 'if(x=="'+escDblQuot(str)+'"){pos+='+l+';return true}'
-   + 'return false'
-   + '}'}
-  else{
-   ret=['function sl_'+n+'(){var '
-   ,'p=pos;'
-   ,'if(']
-   ret2=[]
-   for(i=0;i<l;i++)
-    ret2.push('str.charCodeAt(p'+(i<l-1?'++':'')+')=='+str.charCodeAt(i))
-   ret.push(ret2.join('&&'))
-   ret.push('){pos+='+str.length+';return true}')
-   ret.push('return false}')
-   return ret.join('')}}}
+Sequence:
+  function(_,cn){return re_sequence(cn)},
 
-function escDblQuot(s){return s.replace(/\\|"/g,"\\$&")}
+StrLit:
+  function(m){return re_from_str(m.text().slice(1,-1))},
 
-function cset_to_js_v5(cset,id,id2){
- return g(cset)
- function g(cset){
-  if(cset.length<196)
-   return id2+'='+f(cset,false)
-  return 'if('+id+'<'+cset[128]+')'
-       + id2+'='+f(cset.slice(0,128))
-       + '\nelse '+g(cset.slice(128))}
- function f(cset,mode){var l=cset.length,a,b,pivot
-  if(!l)return mode?'1':'0'
-  a=Math.ceil(l/2);b=l-a
-  pivot=cset[a-1]
-  return id+'<'+pivot
-         +'?'+f(cset.slice(0,a-1),mode)
-         +':'+f(cset.slice(a),a%2?!mode:mode)}}
+Empty:
+  function(){return re_from_str('')},
 
-function cset_to_js_v5_test(){
- return cset_to_js_v5(CSET.fromUnicodeGeneralCategory('Ll'),'c','x')}
+NegLookahead:
+  function(_,cn){return re_neg_lookahead(cn[0])},
+
+PosLookahead:
+  function(_,cn){return re_pos_lookahead(cn[0])},
+
+PropSpec:
+  function(m){return CSET.fromUnicodeGeneralCategory(m.text())},
+
+NegativeSpec:
+  function(_,cn){return CSET.complement(cn[0])},
+PositiveSpec:
+  function(_,cn){return cn[0]},
+UnicodePropSpec:
+  function(_,cn){return cn[0]},
+CodePointExpr:
+  function(_,cn){return cn[0]},
+
+CharSet:
+  function(_,cn){return re_from_cset(cn[0])},
+CharSetUnion:
+  function(_,cn){return foldl1(CSET.union,cn)},
+CharSetIntersection:
+  function(_,cn){return foldl1(CSET.intersection,cn)},
+CharSetDifference:
+  function(_,cn){return foldl1(CSET.difference,cn)},
+CharSetExpr:transparent,
+PosCharSet:
+  function(_,cn){return cn[0]||CSET.nil},
+NegCharSet:
+  function(_,cn){return CSET.complement(cn[0]||CSET.nil)},
+
+UPlusCodePoint:
+  function(m){return parseInt(m.text().slice(2),16)},
+
+CodePointLit:
+  function(m){return cpFC(m.text())},
+
+CodePoint:
+  function(_,cn){return CSET.fromInt(cn[0])},
+
+CodePointRange:
+  function(_,cn){return CSET.fromIntRange(cn[0][0],cn[1][0])},
+
+CodePointFrom:transparent,
+CodePointTo:transparent
+
+}
+ warnings=treeWalker(dict,names)(tree,s)
+ return ret
+ return pp(ret)+'\n\n'+pp(warnings.slice(0,8))+'\n\n'+st
+ function transparent(_,cn){return cn[0]}
+
+ // from CSET
+ function cpFC(s){var hi,lo
+  if(/[\uD800-\uDBFF][\uDC00-\uDFFF]/.test(s)){
+   hi=s.charCodeAt(0)
+   lo=s.charCodeAt(1)
+   return 0x10000+(((hi&0x3FF) << 10) | (lo&0x3FF))}
+  return s.charCodeAt(0)}}
+
 
 /* PEG_codegen_6.js */ 
 
@@ -2067,6 +796,11 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
  //opts.asserts=true
  //return pp(named_res)
  //opts=extend({},opts) // we mutate this argument
+ opts.elide=opts.elide||[]
+ opts.drop=opts.drop||[]
+ opts.prefix=opts.prefix||''
+ opts.start=opts.start||named_res[0][0]
+ opts.fname=opts.fname||opts.prefix+opts.start
  opts.S_map=[]
  rules=v6_named_res_to_rules(opts,named_res)
  rules=v6_expr_fixups(opts,rules)
@@ -2394,7 +1128,7 @@ function v6_expr_apply_flags(opts,expr){var ret={}
 function v6_calculate_flags(opts,rules){var p
  for(p in rules)
   if(p != '_')
-   v6_calculate_flags_expr(rules[p])({})(rules[p].expr)
+   v6_calculate_flags_expr(opts,rules[p])({})(rules[p].expr)
  // special cases for the shadow start rule
  rules._.expr.flags=
   {cache:false
@@ -2409,7 +1143,7 @@ function v6_calculate_flags(opts,rules){var p
   ,m_tossbuf:false
   ,f_tossbuf:false}}
 
-function v6_calculate_flags_expr(rule){return function loop(parent){return function(expr,i){var ret={},subs_anon_consume=[],sub_can_emit_named=false
+function v6_calculate_flags_expr(opts,rule){return function loop(parent){return function(expr,i){var ret={},subs_anon_consume=[],sub_can_emit_named=false
    function makeAnonEmit(sub){
     sub.emits_anon=true
     sub.flags.pushpos=true
@@ -2417,8 +1151,10 @@ function v6_calculate_flags_expr(rule){return function loop(parent){return funct
     sub.flags.m_emitlength=true}
    if(isCset(expr.type)){
     expr.anon_consume=true}
-   if(isNamedRef(expr.type)){
-    expr.can_emit_named=true}
+   if(isNamedRef(expr.type))
+    if(opts.elide.indexOf(expr.ref)==-1)
+     expr.can_emit_named=true
+    else expr.anon_consume=true
    ret.cache=!!expr.toplevel
    expr.subexprs.forEach(loop(expr))
    expr.subexprs.forEach(function(sub){
@@ -2447,9 +1183,9 @@ function v6_calculate_flags_expr(rule){return function loop(parent){return funct
                  || isLookahead(expr.type)
                  || expr.emits_anon
                  || isProperSequence(expr) )
-   ret.t_emitstate=!!expr.toplevel
+   ret.t_emitstate=!!(expr.toplevel&&opts.elide.indexOf(rule.name)==-1)
    ret.m_emitstate=false // used only in streaming
-   ret.m_emitclose=!!expr.toplevel
+   ret.m_emitclose=ret.t_emitstate
    ret.m_emitanon=false // will only be set by parent expression
    ret.m_emitlength=ret.m_emitclose
    ret.m_resetpos=isPositiveLookahead(expr.type)
