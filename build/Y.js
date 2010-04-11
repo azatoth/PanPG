@@ -1,4 +1,4 @@
-var Y,Z,fac
+var Y,Z
 
 // Y = λf. (λx. f (x x)) (λx. f (x x))
 
