@@ -409,19 +409,43 @@ function v6_calculate_flags_expr(opts,rule){return function loop(parent){return 
 
 function isProperSequence(expr){return isSequence(expr.type) && expr.subexprs.length>1}
 
-function v6_calculate_streamability(opts,rules){
- rules._.expr.streamable=true}
+function v6_calculate_streamability(opts,rules){var p,parents=[]
+ for(p in rules)go(rules[p])
+ function go(rule){
+  if(parents.indexOf(rule.name)>-1)return explain_cycle(parents,rule.name)
+  parents.push(rule.name)
+  if(!rule.known_regular)rule.known_regular=go_expr(rule.expr)
+  parents.pop()
+  return rule.known_regular
+  function go_expr(expr){var i,l,res
+   if(v6_always_regular(expr.type))return [true]
+   if(isNamedRef(expr.type)){
+    return annotate(expr.id,go(rules[expr.ref]))}
+   for(i=0,l=expr.subexprs.length;i<l;i++){
+    res=go_expr(expr.subexprs[i])
+    if(!res[0])return annotate(expr.id,res)}
+   return [true]}}
+ function annotate(id,res){
+  if(res[0])return res
+  return [false,id+': '+res[1]]}
+ function explain_cycle(parents,name){
+  return [false,parents.concat([name]).join(' → ')]}}
+
+function v6_always_regular(n){return isCset(n)||isStrLit(n)||isEmpty(n)}
 
 function varstmt(vars){
  if(!vars.length) return ''
  return 'var '+vars.join(',')+';'}
 
 function isCset(n){return n==0}
+function isStrLit(n){return n==1}
 function isSequence(n){return n==2}
 function isOrdC(n){return n==3}
+function isRep(n){return n==4}
 function isNamedRef(n){return n==5}
 function isPositiveLookahead(n){return n==7}
 function isLookahead(n){return n==6||n==7}
+function isEmpty(n){return n==8}
 
 /*
 0 → cset

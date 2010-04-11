@@ -6,7 +6,9 @@
 
 //,cfunc:'test_treeWalker'
 
-,cfunc:'generateParserThrowing',ciset:'PEG.peg_gen_v6',outfn:'parsePEG.js',outct:'text/javascript'
+//,cfunc:'generateParserThrowing',ciset:'PEG.peg_gen_v6',outfn:'parsePEG.js',outct:'text/javascript'
+
+,cfunc:'generateParserThrowing',ciset:'test_gen_dfa',outfn:'test_dfa.js',outct:'text/javascript'
 
 //,cfunc:'generateParser2',ciset:'PEG.peg_gen_v6'
 
@@ -104,6 +106,9 @@
                      ,'PEGpeg_prefix_v5_1']
  ,'PEG.peg_gen_v6':['file(PEG.peg)'
                    ,'PEG.peg_opts']
+ ,'test_gen_dfa':['file(PEG.peg)'
+                 //,'PEG_features_opts']
+                 ,'PEG.peg_opts_dfa']
  ,'PEG_features_gen_v5':['file(PEG_features.peg)'
                         ,'emptyOpts']
  ,'PEG_features_v6':['file(PEG_features.peg)'
@@ -229,8 +234,20 @@
    ,'LB'
    ,'HEXDIG'
    ]}
+ ,'PEG.peg_opts_dfa':{start:'RuleSet'
+                     ,fname:'parsePEG'
+                     ,debug:true
+                     ,elide:
+   ['S'
+   ,'SpaceAtom'
+   ,'IdentStartChar'
+   ,'IdentChar'
+   ,'LB'
+   ,'HEXDIG'
+   ]}
  ,PEGpeg_prefix_v5:'p_PEG_v5_'
  ,PEGpeg_prefix_v5_1:'p_PEG_v5_1_'
+ ,PEG_features_opts:{debug:true}
  ,PEG_feat_start:'S'
  ,PEG_feat_pre_v5:'p_PEG_features_v5_'
  ,ES5_v5_opts:{prefix:'p_ES5_v5_'
