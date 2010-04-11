@@ -1,3 +1,8 @@
+These are notes taken during the writing of the various code generators (of which there have now been six).
+Mostly these are of historical interest.
+
+-----
+
 If we have a production which consists only of a character class, we can produce an ECMAScript regex to match it.
 
 Example: The rule "Letter ← [ a-z ]" becomes something like "p_Letter(...){...re(/[^a-z]/)...}"
@@ -1481,3 +1486,42 @@ DefaultClause (1)
 Program (1)
 
 Removing all of these from the result table (entirely) gives a speedup of somewhere around 40%.
+
+--------
+20100410
+--------
+
+----------
+v6 codegen
+----------
+
+The v6 codegen is now finished and the default codegen.
+
+It uses a table-based parsing approach rather than recursive descent, and does not use native regexes.
+It is currently unoptimized, and slower than the v5 parsers, which also did not use regexes, but did use recursive descent.
+One of the first optimizations I plan to port is collapsing regular subparts of the grammar into single expressions.
+Rather than use native regexes however, I will be compiling these to DFAs.
+Later, sets of regular parts can be combined into an NFA, allowing tokenization to proceed in a single pass over the input in many cases.
+
+To make this optimization in many cases we will want to eliminate rules from the parse tree that would prevent these simplifications.
+For example many rules in the ES5 grammar are effectively simply names for character classes (e.g. IdentifierStart, IdentifierPart), and do not belong in parse trees (except perhaps when debugging the grammar).
+
+We add options to elide a rule and to drop a rule.
+Eliding a rule simply removes the rule itself from the parse tree, but any child nodes will still appear.
+Dropping a rule drops that match and any child matches from the tree, somewhat like a forward lookahead if it also consumed the input.
+Dropping a rule is like eliding it and all its children.
+Eliding a rule is like inlining the rule definition at the point of use in the grammar.
+
+If a rule is elided or dropped, we only care about the parse result, not any actions or child nodes that might otherwise be produced.
+This means we can compile a DFA that does none of these things, and use that to test that parser state instead of using the normal parsing strategy.
+An expression can be compiled to a DFA if it is regular.
+There can be expressions that match regular languages, but cannot be identified as regular by the heuristics we use.
+For example, a PEG could be implemented using recursion where recursion is not necessary, and our heuristics would give up even if the matched language is trivially regular.
+So our heuristics can tell us in some cases that an expression is regular, but cannot tell us that an expression is not.
+
+Our heuristic is:
+- csets are regular
+- sequences are regular if all elements are regular
+- ordC is regular if all elements are regular
+- repetitions and lookaheads are regular if the sub-expression is
+- named references are regular if the rule is regular and is not part of a dependency cycle
