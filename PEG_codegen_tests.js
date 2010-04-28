@@ -1,9 +1,7 @@
 function test_treeWalker(){var dict,out=[],result,names,parser,s
  s="1+2*3"
  out.push(s+'\n\n')
- parser=p_arith_streaming_v6_default_flags_Expr
- result=[1,{tree:parser(s)[1],names:parser.names,input:s}]
- //return pp(result)
+ result=p_arith_streaming_v6_default_flags_Expr(s)
  assert(result[0],'parse succeeded')
  dict=
   {Expr:function(_,cn){out.push('result: '+cn[0])}
