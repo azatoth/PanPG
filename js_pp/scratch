@@ -1,0 +1,4 @@
+function tree(p_,str){
+ var s=new State(str)
+ if(p_(s) && s.str()=='') return [true, buildTree(s)]
+ return [false, s]}

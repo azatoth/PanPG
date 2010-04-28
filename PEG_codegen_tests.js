@@ -1,3 +1,4 @@
+/*
 function peg_v5_gen_tal(s){var pt,hide,force
  pt=p_PEG_v5_RuleSet(s)[1]
  PEG_codegen_5(pt)
@@ -11,13 +12,14 @@ return pp(opts)
  pt=p_PEG_v5_RuleSet(s)[1]
  PEG_codegen_5(pt)
  return pt.code_v5()(opts)}
+*/
 
 function test_treeWalker(){var dict,out=[],result,names,parser,s
  s="1+2*3"
  out.push(s+'\n\n')
  parser=p_arith_streaming_v6_default_flags_Expr
- names=parser.names
- result=parser(s)
+ result=[1,{tree:parser(s)[1],names:parser.names,input:s}]
+ //return pp(result)
  assert(result[0],'parse succeeded')
  dict=
   {Expr:function(_,cn){out.push('result: '+cn[0])}
@@ -25,7 +27,7 @@ function test_treeWalker(){var dict,out=[],result,names,parser,s
   ,Mult:function(_,cn){return product(cn)}
   ,Num:function(m){return parseInt(m.text(),10)}
   }
- treeWalker(dict,names)(result,s)
+ treeWalker(dict,result)
  return out.join('')}
 
 function benchmarkPEGParsers(peg){var out=[],ms
@@ -41,24 +43,12 @@ function benchmarkParserGenerator(peg){var out=[],ms,opts
  out.push(simple(function(){generateParser2(peg,opts)},ms,'new'))
  return out.join('\n')}
 
-function peg_arith_test(s){var pt,pt2
- pt=tree(p_Expr,s)[1]
- pt2=p_arith_Expr(s)[1]
- pt3=p_arith_v4_Expr(s)[1]
- pt4=p_arith_v5_Expr(s)[1]
- return s
-    //  + '\n\n' + pp(pt)
-    //  + '\n\n' + pp(pt2)
-    //  + '\n\n' + pp(pt3)
-      + '\n\n' + showTree(pt4,p_arith_v5_Expr.names)}
-
 function peg_v6_test_streaming_arith(){var s,messages=[],parser,parse=[],tree,chunks
  chunks=['1+','2*3']
  chunks=['1+','2','*3']
  parser=p_arith_streaming_v6_Expr(out)
  chunks.forEach(function(chunk){parser('chunk',chunk)})
  parser('eof')
- tree=treeFromEvents(parse)
  s=chunks.join('')
  return s + '\n\n'
   + pp(messages) + '\n\n'
@@ -164,15 +154,9 @@ function ES5_default_test(s){var p,pt=[],messages=[],tree
   if(m=='tree segment')pt=pt.concat(x)})
  p('chunk',s)
  p('eof')
- tree=treeFromEvents(pt)
  return s + '\n\n'
       + pp(messages) + '\n\n'
- //     + pp(tree) + '\n\n'
-      + showTree(tree,p_ES5_v6_default.names,s)
- return JSON.stringify(pt)
- return pt[0]
- return pp(pt)
- return showPTNodeTreeAttrs(pt,[],[])}
+      + showTree({tree:pt,names:p_ES5_v6_default.names,input:s})}
 
 function ES5_default_test_identifier(s){var p,pt=[],messages=[],tree,failed=false
  s='foo_$xxx'
@@ -204,7 +188,6 @@ function peg_benchmarks_upper_bound(){var ret=[],l,ms
  //ret.push(simple(peg_benchmarks_test_chars_charat(l),ms,"test chars (charAt)"))
  ret.push(simple(peg_benchmarks_test_chars_re(l),ms,"test chars (regex)"))
  //ret.push(simple(peg_benchmarks_test_arith_streaming(l),ms,"streaming revisited"))
- ret.push(simple(peg_benchmarks_test_arith_fast(l),ms,"streaming fast"))
  ret.push(simple(peg_benchmarks_test_arith_v6(l),ms,"streaming v6"))
  ret.push(simple(peg_benchmarks_test_arith_v6_hacked(l),ms,"streaming v6 hacked"))
  ret.push(simple(peg_benchmarks_test_arith_v6_default(l),ms,"v6 default"))
@@ -230,16 +213,6 @@ function peg_benchmarks_test_chars_re(n){return function(){var s,l,i,x
  s=Array(n/2+1).join('ab')
  for(i=0,l=s.length;i<l;i++){
   s.slice(i).match(/^ab/)}}}
-
-function peg_benchmarks_test_arith_streaming(n){return function(){var s,p,x=[]
- s=Array(n/8+1).join('1*2+')+'3'
- assert(s.length==n/2+1,'string length '+n)
- p=arith_stream(function(m,a){})
- p('chunk',s)
- p('chunk',s)
- p('eof')
- //return pp(x)
- }}
 
 function peg_benchmarks_test_arith_v6(n){var s,p,x=[]
  s=Array(n/8+1).join('1*2+')+'3'
@@ -267,14 +240,6 @@ function peg_benchmarks_test_arith_v6_default(n){var s,p,x=[]
   p('chunk',s)
   p('chunk',s)
   return s}}
-
-function peg_benchmarks_test_arith_fast(n){return function(){var s,p,x=[]
- s=Array(n/8+1).join('1*2+')+'3'
- assert(s.length==n/2+1,'string length')
- p=arith_stream(function(m,a){})
- p('chunk',s)
- p('chunk',s)
- p('eof')}}
 
 function peg_benchmarks_test_arith_pushpop(n){return function(){var npushes,a=[],depth=16,i,j,total=0
   npushes=n*13 // the arithmetic parser does about 13 state pushes and pops per input character on the test input we use

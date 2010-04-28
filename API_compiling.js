@@ -1,9 +1,9 @@
-function generateParser(peg,opts){var pt,named_res
- pt=parsePEG(peg)
- if(!pt[0])return pt
- named_res=v6_named_res(pt,parsePEG.names,peg)
+function generateParser(peg,opts){var parse_result,named_res
+ parse_result=parsePEG(peg)
+ if(!parse_result[0])return parse_result
+ named_res=v6_named_res(parse_result)
  try{return [1,codegen_v6(opts||{},named_res)]}
- catch(e){return [0,e.toString()]}}
+ catch(e){return [0,e]}}
 
 function generateParserThrowing(peg,opts){var x
  x=generateParser(peg,opts)

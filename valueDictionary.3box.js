@@ -8,11 +8,13 @@
 
 //,cfunc:'generateParserThrowing',ciset:'PEG.peg_gen_v6',outfn:'parsePEG.js',outct:'text/javascript'
 
-,cfunc:'generateParserThrowing',ciset:'test_gen_dfa',outfn:'test_dfa.js',outct:'text/javascript'
+//,cfunc:'generateParserThrowing',ciset:'test_gen_dfa',outfn:'test_dfa.js',outct:'text/javascript'
 
-//,cfunc:'generateParser2',ciset:'PEG.peg_gen_v6'
+//,cfunc:'generateParser',ciset:'PEG.peg_gen_v6'
 
 //,cfunc:'generateParser',ciset:'ES5_gen_v6'
+
+//,cfunc:'generateParserThrowing',ciset:'ES5_commonjs',outfn:'build/ES5_commonjs.js',outct:'text/javascript'
 
 //,cfunc:'peg_v5_gen',ciset:'ES5_v6_default_identifier',outfn:'ES5_v6_default_identifier.js',outct:'text/javascript'
 
@@ -21,42 +23,19 @@
 
 //,outfn:'parse_trace',outct:'text/plain'
 
-//,cfunc:'ES5_default_test_identifier',ciset:'ES5_test_small'
-
-//,cfunc:'peg_v6_test_streaming_arith_default'
-
 //,cfunc:'peg_benchmarks_upper_bound'
 
-
-//,outfn:'scratch',outct:'text/plain'
-//,cfunc:'peg_v6_test_streaming_arith'
-
-//,cfunc:'peg_v5_gen',ciset:'PEG_features_v6'
-//,outfn:'PEG_features_streaming.js',outct:'application/x-javascript'
-
-
-//cfunc:'cset_prod',ciset:'cset_prod',outfn:'cset_prod.js',outct:'application/x-javascript'
-//,cfunc:'PEG_summarize',ciset:'ES5arith'
-//,cfunc:'PEG_summarize_tal',ciset:'ES5arith'
-//,cfunc:'peg_arith_test',ciset:'arith_expr1'
-
-//,cfunc:'rawFailDump',ciset:'buildFailTree'
-
-//,cfunc:'abc_test',ciset:'test_abc'
-
-//,cfunc:'streaming_test',ciset:'streaming_test'
-//,cfunc:'streaming_revisited'
+//,cfunc:'cset_prod',ciset:'cset_prod',outfn:'cset_prod.js',outct:'application/x-javascript'
 
 //,cfunc:'peg_v6_hacked'
 //,cfunc:'peg_benchmarks_upper_bound'
-//,cfunc:'peg_benchmarks_test_arith_streaming'
 //,cfunc:'peg_benchmarks_array_push'
 
 /**************/
 /* v6 codegen */
 /**************/
 
-//,cfunc:'peg_v5_gen',ciset:'arith_streaming',outfn:'PEG_arith_streaming.js',outct:'text/javascript'
+,cfunc:'generateParserThrowing',ciset:'arith_streaming',outfn:'PEG_arith_streaming.js',outct:'text/javascript'
 //,cfunc:'peg_v5_gen',ciset:'arith_streaming_default_flags',outfn:'PEG_arith_streaming_default.js',outct:'text/javascript'
 //,cfunc:'peg_v5_gen',ciset:'ES5_v6_default',outfn:'ES5_v6_default.js',outct:'text/javascript'
 //,outfn:'scratch',outct:'text/plain'
@@ -124,6 +103,7 @@
  ,'ES5_test':['file(API.js)']
  ,'ES5_test_small':['small_javascript']
  ,'ES5_gen_v6':['file(ECMAScript_unified.peg)','emptyOpts']
+ ,'ES5_commonjs':['file(ECMAScript_unified.peg)','ES5_commonjs']
  ,'scratch':['file(scratch)']
  ,CodePointLit:['CodePointLit']
  ,profile_analyzer:['result(1252281266,ES5_test,ES5_test)']
@@ -215,10 +195,12 @@
      }
  ,features_streaming:{prefix:'p_features_stream'
                      ,streaming:true}
- ,ES5_v6_default:{fname:'p_ES5_v6_default'
+ ,ES5_v6_default:{fname:'ES5Parser'
                  ,streaming:true}
  ,ES5_v6_default_identifier:{fname:'p_ES5_v6_default_identifier'
                             ,streaming:true}
+ ,ES5_commonjs:{commonjs:true
+               ,fname:'ES5Parser'}
  ,ES5arith_v5_opts:{prefix:'p_ES5_arith_'}
  ,ES5arith_expr:'8 * 3 << ~-2'
  ,PEGpeg_v5_opts:{start:'RuleSet'
