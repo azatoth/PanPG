@@ -1,7 +1,8 @@
-function v6_named_res(tree,names,s){var dict,ret,hide,warnings,st
+function v6_named_res(result){var dict,ret,hide,warnings,st
+ //var result=[1,{tree:tree[1],names:names,input:s}]
  hide=
   ['anonymous']
- st=showTree(tree[1],names,s,{hide:hide})
+ //st=showTree(result,{hide:hide})
  dict={
 RuleSet:
   function(_,cn){ret=cn},
@@ -90,7 +91,8 @@ CodePointFrom:transparent,
 CodePointTo:transparent
 
 }
- warnings=treeWalker(dict,names)(tree,s)
+ warnings=treeWalker(dict,result)
+ if(warnings.length)throw warnings
  return ret
  return pp(ret)+'\n\n'+pp(warnings.slice(0,8))+'\n\n'+st
  function transparent(_,cn){return cn[0]}
