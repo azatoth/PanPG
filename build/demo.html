@@ -19,9 +19,8 @@ h1 {margin-bottom:1.5em}
 <h1>PanPG demo 2010-04-05</h1>
 
 <p>This is a very simple demo that demonstrates the PanPG API.
-We load a PEG from a file, generate a parser, use that parser to parse some input, and finally display the resulting parse or error.
-You can edit the arithmetic expression below and see the different parse trees generated.
-You can also edit the grammar, and the parser will be regenerated and the input parsed again.
+We load a PEG from a file, generate a parser, use that parser to parse some input, display the resulting parse or error, and finally walk the parse tree to generate a result.
+You can edit the grammar, the arithmetic expression, and the treeWalker callbacks, and your changes will take effect in real time.
 
 <p>The parser generator also has Unicode support, including characters outside the BMP, though this demo doesn't use them.
 

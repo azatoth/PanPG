@@ -4,7 +4,7 @@
 //,cfunc:'test_showError'
 //,cfunc:'test_showResult'
 
-//,cfunc:'test_treeWalker'
+,cfunc:'test_treeWalker'
 
 //,cfunc:'generateParserThrowing',ciset:'PEG.peg_gen_v6',outfn:'parsePEG.js',outct:'text/javascript'
 
