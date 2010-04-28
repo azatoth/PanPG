@@ -1,4 +1,4 @@
-function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,function_emit,dbg,function_fail,function_assert,nameline,asserts,single_call_special_case
+function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,function_emit,dbg,function_fail,function_assert,nameline,asserts,single_call_special_case,id_names,commonjs_begin,commonjs_end
  //opts.debug=true
  //opts.trace=true
  //opts.asserts=true
@@ -9,6 +9,8 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
  opts.prefix=opts.prefix||''
  opts.start=opts.start||named_res[0][0]
  opts.fname=opts.fname||opts.prefix+opts.start
+ opts.target_language=opts.target_language||'ES3'
+ opts.commonjs=!!opts.commonjs
  opts.S_map=[]
  rules=v6_named_res_to_rules(opts,named_res)
  rules=v6_expr_fixups(opts,rules)
@@ -24,6 +26,7 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
  rules=v6_step_three(opts,rules) // assign T, M, and F states
  dbg=opts.trace?v6_dbg(opts,rules):function(){return ''}
  asserts=opts.asserts
+ id_names=opts.commonjs?'exports.names':opts.fname+'.names'
  vars=['eof=false'
       ,'s=\'\'','l=0'
       ,'S='+rules._.expr.S_flags
@@ -33,6 +36,11 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
       ,'buf=[]','bufs=[]','states=[]','posns=[]','c']
  if(opts.trace) vars.push('S_map=[\''+opts.S_map.join('\',\'')+'\']')
  ft=v6_flag_test(opts)
+ commonjs_begin=';(function(exports){'
+  + 'exports.names='+nameline
+  + ';exports.parse='+opts.fname
+  + '\n'
+ commonjs_end='})(typeof exports==\'object\'?exports:'+opts.fname+'={});'
  function_emit='function emit(){var x='
   + 'bufs.length?bufs[0]:buf;'
   + 'if(x.length){out(\'tree segment\',x);'
@@ -53,7 +61,9 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
   +    'if(m==\'tree segment\')out=out.concat(x)});'
   +  'x(\'chunk\',s);'
   +  'x(\'eof\');'
-  +  'return out[0]===false?out:[true,out]}'
+  +  'return out[0]===false?out:[true,{names:'+id_names
+  +                                  ',tree:out'
+  +                                  ',input:s}]}'
  mainloop='function mainloop(){for(;;){'
   + dbg('main')+'\n'
   + 'if('+v6_is_not_prim_test(opts)('S')+')t_block:{\n'
@@ -154,8 +164,9 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
                + pp(opts)+'\n\n'
                + pp(opts.prim_test_assignments)+'\n\n'
                + pp(rules)+'\n\n'):'')
+      + (opts.commonjs?commonjs_begin:'')
       + (opts.trace?v6_legend(opts,rules)+'\n':'')
-      + nameline+'\n'
+      + opts.fname+'.names='+(opts.commonjs?id_names:nameline)+'\n'
       + 'function '+opts.fname+'(out){'
           +varstmt(vars)+'\n'
           +v6_TMF_tables(opts,rules)
@@ -165,7 +176,9 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
           +function_emit+'\n'
           +function_fail
           +(asserts?'\n'+function_assert:'')
-          +'}\n'}
+          +'}\n'
+      + (opts.commonjs?commonjs_end:'')
+ }
 
 function v6_dbg(opts,rules){return function(msg){
   return 'out(\''+msg+'\',\'S:\'+(S_map[S>>>'+opts.flagbits+']||\'unknown state \'+S>>>'+opts.flagbits+')'
@@ -228,8 +241,7 @@ function v6_direct_dependencies(expr){var ret=[]
 
 function v6_nameline(opts,rules){var names=[]
  for(p in rules)names[rules[p].S]=rules[p].name
- nameline=opts.fname+'.names='+'[\''+names.join('\',\'')+'\'];'
- return nameline}
+ return '[\''+names.join('\',\'')+'\']'}
 
 function v6_named_res_to_rules(opts,res){var i,l,ret={},name
  for(i=0,l=res.length;i<l;i++){
