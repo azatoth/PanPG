@@ -1,19 +1,3 @@
-/*
-function peg_v5_gen_tal(s){var pt,hide,force
- pt=p_PEG_v5_RuleSet(s)[1]
- PEG_codegen_5(pt)
- hide=['S','LB','IdentStartChar','IdentChar']
- force=['nm','f1','named_re','re','cset','cp']
- return showPTNodeTreeAttrs(pt,hide,force)}
-
-function peg_v5_gen(s,opts){var pt
-return generateParser(s,opts)
-return pp(opts)
- pt=p_PEG_v5_RuleSet(s)[1]
- PEG_codegen_5(pt)
- return pt.code_v5()(opts)}
-*/
-
 function test_treeWalker(){var dict,out=[],result,names,parser,s
  s="1+2*3"
  out.push(s+'\n\n')
@@ -53,7 +37,7 @@ function peg_v6_test_streaming_arith(){var s,messages=[],parser,parse=[],tree,ch
  return s + '\n\n'
   + pp(messages) + '\n\n'
   + pp(parse) + '\n\n'
-  + showTree(tree,p_arith_streaming_v6_Expr.names,s)
+  + showTree({tree:parse,names:p_arith_streaming_v6_Expr.names,input:s})
  function out(m,x){messages.push(m+' '+x)
   if(m=='tree segment')parse=parse.concat(x)}}
 
@@ -67,10 +51,9 @@ function peg_v6_test_streaming_arith_default(){var s,messages=[],parser,parse=[]
  chunks.forEach(function(chunk){parser('chunk',chunk)})
  parser('eof')
  return pp(chunks) + '\n\n'
-  + p_arith_streaming_v6_default_flags_Expr.legend + '\n\n'
   + pp(messages) + '\n\n'
   + pp(parse) + '\n\n'
-  + showTree(parse,p_arith_streaming_v6_Expr.names,s)
+  + showTree({tree:parse,names:p_arith_streaming_v6_Expr.names,input:s})
  function out(m,x){messages.push(m+' '+x)
   if(m=='tree segment')parse=parse.concat(x)}}
 
@@ -132,9 +115,6 @@ function peg_v6_hacked(){var s,p,msgs=[],i,l,prof,ls=[]
    ls.push(i+': '+prof[i])
  return ls.join('\n')
  }
-
-function peg_features_test(){
- return showTree(p_PEG_features_v5_S('x')[1])}
 
 function PEG_ES5_arith_Expr_test(s){var pt
  pt=p_ES5_arith_Expr(s)[1]

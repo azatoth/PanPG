@@ -1,9 +1,9 @@
-p_arith_streaming_v6_default_flags_Expr.names=['','Expr','Add','Mult','Num','S','_'];
+p_arith_streaming_v6_default_flags_Expr.names=['','Expr','Add','Mult','Num','S','_']
 function p_arith_streaming_v6_default_flags_Expr(out){var eof=false,s='',l=0,S=24576,T,M,F,R,tbl=[],x,pos=0,offset=0,buf=[],bufs=[],states=[],posns=[],c;
 T=[,28672,32768,77824,125446,141830,155648,10927,15023,43526,45056,49152,23215,43,44,65536,23215,43,15023,19119,88582,90112,94208,23215,43,45,110592,23215,43,19119,126976,46,135168,46,143360,47,151552,47,6831,163840,48]
 M=[,41,41,41,41,41,41,41,36864,41,43526,57540,41,41,61440,73728,41,41,41,81920,41,88582,102596,41,41,106496,118784,41,41,41,41,131072,41,135168,41,147456,41,151552,159744,41,42]
 F=[,42,42,42,42,42,42,42,42,42,41,42,53248,42,42,42,69632,42,42,42,42,41,42,98304,42,42,42,114688,42,42,42,42,42,41,42,42,42,41,42,42,41]
-if(typeof out=='string'){s=out;out=[];x=p_arith_streaming_v6_default_flags_Expr(function(m,x,y){if(m=='fail')out=[false,x,y];if(m=='tree segment')out=out.concat(x)});x('chunk',s);x('eof');return out[0]===false?out:[true,out]}
+if(typeof out=='string'){s=out;out=[];x=p_arith_streaming_v6_default_flags_Expr(function(m,x,y){if(m=='fail')out=[false,x,y];if(m=='tree segment')out=out.concat(x)});x('chunk',s);x('eof');return out[0]===false?out:[true,{names:p_arith_streaming_v6_default_flags_Expr.names,tree:out,input:s}]}
 return function(m,x){switch(m){
 case 'chunk':s+=x;l=s.length;while(tbl.length<l+1)tbl.push([]);mainloop();break
 case 'eof':eof=true;mainloop();break
