@@ -35,23 +35,13 @@
 /* v6 codegen */
 /**************/
 
-,cfunc:'generateParserThrowing',ciset:'arith_streaming',outfn:'PEG_arith_streaming.js',outct:'text/javascript'
-//,cfunc:'peg_v5_gen',ciset:'arith_streaming_default_flags',outfn:'PEG_arith_streaming_default.js',outct:'text/javascript'
-//,cfunc:'peg_v5_gen',ciset:'ES5_v6_default',outfn:'ES5_v6_default.js',outct:'text/javascript'
+//,cfunc:'generateParserThrowing',ciset:'arith_streaming',outfn:'PEG_arith_streaming.js',outct:'text/javascript'
+//,cfunc:'generateParserThrowing',ciset:'arith_streaming_default_flags',outfn:'PEG_arith_streaming_default.js',outct:'text/javascript'
+//,cfunc:'generateParserThrowing',ciset:'ES5_v6_default',outfn:'ES5_v6_default.js',outct:'text/javascript'
 //,outfn:'scratch',outct:'text/plain'
 //,cfunc:'peg_v6_test_streaming_arith'
 //,cfunc:'peg_v6_test_streaming_arith_default'
 //,cfunc:'peg_v6_test_streaming_arith_single_call'
-
-/************/
-/* FEATURES */
-/************/
-
-//,cfunc:'peg_v5_gen',ciset:'PEG_features_gen_v5',outfn:'PEG_features_v5.js',outct:'application/x-javascript'
-
-//,cfunc:'peg_features_test'
-
-//,cfunc:'generateParserThrowing',ciset:'test_markdown'
 
 ,isets:
  {cset_prod:['file(cset.js)'
