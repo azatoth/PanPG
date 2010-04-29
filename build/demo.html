@@ -16,11 +16,11 @@ h1 {margin-bottom:1.5em}
 <script src=PanPG_generator.js></script>
 <script src=PanPG_util.js></script>
 
-<h1>PanPG demo 2010-04-05</h1>
+<h1>PanPG demo 2010-04-28</h1>
 
 <p>This is a very simple demo that demonstrates the PanPG API.
 We load a PEG from a file, generate a parser, use that parser to parse some input, display the resulting parse or error, and finally walk the parse tree to generate a result.
-You can edit the grammar, the arithmetic expression, and the treeWalker callbacks, and your changes will take effect in real time.
+You can edit the grammar, the arithmetic expression, and the parse tree callbacks, and your changes will take effect in real time.
 
 <p>The parser generator also has Unicode support, including characters outside the BMP, though this demo doesn't use them.
 
@@ -39,22 +39,31 @@ There's also an <a href=ES5.html>an ECMAScript parser demo</a>.
 
 <fieldset>
 <label>Grammar: <br><textarea id=PEG spellcheck=false></textarea></label>
-<label>Input: <br><textarea id=text spellcheck=false></textarea></label>
 <label>Generated parser: <br><textarea readonly id=parser></textarea></label>
+<label>Input: <br><textarea id=text spellcheck=false></textarea></label>
 <label>Parse tree: <br><textarea readonly id=parse_tree></textarea></label>
+<label>Callbacks: <br><textarea id=walker spellcheck=false></textarea></label>
+<label>Output: <br><textarea id=output readonly></textarea></label>
 </fieldset>
 
 <script>
 var inputPEG_el=document.getElementById('PEG')
   , inputText_el=document.getElementById('text')
+  , inputWalker_el=document.getElementById('walker')
   , parser_el=document.getElementById('parser')
   , parseTree_el=document.getElementById('parse_tree')
   , status_el=document.getElementById('status')
+  , output_el=document.getElementById('output')
   , ms
   , the_grammar
   , the_parser
   , the_input
+  , the_result
+  , the_walker_code
+  , the_walker
+  , the_output
   , sample_input='arith_test_expr'
+  , sample_walker='arith_callbacks'
 
 // report what we are doing and how long it takes:
 function start(s){status_el.innerHTML+=s+'... ';ms=+new Date}
@@ -95,25 +104,56 @@ function updateParser(peg){var result,compilerOpts,parser
  else{
   updateParseTree()}}
 
-function updateParseTree(){var result
+function updateParseTree(){
  the_input=inputText_el.value
  start('parsing')
- result=the_parser(the_input)
+ the_result=the_parser(the_input)
  finish()
  start('rendering the parser output')
- parseTree_el.value=showResult(result,the_parser.names,the_input)
+ parseTree_el.value=showResult(the_result)
+ finish()
+ if(!the_walker_code){
+  start('fetching the tree walker')
+  xhr('GET',sample_walker,null,function(x){
+   inputWalker_el.value=x.responseText
+   finish()
+   updateWalker()})}
+ else{
+  updateWalker()}}
+
+function updateWalker(){var x
+ start('eval() the callbacks')
+ the_walker_code=inputWalker_el.value
+ try{the_walker=eval('('+the_walker_code+')')}
+ catch(e){output_el.value=e;finish();return}
+ finish()
+ updateWalkerOutput()}
+
+function updateWalkerOutput(){var x,warnings
+ start('walk the parse tree')
+ try{warnings=treeWalker(the_walker/*actually the dict...*/,the_result)}
+ catch(e){output_el.value=e;finish();return}
+ if(warnings.length){output_el.value=warnings.join('\n')+'\n\n'+the_output}
+ else output_el.value=the_output
  finish()}
 
 function updateIfChanged(){if(the_input!=inputText_el.value) updateParseTree()}
 
 function updateParserIfChanged(){if(the_grammar!=inputPEG_el.value) updateParser(inputPEG_el.value)}
 
+function updateWalkerIfChanged(){if(the_walker_code!=inputWalker_el.value) updateWalker()}
+
 function delay(f,ms){return function(){
  if(f.pending) clearTimeout(f.pending)
  f.pending = setTimeout(f,ms)}}
 
-inputText_el.onkeydown=inputText_el.onkeyup=inputText_el.onclick=delay(updateIfChanged,50)
-inputPEG_el.onkeydown=inputPEG_el.onkeyup=inputPEG_el.onclick=delay(updateParserIfChanged,50)
+function onChange(el,f,ms){
+ el.onkeydown=el.onkeyup=el.onclick=delay(f,ms)}
+
+onChange(inputText_el,updateIfChanged,50)
+onChange(inputPEG_el,updateParserIfChanged,50)
+onChange(inputWalker_el,updateWalkerIfChanged,50)
+
 inputText_el.focus()
 
 </script>
