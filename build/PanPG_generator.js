@@ -8,12 +8,12 @@
 exports.generateParser=generateParser
 exports.generateParserThrowing=generateParserThrowing
 
-function generateParser(peg,opts){var pt,named_res
- pt=parsePEG(peg)
- if(!pt[0])return pt
- named_res=v6_named_res(pt,parsePEG.names,peg)
+function generateParser(peg,opts){var parse_result,named_res
+ parse_result=parsePEG(peg)
+ if(!parse_result[0])return parse_result
+ named_res=v6_named_res(parse_result)
  try{return [1,codegen_v6(opts||{},named_res)]}
- catch(e){return [0,e.toString()]}}
+ catch(e){return [0,e]}}
 
 function generateParserThrowing(peg,opts){var x
  x=generateParser(peg,opts)
@@ -24,12 +24,12 @@ function patchPEG(original,patch){}
 
  /* parsePEG.js */ 
 
-parsePEG.names=['','PropSpec','BinaryUnicodeProperty','UnicodeProperty','PropVal','ScriptOrCatPropVal','UPlusCodePoint','PositiveSpec','NegativeSpec','CodePoint','CodePointLit','CodePointFrom','CodePointTo','CodePointRange','UnicodePropSpec','CodePointExpr','CharSetUnion','CharSetIntersection','HEXDIG','CharSetDifference','CharEscape','CharSetExpr','StrLit','CharSet','PosCharSet','NegCharSet','Empty','AtomicExpr','ParenthExpr','Replicand','N','M','Optional','MNRep','PosRep','AnyRep','SeqUnit','Sequence','IdentChar','IdentStartChar','OrdChoice','S','SpaceAtom','LB','NonTerminal','Comment','Rule','RuleSet','PosLookahead','NegLookahead','_'];
+parsePEG.names=['','PropSpec','BinaryUnicodeProperty','UnicodeProperty','PropVal','ScriptOrCatPropVal','UPlusCodePoint','PositiveSpec','NegativeSpec','CodePoint','CodePointLit','CodePointFrom','CodePointTo','CodePointRange','UnicodePropSpec','CodePointExpr','CharSetUnion','CharSetIntersection','HEXDIG','CharSetDifference','CharEscape','CharSetExpr','StrLit','CharSet','PosCharSet','NegCharSet','Empty','AtomicExpr','ParenthExpr','Replicand','N','M','Optional','MNRep','PosRep','AnyRep','SeqUnit','Sequence','IdentChar','IdentStartChar','OrdChoice','S','SpaceAtom','LB','NonTerminal','Comment','Rule','RuleSet','PosLookahead','NegLookahead','_']
 function parsePEG(out){var eof=false,s='',l=0,S=204800,T,M,F,R,tbl=[],x,pos=0,offset=0,buf=[],bufs=[],states=[],posns=[],c;
 T=[,860160,917504,924166,940550,956934,1034758,834246,973510,1019904,1097728,1015808,1101824,1003520,819200,802816,756230,708608,1093632,663552,1163264,647168,1138688,593920,1106116,608966,589824,569344,557252,544768,1265664,1257472,1273856,1220608,1212416,536576,499712,453126,319488,315392,381124,326150,339968,360448,303104,270336,282624,208896,1282244,1290436,1298432,215558,217088,221184,187055,191151,236038,240326,241664,178695,249856,178695,258048,187055,191151,322,323,278528,324,182959,170503,325,170503,166575,162311,311296,158215,326,327,327680,174599,335872,174599,344064,328,352256,178695,328,367110,368640,329,330,331,385024,170503,322,154287,401408,170503,322,416262,417988,332,425984,170503,322,154287,442368,170503,322,457222,458752,150191,466944,170503,322,481798,483328,150191,491520,170503,322,503808,146095,141999,137903,133807,117423,199343,203439,113327,121519,333,548864,117423,113327,334,166575,335,573440,109231,96943,182959,92847,336,598016,105135,101039,610304,337,338,622592,170503,322,634880,88751,322,339,80559,655360,170503,322,72367,674310,676036,679936,170503,322,340,696320,170503,322,72367,68271,719366,721092,724992,170503,322,341,741376,170503,322,68271,760326,761856,64175,770048,170503,322,784902,786432,64175,794624,170503,322,806912,60079,55983,39599,823296,31407,35503,835584,337,342,6831,851968,342,339,864256,10927,872448,15023,880640,343,344,19119,897024,23215,907782,909508,345,23215,15023,925696,346,933888,346,942080,346,950272,346,958464,346,966656,346,974848,337,342,338,6831,995328,342,339,47791,347,51887,39599,1024000,27311,43695,1036288,348,349,1048576,76295,76295,76295,76295,1071622,1073152,76295,1081344,76295,322,322,350,351,39599,337,1114112,170503,322,1126400,88751,322,339,352,1146880,1150976,84655,353,352,1169926,1171456,354,1179648,76295,76295,76295,76295,322,1204224,354,355,121519,349,121519,356,129711,1239558,1241284,357,125615,322,358,1261568,359,1269760,359,121519,360,361,150191,362,150191,195247,1306624,363]
 M=[,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,320,229376,320,320,320,236038,253952,245760,320,249856,320,320,320,320,274432,320,278528,286916,291012,295108,299008,320,307200,320,311296,320,320,320,331776,320,335872,320,320,320,356352,320,320,320,372736,320,320,393216,320,320,397508,409600,320,320,320,416262,422084,434176,320,320,438468,320,320,320,320,475136,463044,320,320,320,320,481798,487620,320,320,320,320,320,320,320,320,320,320,320,320,540868,320,320,320,320,561152,565444,320,320,320,320,320,320,320,320,320,320,618692,614400,320,630784,320,320,643268,320,320,320,651460,320,320,320,667648,320,674310,688324,320,320,692420,704512,320,320,320,712704,320,719366,733380,320,320,737476,749568,320,320,320,320,778240,766148,320,320,320,320,784902,790724,320,320,320,320,320,320,320,320,320,320,843776,839680,320,850630,320,856064,320,320,320,320,876740,888832,320,320,320,320,901120,320,907782,913408,320,320,320,929792,320,933888,320,946176,320,950272,320,962560,320,966656,987136,978944,983040,320,993990,320,999424,320,1007812,1011712,320,320,320,320,320,1047046,1040384,320,320,1052672,1056768,1060864,1064960,320,320,1077248,320,320,320,320,320,320,320,1110212,1122304,320,320,1134788,320,320,320,1142784,1159168,1146880,320,320,320,320,320,1178118,320,1183744,1187840,1191936,1196032,320,320,1208320,320,1216708,320,1224900,1228800,1232896,1253572,320,1245184,320,320,320,320,1261568,320,1269760,1278148,320,1286144,320,1294336,320,1302528,320,321]
 F=[,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,266240,321,225280,321,321,320,321,321,321,320,321,262144,321,321,321,321,320,321,321,321,321,321,321,321,320,321,321,321,321,321,320,321,350726,321,321,321,321,376832,321,321,321,321,389120,321,321,321,405504,321,321,320,321,321,430080,321,321,321,446464,321,321,321,321,321,471040,321,321,320,321,321,495616,321,321,507904,512000,516096,520192,524288,528384,532480,321,321,321,321,552960,321,321,321,321,321,577536,581632,585728,321,321,321,602112,321,321,321,321,321,626688,321,321,638976,321,321,321,321,659456,321,321,321,320,321,684032,321,321,321,700416,321,321,321,321,320,321,729088,321,321,321,745472,321,321,321,321,321,321,774144,321,321,320,321,321,798720,321,321,811008,815104,321,321,827392,321,321,321,321,321,321,321,321,321,870918,895494,321,321,884736,321,321,321,321,321,320,321,321,321,321,321,321,320,321,321,321,320,321,321,321,320,321,321,321,321,321,321,321,321,321,321,321,321,321,1028096,321,321,321,321,321,321,321,321,321,321,1089536,321,321,1085440,321,321,321,321,321,321,321,1118208,321,321,1130496,321,321,321,321,320,1155268,321,321,321,1202694,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,321,1249280,321,321,321,321,321,320,321,320,321,321,321,321,321,321,321,321,320]
-if(typeof out=='string'){s=out;out=[];x=parsePEG(function(m,x,y){if(m=='fail')out=[false,x,y];if(m=='tree segment')out=out.concat(x)});x('chunk',s);x('eof');return out[0]===false?out:[true,out]}
+if(typeof out=='string'){s=out;out=[];x=parsePEG(function(m,x,y){if(m=='fail')out=[false,x,y];if(m=='tree segment')out=out.concat(x)});x('chunk',s);x('eof');return out[0]===false?out:[true,{names:parsePEG.names,tree:out,input:s}]}
 return function(m,x){switch(m){
 case 'chunk':s+=x;l=s.length;while(tbl.length<l+1)tbl.push([]);mainloop();break
 case 'eof':eof=true;mainloop();break
@@ -682,10 +682,11 @@ CSET.import('',CSET)
 
 /* PEG_codegen_6_attr.js */ 
 
-function v6_named_res(tree,names,s){var dict,ret,hide,warnings,st
+function v6_named_res(result){var dict,ret,hide,warnings,st
+ //var result=[1,{tree:tree[1],names:names,input:s}]
  hide=
   ['anonymous']
- st=showTree(tree[1],names,s,{hide:hide})
+ //st=showTree(result,{hide:hide})
  dict={
 RuleSet:
   function(_,cn){ret=cn},
@@ -774,7 +775,8 @@ CodePointFrom:transparent,
 CodePointTo:transparent
 
 }
- warnings=treeWalker(dict,names)(tree,s)
+ warnings=treeWalker(dict,result)
+ if(warnings.length)throw warnings
  return ret
  return pp(ret)+'\n\n'+pp(warnings.slice(0,8))+'\n\n'+st
  function transparent(_,cn){return cn[0]}
@@ -790,7 +792,7 @@ CodePointTo:transparent
 
 /* PEG_codegen_6.js */ 
 
-function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,function_emit,dbg,function_fail,function_assert,nameline,asserts,single_call_special_case
+function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,function_emit,dbg,function_fail,function_assert,nameline,asserts,single_call_special_case,id_names,commonjs_begin,commonjs_end
  //opts.debug=true
  //opts.trace=true
  //opts.asserts=true
@@ -801,6 +803,8 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
  opts.prefix=opts.prefix||''
  opts.start=opts.start||named_res[0][0]
  opts.fname=opts.fname||opts.prefix+opts.start
+ opts.target_language=opts.target_language||'ES3'
+ opts.commonjs=!!opts.commonjs
  opts.S_map=[]
  rules=v6_named_res_to_rules(opts,named_res)
  rules=v6_expr_fixups(opts,rules)
@@ -816,6 +820,7 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
  rules=v6_step_three(opts,rules) // assign T, M, and F states
  dbg=opts.trace?v6_dbg(opts,rules):function(){return ''}
  asserts=opts.asserts
+ id_names=opts.commonjs?'exports.names':opts.fname+'.names'
  vars=['eof=false'
       ,'s=\'\'','l=0'
       ,'S='+rules._.expr.S_flags
@@ -825,6 +830,11 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
       ,'buf=[]','bufs=[]','states=[]','posns=[]','c']
  if(opts.trace) vars.push('S_map=[\''+opts.S_map.join('\',\'')+'\']')
  ft=v6_flag_test(opts)
+ commonjs_begin=';(function(exports){'
+  + 'exports.names='+nameline
+  + ';exports.parse='+opts.fname
+  + '\n'
+ commonjs_end='})(typeof exports==\'object\'?exports:'+opts.fname+'={});'
  function_emit='function emit(){var x='
   + 'bufs.length?bufs[0]:buf;'
   + 'if(x.length){out(\'tree segment\',x);'
@@ -845,7 +855,9 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
   +    'if(m==\'tree segment\')out=out.concat(x)});'
   +  'x(\'chunk\',s);'
   +  'x(\'eof\');'
-  +  'return out[0]===false?out:[true,out]}'
+  +  'return out[0]===false?out:[true,{names:'+id_names
+  +                                  ',tree:out'
+  +                                  ',input:s}]}'
  mainloop='function mainloop(){for(;;){'
   + dbg('main')+'\n'
   + 'if('+v6_is_not_prim_test(opts)('S')+')t_block:{\n'
@@ -946,8 +958,9 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
                + pp(opts)+'\n\n'
                + pp(opts.prim_test_assignments)+'\n\n'
                + pp(rules)+'\n\n'):'')
+      + (opts.commonjs?commonjs_begin:'')
       + (opts.trace?v6_legend(opts,rules)+'\n':'')
-      + nameline+'\n'
+      + opts.fname+'.names='+(opts.commonjs?id_names:nameline)+'\n'
       + 'function '+opts.fname+'(out){'
           +varstmt(vars)+'\n'
           +v6_TMF_tables(opts,rules)
@@ -957,7 +970,9 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
           +function_emit+'\n'
           +function_fail
           +(asserts?'\n'+function_assert:'')
-          +'}\n'}
+          +'}\n'
+      + (opts.commonjs?commonjs_end:'')
+ }
 
 function v6_dbg(opts,rules){return function(msg){
   return 'out(\''+msg+'\',\'S:\'+(S_map[S>>>'+opts.flagbits+']||\'unknown state \'+S>>>'+opts.flagbits+')'
@@ -1020,8 +1035,7 @@ function v6_direct_dependencies(expr){var ret=[]
 
 function v6_nameline(opts,rules){var names=[]
  for(p in rules)names[rules[p].S]=rules[p].name
- nameline=opts.fname+'.names='+'[\''+names.join('\',\'')+'\'];'
- return nameline}
+ return '[\''+names.join('\',\'')+'\']'}
 
 function v6_named_res_to_rules(opts,res){var i,l,ret={},name
  for(i=0,l=res.length;i<l;i++){
@@ -1201,19 +1215,43 @@ function v6_calculate_flags_expr(opts,rule){return function loop(parent){return 
 
 function isProperSequence(expr){return isSequence(expr.type) && expr.subexprs.length>1}
 
-function v6_calculate_streamability(opts,rules){
- rules._.expr.streamable=true}
+function v6_calculate_streamability(opts,rules){var p,parents=[]
+ for(p in rules)go(rules[p])
+ function go(rule){
+  if(parents.indexOf(rule.name)>-1)return explain_cycle(parents,rule.name)
+  parents.push(rule.name)
+  if(!rule.known_regular)rule.known_regular=go_expr(rule.expr)
+  parents.pop()
+  return rule.known_regular
+  function go_expr(expr){var i,l,res
+   if(v6_always_regular(expr.type))return [true]
+   if(isNamedRef(expr.type)){
+    return annotate(expr.id,go(rules[expr.ref]))}
+   for(i=0,l=expr.subexprs.length;i<l;i++){
+    res=go_expr(expr.subexprs[i])
+    if(!res[0])return annotate(expr.id,res)}
+   return [true]}}
+ function annotate(id,res){
+  if(res[0])return res
+  return [false,id+': '+res[1]]}
+ function explain_cycle(parents,name){
+  return [false,parents.concat([name]).join(' → ')]}}
+
+function v6_always_regular(n){return isCset(n)||isStrLit(n)||isEmpty(n)}
 
 function varstmt(vars){
  if(!vars.length) return ''
  return 'var '+vars.join(',')+';'}
 
 function isCset(n){return n==0}
+function isStrLit(n){return n==1}
 function isSequence(n){return n==2}
 function isOrdC(n){return n==3}
+function isRep(n){return n==4}
 function isNamedRef(n){return n==5}
 function isPositiveLookahead(n){return n==7}
 function isLookahead(n){return n==6||n==7}
+function isEmpty(n){return n==8}
 
 /*
 0 → cset
