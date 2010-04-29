@@ -263,7 +263,7 @@ The callbacks should store or use any results they generate, as the `treeWalker`
 Typically the callback for the top-level rule will store a result or call a function to output its result.
 
 The call to `treeWalker` returns an array of warnings.
-When a callback returns a value, but the parent node does not have a provided callback, a warning will be generated.
+When a callback returns a value when no callback was provided for the parent node, a warning will be generated.
 
 There is an example of the tree walker API in use in the [arithmetic demo][demo].
 

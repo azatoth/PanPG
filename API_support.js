@@ -77,7 +77,7 @@ function treeWalker(dict,result){var p,any,anon,fail,except,index,cb={},stack=[]
  except=dict.exception
  if(!result[0]){
   if(fail) fail(result[1],result[2])
-  return err('parse failed: '+result[1]+' '+result[2])}
+  return err('parse failed: '+result[1]+' '+(result[2]||''))}
  result=result[1]
  names=result.names
  events=result.tree
