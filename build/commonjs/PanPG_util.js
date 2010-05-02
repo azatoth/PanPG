@@ -1,3 +1,5 @@
+;(function(exports){
+
 // (event array (can be partial), [name array], [input string], [state]) → [ascii-art tree, state]
 // -or-
 // (complete event array, [name array], [input string]) → ascii-art
@@ -63,7 +65,7 @@ function showError(pos,msg,str){var line_number,col,lines,line,start,end,prefix,
  if(end==-1) end=str.length
  else end=prefix.length+end
  line=str.slice(start,end)
- line=line.replace(/\t/g,' ')
+ line=line.replace('\t',' ')
  col=pos-start
  arrow=Array(col).join('-')+'^'
  return msg+' at line '+line_number+' column '+col+'\n'+line+'\n'+arrow}
@@ -72,7 +74,7 @@ function showResult(r,names,str,opts){
  if(r[0])return showTree(r[1],names,str,opts)
  return showError(r[1],r[2],str)}
 
-function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb={},stack=[],frame,pos=0,warnings=[],i,l,x,retval,events
+function treeWalker(dict,result){var p,any,anon,fail,except,index,cb={},stack=[],frame,pos=0,warnings=[],i,l,x,retval,events
  fail=dict.fail
  except=dict.exception
  if(!result[0]){
@@ -82,9 +84,8 @@ function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb={},st
  names=result.names
  events=result.tree
  for(p in dict) if(dict.hasOwnProperty(p)){
-  if(p=='any'){any=dict[p];throw new Error('unimplemented, use `other` instead')}
+  if(p=='any'){any=dict[p];continue}
   if(p=='anonymous'||p=='anon'){anon=dict[p];continue}
-  if(p=='other'){other=dict[p];continue}
   if(p=='fail'){fail=dict[p];continue}
   if(p=='exception'){except=dict[p];continue}
   index=names.indexOf(p)
@@ -94,18 +95,17 @@ function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb={},st
   if(x>0){ // named rule start
    stack.push(frame)
    frame={index:x,start:pos}
-   if(cb[x]||any||other) frame.cn=[]}
+   if(cb[x]) frame.cn=[]}
   else if(x==-1){ // anonymous node
    i++
    if(i==l)return err('incomplete anonymous node')
-   if(anon)anon(m(pos,pos+events[i]))
+   if(anon)anon({start:pos,end:pos+events[i]})
    pos+=events[i]}
   else if(x==-2){ // node close
    i++
    if(i==l)return err('incomplete rule close')
    pos=frame.start+events[i]
    x=frame.index
-   if(other && !cb[x])cb[x]=other
    if(cb[x])
     try{retval=cb[x](m(frame.start,pos),frame.cn)}
     catch(e){return err('exception in '+names[x]+': '+e.toString())}
@@ -122,3 +122,10 @@ function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb={},st
  function err(s){
   if(except)return except(s)
   throw new Error('treeWalker: '+s)}}
+
+exports.showTree=showTree
+exports.showError=showError
+exports.showResult=showResult
+exports.treeWalker=treeWalker
+
+})(typeof exports=='object'?exports:PanPG_util={});

@@ -4,7 +4,7 @@
 //,cfunc:'test_showError'
 //,cfunc:'test_showResult'
 
-,cfunc:'test_treeWalker'
+//,cfunc:'test_treeWalker'
 
 //,cfunc:'generateParserThrowing',ciset:'PEG.peg_gen_v6',outfn:'parsePEG.js',outct:'text/javascript'
 
@@ -14,7 +14,7 @@
 
 //,cfunc:'generateParser',ciset:'ES5_gen_v6'
 
-//,cfunc:'generateParserThrowing',ciset:'ES5_commonjs',outfn:'build/ES5_commonjs.js',outct:'text/javascript'
+,cfunc:'buildES5_commonjs',ciset:'ES5_commonjs',outfn:'build/commonjs/ES5Parser.js',outct:'text/javascript'
 
 //,cfunc:'peg_v5_gen',ciset:'ES5_v6_default_identifier',outfn:'ES5_v6_default_identifier.js',outct:'text/javascript'
 
@@ -93,7 +93,7 @@
  ,'ES5_test':['file(API.js)']
  ,'ES5_test_small':['small_javascript']
  ,'ES5_gen_v6':['file(ECMAScript_unified.peg)','emptyOpts']
- ,'ES5_commonjs':['file(ECMAScript_unified.peg)','ES5_commonjs']
+ ,'ES5_commonjs':['file(ECMAScript_unified.peg)','file(ECMAScript_streamable.peg)','ES5_commonjs']
  ,'scratch':['file(scratch)']
  ,CodePointLit:['CodePointLit']
  ,profile_analyzer:['result(1252281266,ES5_test,ES5_test)']
