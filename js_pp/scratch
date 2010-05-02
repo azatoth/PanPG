@@ -1,4 +1,6 @@
 function tree(p_,str){
  var s=new State(str)
  if(p_(s) && s.str()=='') return [true, buildTree(s)]
- return [false, s]}
+ return [false, s]
+ for(var p in o) foo
+ x = 4 * 7 + 3 * 2 / 3 && 5}

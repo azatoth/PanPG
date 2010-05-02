@@ -91,7 +91,7 @@ Comment           ← ";" [^ U+000A U+000D ]*
 
 Rule              ← NonTerminal S "←" S OrdChoice
 
-RuleSet           ← (Comment / Rule) (LB+ (Comment / Rule))*
+RuleSet           ← LB* (Comment / Rule) (LB+ (Comment / Rule))* LB*
                   / ϵ
 
 PosLookahead      ← "&" SeqUnit

@@ -219,22 +219,35 @@ MultiplicativeOp ←
 
 UnaryExpr ←
    PostfixExpr
- / DeleteTok S? UnaryExpr
- / VoidTok S? UnaryExpr
- / TypeofTok S? UnaryExpr
- / "++" S? UnaryExpr
- / "--" S? UnaryExpr
- / "+" S? UnaryExpr
- / "-" S? UnaryExpr
- / "~" S? UnaryExpr
- / "!" S? UnaryExpr
+ / DeleteExpr
+ / VoidExpr
+ / TypeofExpr
+ / PreIncrementExpr
+ / PreDecrementExpr
+ / UnaryPlusExpr
+ / UnaryMinusExpr
+ / BitwiseNotExpr
+ / LogicalNotExpr
+
+DeleteExpr ← DeleteTok S? UnaryExpr
+VoidExpr ← VoidTok S? UnaryExpr
+TypeofExpr ← TypeofTok S? UnaryExpr
+PreIncrementExpr ← "++" S? UnaryExpr
+PreDecrementExpr ← "--" S? UnaryExpr
+UnaryPlusExpr ← "+" S? UnaryExpr
+UnaryMinusExpr ← "-" S? UnaryExpr
+BitwiseNotExpr ← "~" S? UnaryExpr
+LogicalNotExpr ← "!" S? UnaryExpr
 
 ; why isn't ++a++ a valid UnaryExpr?
 ; answer: it is, and parses as ++(a++), the evaluation of which must throw a ReferenceError per spec
 ; Firefox currently makes this a syntax error which is wrong, Opera gets it right
 
 PostfixExpr ←
-  LeftHandSideExpr (SnoLB? ("++"/"--"))?
+  LeftHandSideExpr (SnoLB? (PostIncrementOp/PostDecrementOp))?
+
+PostIncrementOp ← "++"
+PostDecrementOp ← "--"
 
 LeftHandSideExpr ←
    CallExpr

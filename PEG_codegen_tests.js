@@ -1,3 +1,7 @@
+function buildES5_commonjs(es5,patch,opts){
+ opts.patches=[patch]
+ return generateParserThrowing(es5,opts)}
+
 function test_treeWalker(){var dict,out=[],result,names,parser,s
  s="1+2*3"
  out.push(s+'\n\n')
