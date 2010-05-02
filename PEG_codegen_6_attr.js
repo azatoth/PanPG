@@ -1,5 +1,4 @@
 function v6_named_res(result){var dict,ret,hide,warnings,st
- //var result=[1,{tree:tree[1],names:names,input:s}]
  hide=
   ['anonymous']
  //st=showTree(result,{hide:hide})
