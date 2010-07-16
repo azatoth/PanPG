@@ -1,4 +1,4 @@
-{Expr: function(m,cn){the_output=cn[0]}
+{Expr: function(m,cn){return cn[0]} // [1]
 ,Add:  function(m,cn){var i,sum=0
          for(i=0;i<cn.length;i++)
            sum+=cn[i]
@@ -7,5 +7,16 @@
          for(i=0;i<cn.length;i++)
            product *= cn[i]
          return product}
-,Num:  function(m,cn){return Number(m.text())}
+,Num:  function(m,cn){return Number(m.text())} // [2]
 }
+
+/* [1] The value of Expr is the value of the first 
+       child, cn[0].  This will be the return value 
+       of the Add callback.
+
+   [2] The first argument to the callback function 
+       is the match object, which stores start and 
+       end positions and has a text() method, which 
+       we use here to find the digits and parse them 
+       as a number.
+*/

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+
+<title>JavaScript Syntax Highlighting Demo</title>
+
+<style>
+textarea {width:40%;height:256px;float:right;clear:right}
+#output_text {font-family:monospace}
+body.dark {background:#000;color:#fff}
+.dark textarea {background:#000;color:#fff;border:1px solid #777}
+</style>
+
+<h1>JavaScript Syntax Highlighting (work in progress)</h1>
+
+<p>
+This page demonstrates true syntax highlighting of JavaScript source code, with HTML output.
+The input, code, and CSS on the right is "live".
+The CSS is just a start.
+</p>
+
+<textarea id=input spellcheck=false>function x(){if(1>0) throw new Error("1>0")}
+
+if(1>0) throw new Error("1>0");
+if(0&lt;1) return;
+throw new Error('xyz');
+return 0;
+
+if(0&lt;1) return 0;
+else return 1;
+
+function f(x){return function g(y){return x+y}}
+
+// this is a comment
+
+var tags=[]
+  , replacements=[]
+  , i,l</textarea>
+
+<textarea id=code spellcheck=false>// `parse_result` is provided by the environment
+// `parse_result.input` is the input string
+
+// this code is wrapped in a function, so `return` is needed to return the generated HTML which is then displayed
+
+var tags=[]
+  , replacements=[]
+  , i,l
+  , result
+  , input
+  , tag_rules
+  , replace_rules
+  , end_markers
+
+// which parse rules get surrounded by tags?
+tag_rules=
+['Identifier'
+,'FunctionTok'
+,'FunctionDeclaration'
+,'ReturnStatement'
+,'ReturnTok'
+,'IfStatement'
+,'IfTok'
+,'ThrowStatement'
+,'ThrowTok'
+,'FunctionExpr'
+,'VariableStatement'
+,'Comment'
+,'Block'
+,'Program'
+,'FunctionBody'
+]
+
+// the entire contents of some rules get replaced
+replace_rules=
+{WhiteSpace:'&amp;nbsp;'
+,LineTerminatorSequence:'&lt;br>\n'
+}
+
+end_markers=
+{//'FunctionDeclaration':1
+//,'Statement':1
+}
+
+function rule_callback(m,cn,rule){
+ if(tag_rules.indexOf(rule)>-1){
+  push(m.start,'&lt;span class='+rule+'>')
+  push(m.end,'&lt;/span>')}
+ if(rule in replace_rules){
+  replacements[m.start]=[replace_rules[rule],m.end-m.start]}
+ if(rule in end_markers){
+  push(m.start,'&lt;span class='+rule+'_start>&lt;/span>')
+  push(m.end,'&lt;span class='+rule+'_end>&lt;/span>')}}
+
+function push(pos,s){
+ if(!tags[pos])tags[pos]=[]
+ tags[pos].unshift(s)}
+
+treeWalker({other:rule_callback},parse_result)
+
+input=parse_result[1].input
+
+result=''
+for(i=0;i&lt;=input.length;i++){
+ if(tags[i])result+=tags[i].join('')
+ if(replacements[i]){
+  result+=replacements[i][0]
+  i=i+replacements[i][1]-1
+  continue}
+ result+=input.charAt(i)}
+
+return result</textarea>
+
+<textarea id=css spellcheck=false>body {background:#eee}
+
+#output_html {font-family:monospace;line-height:1.3}
+
+.light .FunctionDeclaration,
+.light .FunctionExpr {
+ background:rgba(0,0,255,0.05);
+ border:1px solid rgba(0,0,255,0.5)}
+
+.light .IfStatement {
+ background:rgba(0,255,0,0.05);
+ border:1px solid rgba(0,255,0,0.5)}
+
+.light .ThrowStatement {
+ background:rgba(255,0,0,0.05);
+ border:1px solid rgba(255,0,0,0.5)}
+
+.light .ReturnStatement {
+ background:rgba(128,0,255,0.05);
+ border:1px solid rgba(128,0,255,0.5)}
+
+.light .VariableStatement {
+ background:rgba(255,127,0,0.05);
+ border:1px solid rgba(255,127,0,0.5)}
+
+.Comment {
+ color:green}
+
+.dark #output_html {background:#070707}
+
+.dark .FunctionDeclaration,
+.dark .FunctionExpr {
+ background:green}
+
+.dark .FunctionBody .FunctionDeclaration,
+.dark .FunctionBody .FunctionExpr {
+ background:#f70}
+
+.dark .FunctionBody{
+ background:#000}
+</textarea>
+
+<p id=update></p>
+
+<h2>rendered</h2>
+<p><a href=#light id=a_light>light</a> <a href=#dark id=a_dark>dark</a></p>
+<div id=output_html></div>
+<h2>output</h2>
+<p id=output_text></p>
+
+<h2>parse tree</h2>
+<pre id=pt></pre>
+
+<script src=../build/commonjs/ES5Parser.js></script>
+<script src=../build/PanPG_util.js></script>
+<script src=../../3box/DOM_util.js></script>
+<script src=../../3box/util.js></script>
+<script>
+var input_el=byId('input')
+  , tree_el=byId('pt')
+  , parse_result
+  , code_el=byId('code')
+  , old_code
+  , code
+  , code_error
+  , output_text_el=byId('output_text')
+  , output_html_el=byId('output_html')
+  , update_el=byId('update')
+  , css_el=byId('css')
+  , style_el
+  , old_css
+  , a_light=byId('a_light')
+  , a_dark=byId('a_dark')
+
+handleTextChange(input_el,update_text,250)
+handleTextChange(code_el,update_code,1000)
+
+function update_text(s){
+ parse_result=ES5Parser.parse(s)
+ tree_el.textContent=showResult(parse_result)
+ update_output()
+ replace_if_changed('input',s)}
+
+function update_code(s){
+ if(s==old_code)return
+ old_code=s
+ code_error=undefined
+ try{code=eval('(function (parse_result){'+s+'})')}catch(e){code_error=e}
+ update_output()
+ replace_if_changed('code',s)}
+
+function update_output(){var html
+ if(code_error){output_text_el.textContent=code_error;return}
+ try{html=code(parse_result)}catch(e){output_text_el.textContent=e;return}
+ output_text_el.textContent=html
+ output_html_el.innerHTML=html}
+
+function replace_if_changed(id,code){
+ xhr('GET',location.href,null,function(x){
+   if(x.status!=200 && x.status!=304)return
+   finish(x.responseText)})
+ function finish(body){var current,re
+  re=RegExp('(<textarea id='+id+'(?= |>)[^>]*>)([^<]*)(<\/textarea>)')
+  code=code.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  current=re.exec(body)[2]
+  if(code==current)return
+  body=body.replace(re,"$1"+code+"$3")
+  xhr('PUT',location.href,body,function(x){update_el.innerHTML='updated '+id+' '+x.status+' '+x.responseText})}}
+
+style_el=cEl('style')
+
+document.getElementsByTagName('head')[0].appendChild(style_el)
+
+handleTextChange(css_el,update_css,500)
+
+function update_css(s){
+ if(old_css==s)return
+ old_css=s
+ style_el.textContent=s
+ replace_if_changed('css',s)}
+
+a_light.onclick=a_dark.onclick=function(){setTimeout(update_mood,0)}
+
+function update_mood(){
+ if(location.hash.slice(-4)=='dark')document.body.className='dark'
+ else document.body.className='light'}
+
+update_css(css_el.value)
+update_code(code_el.value)
+update_text(input_el.value)
+update_output()
+update_mood()
+</script>

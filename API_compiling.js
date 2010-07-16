@@ -26,5 +26,5 @@ function generateParser(peg,opts){var parse_result,named_res,i,l,patch,pr,nr
 
 function generateParserThrowing(peg,opts){var x
  x=generateParser(peg,opts)
- if(!x[0])throw new Error(x[1])
+ if(!x[0])throw x[1]
  return x[1]}

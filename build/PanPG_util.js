@@ -1,4 +1,4 @@
-/* Useful functions on PEG parse trees.
+/* Useful functions on PanPG parse trees.
  * http://inimino.org/~inimino/blog/peg_v0.0.5
  */
 
@@ -67,16 +67,16 @@ function showError(pos,msg,str){var line_number,col,lines,line,start,end,prefix,
  if(end==-1) end=str.length
  else end=prefix.length+end
  line=str.slice(start,end)
- line=line.replace('\t',' ')
+ line=line.replace(/\t/g,' ')
  col=pos-start
  arrow=Array(col).join('-')+'^'
  return msg+' at line '+line_number+' column '+col+'\n'+line+'\n'+arrow}
 
-function showResult(r,names,str,opts){
- if(r[0])return showTree(r[1],names,str,opts)
- return showError(r[1],r[2],str)}
+function showResult(r,opts){
+ if(r[0])return showTree(r[1],opts)
+ return showError(r[1],r[2],r[3])}
 
-function treeWalker(dict,result){var p,any,anon,fail,except,index,cb={},stack=[],frame,pos=0,warnings=[],i,l,x,retval,events
+function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb=[],stack=[],frame,pos=0,i,l,x,retval,events,begin=[],match,target
  fail=dict.fail
  except=dict.exception
  if(!result[0]){
@@ -86,41 +86,52 @@ function treeWalker(dict,result){var p,any,anon,fail,except,index,cb={},stack=[]
  names=result.names
  events=result.tree
  for(p in dict) if(dict.hasOwnProperty(p)){
-  if(p=='any'){any=dict[p];continue}
+  if(p=='any'){any=dict[p];throw new Error('unimplemented, use `other` instead')}
   if(p=='anonymous'||p=='anon'){anon=dict[p];continue}
+  if(p=='other'){other=dict[p];continue}
   if(p=='fail'){fail=dict[p];continue}
   if(p=='exception'){except=dict[p];continue}
+  if(p=='warn'){continue}
+  target=cb
+  if(match=/(.*) start/.exec(p)){p=m[1];target=begin}
   index=names.indexOf(p)
   if(index==-1)return err('rule not found in rule names: '+p)
-  cb[index]=dict[p]}
+  target[index]=dict[p]}
+ frame={cn:[]}
  for(i=0,l=events.length;i<l;i++){x=events[i]
   if(x>0){ // named rule start
    stack.push(frame)
    frame={index:x,start:pos}
-   if(cb[x]) frame.cn=[]}
+   if(begin[x]){
+    try{retval=begin[x](pos)}
+    catch(e){return err('exception in '+names[x]+' start:'+e)}}
+   if(cb[x]||any||other) frame.cn=[]}
   else if(x==-1){ // anonymous node
    i++
    if(i==l)return err('incomplete anonymous node')
-   if(anon)anon({start:pos,end:pos+events[i]})
+   if(anon)anon(m(pos,pos+events[i]))
    pos+=events[i]}
   else if(x==-2){ // node close
    i++
    if(i==l)return err('incomplete rule close')
    pos=frame.start+events[i]
    x=frame.index
-   if(cb[x])
-    try{retval=cb[x](m(frame.start,pos),frame.cn)}
-    catch(e){return err('exception in '+names[x]+': '+e.toString())}
+   try{
+    if(cb[x])     retval=cb[x](m(frame.start,pos),frame.cn)
+    else if(other)retval=cb[x](m(frame.start,pos),frame.cn,names[x])}
+   catch(e){return err('exception in '+names[x]+': '+e)}
    frame=stack.pop() // the parent node
    if(cb[x] && retval!==undefined)
     if(frame.cn)frame.cn.push(retval)
-    else warnings.push('ignored return value of '+names[x]+' in '+names[frame.index])}
+    else warn('ignored return value of '+names[x]+' in '+names[frame.index])}
   else return err('invalid event stream (saw '+x+' at position '+i+')')}
- return warnings
+ if(frame.cn)return frame.cn[0]
  function m(s,e){
   return {start:s
          ,end:e
          ,text:function(){return result.input.slice(s,e)}}}
  function err(s){
   if(except)return except(s)
-  throw new Error('treeWalker: '+s)}}
+  throw new Error('treeWalker: '+s)}
+ function warn(s){
+  if(dict.warn)dict.warn(s)}}

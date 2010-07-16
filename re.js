@@ -95,6 +95,7 @@ function re_dependency(re){var i,l,r
  switch(re[0]){
  case 0:
  case 1:
+ case 8:
   return
  case 2:
  case 3:

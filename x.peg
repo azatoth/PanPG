@@ -1,0 +1,11 @@
+; JSON grammar
+
+; the grammar and the new DFA-based codegen are going to grow together, so this isn't going to be complete at first.
+
+; see http://json.org/
+
+JSON ← Digit
+
+Digit ← [0-9]
+
+String ← "abcde"

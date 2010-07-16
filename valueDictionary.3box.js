@@ -6,15 +6,21 @@
 
 //,cfunc:'test_treeWalker'
 
+//,cfunc:'test_parsePEG_dfa'
+
+//,cfunc:'DFA_benchmarks'
+
 //,cfunc:'generateParserThrowing',ciset:'PEG.peg_gen_v6',outfn:'parsePEG.js',outct:'text/javascript'
 
 //,cfunc:'generateParserThrowing',ciset:'test_gen_dfa',outfn:'test_dfa.js',outct:'text/javascript'
+
+,cfunc:'generateParserThrowing',ciset:'dfa_json',outfn:'dfa_json.js',outct:'text/javascript'
 
 //,cfunc:'generateParser',ciset:'PEG.peg_gen_v6'
 
 //,cfunc:'generateParser',ciset:'ES5_gen_v6'
 
-,cfunc:'buildES5_commonjs',ciset:'ES5_commonjs',outfn:'build/commonjs/ES5Parser.js',outct:'text/javascript'
+//,cfunc:'buildES5_commonjs',ciset:'ES5_commonjs',outfn:'build/commonjs/ES5Parser.js',outct:'text/javascript'
 
 //,cfunc:'peg_v5_gen',ciset:'ES5_v6_default_identifier',outfn:'ES5_v6_default_identifier.js',outct:'text/javascript'
 
@@ -25,10 +31,11 @@
 
 //,cfunc:'peg_benchmarks_upper_bound'
 
+//,cfunc:'peg_benchmarks_dfa_cset_maps'
+
 //,cfunc:'cset_prod',ciset:'cset_prod',outfn:'cset_prod.js',outct:'application/x-javascript'
 
 //,cfunc:'peg_v6_hacked'
-//,cfunc:'peg_benchmarks_upper_bound'
 //,cfunc:'peg_benchmarks_array_push'
 
 /**************/
@@ -78,6 +85,8 @@
  ,'test_gen_dfa':['file(PEG.peg)'
                  //,'PEG_features_opts']
                  ,'PEG.peg_opts_dfa']
+ ,'dfa_json':['file(x.peg)'
+             ,'dfa_json_opts']
  ,'PEG_features_gen_v5':['file(PEG_features.peg)'
                         ,'emptyOpts']
  ,'PEG_features_v6':['file(PEG_features.peg)'
@@ -207,16 +216,64 @@
    ,'HEXDIG'
    ]}
  ,'PEG.peg_opts_dfa':{start:'RuleSet'
-                     ,fname:'parsePEG'
+                     ,fname:'parsePEG_dfa'
                      ,debug:true
-                     ,elide:
-   ['S'
-   ,'SpaceAtom'
-   ,'IdentStartChar'
-   ,'IdentChar'
-   ,'LB'
-   ,'HEXDIG'
+                     ,trace:true
+                     ,asserts:true
+                     ,include:
+   ['PropSpec'
+   ,'BinaryUnicodeProperty'
+   ,'UnicodeProperty'
+   ,'UPlusCodePoint'
+   ,'PositiveSpec'
+   ,'NegativeSpec'
+   ,'CodePoint'
+   ,'CodePointLit'
+   ,'CodePointFrom'
+   ,'CodePointTo'
+   ,'CodePointRange'
+   ,'UnicodePropSpec'
+   ,'CodePointExpr'
+   ,'CharSetUnion'
+   ,'CharSetIntersection'
+   ,'CharSetDifference'
+   ,'CharEscape'
+   ,'CharSetExpr'             // *
+   ,'StrLit'
+   ,'Charset'
+   ,'PosCharSet'
+   ,'NegCharSet'
+   ,'Empty'
+   ,'AtomicExpr'              // *
+   ,'ParenthExpr'             // *
+   ,'Replicand'               // *
+   ,'N','M'
+   ,'Optional'
+   ,'AnyRep'
+   ,'PosRep'
+   ,'MNRep'
+   ,'SeqUnit'                 // *
+   ,'Sequence'                // *
+   ,'OrdChoice'               // *
+   ,'NonTerminal'
+   ,'Rule'
+   ,'RuleSet'
+   ,'PosLookahead'
+   ,'NegLookahead'
+                              // * = can probably go
+   ]
+                     ,leaf:
+   ['CharEscape'
+   //'UPlusCodePoint'
+   //'CodePointFrom'
+   //,'CodePointTo'
    ]}
+ ,dfa_json_opts:{fname:'parseJSON'
+                ,trace:true
+                ,asserts:true
+                ,dfa:true
+                ,debug:true
+                }
  ,PEGpeg_prefix_v5:'p_PEG_v5_'
  ,PEGpeg_prefix_v5_1:'p_PEG_v5_1_'
  ,PEG_features_opts:{debug:true}

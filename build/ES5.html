@@ -20,6 +20,8 @@ h1 {margin-bottom:1.5em}
 <!-- for displaying the raw parse tree with JSON.stringify -->
 <script src=../../compat/json2.js></script>
 
+<script src=../../3box/util.js></script>
+
 <h1>ECMAScript 5 Parser 2010-03-30</h1>
 
 <p>The <a href=http://boshi.inimino.org/3box/asof/1269629763069/PEG/build/ES5.html>previous version</a> is faster by about 5x on this grammar.
@@ -31,7 +33,7 @@ See <a href=http://inimino.org/~inimino/blog/peg_roadmap>the project roadmap</a>
 <p>You can also look at the <a href=../ECMAScript_unified.peg>PEG input</a> from which the parser is generated.</p>
 
 <p>Generating the ES5 parser from the PEG takes about a minute of CPU time, which is why it isn't part of this demo.
-The <a href=demo.html>arithmetic demo</a> includes generating the parser from the (much smaller) grammar.
+The <a href=demo.html>arithmetic demo</a> includes generating a parser from a (much smaller) grammar.
 
 <pre id=status></pre>
 
@@ -70,16 +72,15 @@ xhr('GET','Y.js',null,function(x){
 
 function parseAndShow(s){var result,parser
  the_input=s
- parser=p_ES5_v6_default
  start('parsing')
- result=parser(s)
+ result=ES5Parser(s)
  finish()
  start('rendering parser output')
- parseTree_el.value=showResult(result,parser.names,s)
+ parseTree_el.value=showResult(result)
  finish()
  if(result[0]){
   start('displaying raw parse tree')
-  parseTreeRaw_el.value=JSON.stringify(result[1])
+  parseTreeRaw_el.value=JSON.stringify(result[1].tree)
   finish()}}
 
 function updateParseTree(){

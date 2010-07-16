@@ -1,15 +1,26 @@
+// TODO:
+// when opts.semicolons==false, add them when necessary
+// don't eat comments
+// the ForInStatement thing is probably buggy (if the Statement contains another for-in statement...), should just make VarTok return something special and then test for it.
+
 function assert(x,m){if(!x)throw new Error('assertion failed: '+m)}
 
-function format(s,opts){var res,cbs,out,hide,state
+function format(s,opts){var res,cbs,out,hide,state,spaces
  opts=opts||{}
+
 
  default_('semicolons',true)
  default_('indentation',2)
  default_('newline_before_closing_brace',true)
  default_('space_after_comma',true)
  default_('space_around_operators',true)
+ default_('object_literal_comma_first',false)
+ default_('blank_before_function',true)
+ default_('space_around_if_condition',true)
 
  function default_(k,v){if(opts[k]===undefined)opts[k]=v}
+
+ spaces=repeat(' ',opts.indentation)
 
  // parse the input
  res=ES5Parser.parse(s)
@@ -29,13 +40,39 @@ function format(s,opts){var res,cbs,out,hide,state
   //   match object has a .text() method which gives you the actual match, sliced out of the input string
   //   children is the return values, if any, of the child nodes in the parse tree, if you didn't define callbacks that returned something on the child nodes then this will just be an empty array
   {Program:
-    function(m,cn){out=cn.join('')}
+    function(m,cn){out=cn.join('\n')}
 
   ,FunctionDeclaration:
-    function(m,cn){return 'function '+cn[0]+'('+(cn[1]||'')+'){\n'+(cn[2]||'')+'}'}
+    function(m,cn){var params='',body=''
+      if(cn[1].formal_params){
+        params=cn[1].formal_params
+        body=cn[2]}
+      else body=cn[1]
+      return (opts.blank_before_function?'\n':'')
+           + 'function '+cn[0]
+           + '('+params+'){'
+           + indent(body?'\n'+body:'')+'}'}
+
+  ,FunctionExpr:
+    function(m,cn){var name='',params='',body
+      switch(cn.length){
+        case 1:body=cn[0];break
+        case 2:
+          if(cn[0].formal_params) params=cn[0].formal_params
+          else name=cn[0]
+          body=cn[1];break
+        case 3:
+          name=cn[0]
+          params=cn[1]
+          body=cn[2];break
+        default:assert(0,'number of child nodes')}
+      return 'function '+name
+           + '('+params+'){'
+           + indent(body?'\n'+body:'')
+           + '}'}
 
   ,FormalParameterList:
-    function(m,cn){return cn.join(', ')}
+    function(m,cn){return {formal_params:cn.join(', ')}}
 
   ,FunctionBody:
     function(m,cn){return cn.join('\n')}
@@ -48,7 +85,7 @@ function format(s,opts){var res,cbs,out,hide,state
   /******** Statements ********/
 
   ,Block: // children are Statements
-    function(m,cn){return '{'+cn.join('')+'}'}
+    function(m,cn){return '{'+indent('\n'+cn.join(''))+'}'}
 
   ,VariableStatement: // children are VariableDeclarations
     function(m,cn){
@@ -59,14 +96,15 @@ function format(s,opts){var res,cbs,out,hide,state
     function(){return ';'}
 
   ,ExprStatement:
-    function(m,cn){return cn[0]}
+    function(m,cn){return cn[0]+EOS()}
 
   ,IfStatement: // cn[0] = Expr, cn[1] = Statement, and if there was an else clause, cn[2] = Statement
-    function(m,cn){
-     if(cn.length==2) return 'if('+cn[0]+')'+cn[1]
-     //assert(cn.length==3,'there is an else clause')
-     return 'if('+cn[0]+') '+cn[1]+'\n'
-          + 'else '+cn[2]}
+    function(m,cn){var open='(',close=')'
+      if(opts.space_around_if_condition) open=' (', close=') '
+      if(cn.length==2) return 'if'+open+cn[0]+close+cn[1]
+      assert(cn.length==3,'there is an else clause')
+      return 'if'+open+cn[0]+close+cn[1]+'\n'
+           + 'else '+cn[2]}
 
   //IterationStatement = do..while, while, for..in, for
   ,IterationStatement:
@@ -121,6 +159,14 @@ function format(s,opts){var res,cbs,out,hide,state
            + cn.slice(1).join('\n')
            + '}'}
 
+  ,CaseClause:
+    function(m,cn){
+      return 'case '+cn[0]+':'+indent('\n'+cn[1])}
+
+  ,DefaultClause:
+    function(m,cn){
+      return 'default: '+indent('\n'+cn[0])}
+
   ,ThrowStatement:
     function(m,cn){return 'throw '+cn[0]+EOS()}
 
@@ -132,7 +178,8 @@ function format(s,opts){var res,cbs,out,hide,state
 
   ,VariableDeclaration: // cn[0] = Identifier, cn[1] = optional AssignmentExpr
     function(m,cn){
-      if(cn[1])return cn[0]+'='+cn[1]
+      assert(cn.length<3,'no extra children')
+      if(cn.length==2)return cn[0]+OP('=')+cn[1]
       else return cn[0]}
 
 
@@ -173,15 +220,72 @@ function format(s,opts){var res,cbs,out,hide,state
   // we use the ECMAScript_streamable.peg definition of LeftHandSideExpr, which is easier to work with
   ,NewTok:function(){return 'new '}
 
+  ,Arguments:
+    function(m,cn){return '('+(cn[0]||'')+')'}
+
+  ,ArgumentList:
+    function(m,cn){return cn.join(COMMA())}
+
   ,BracketAccessor:
     function(m,cn){return '['+cn[0]+']'}
 
   ,DotAccessor:
     function(m,cn){return '.'+cn[0]}
 
-  ,Identifier:
-    // to pretty-print an identifier we just print it
-    function(m,cn){return m.text()}
+  ,PrimaryExpr:
+    function(m,cn){
+      // TODO: add parens only when needed
+      if(m.text().charAt()=='(')return '('+cn[0]+')'
+      else return cn[0]}
+
+  // an ArrayLiteral is either:
+  // empty (no child nodes)
+  // contains an elision or an ElementList without an elision at the end (one child)
+  // or contains an ElementList followed by a literal comma followed by an Elision
+  ,ArrayLiteral:
+    function(m,cn){
+      switch(cn.length){
+        case 0:return '[]' // empty
+        case 1:return '['+cn[0]+']' // contains ElementList or Elision
+        case 2:return '['+cn[0]+COMMA()+cn[1]+']' // ElementList followed by literal comma followed by Elision
+        default:assert(0,'unexpected number of children')}}
+
+  // Elision? S? AssignmentExpr (S? "," Elision? S? AssignmentExpr)*
+  ,ElementList:
+    function(m,cn){var i,l,needs_comma=false,is_elision,ret=[]
+      for(i=0,l=cn.length;i<l;i++){
+        is_elision = /^(, ?)*$/.test(cn[i])
+        if(needs_comma)ret.push(COMMA())
+        ret.push(cn[i])
+        if(!is_elision)needs_comma=true}
+      return ret.join('')}
+
+  // an Elision in an ArrayLiteral is a string of commas (and whitespace)
+  // here we just strip any extra whitespace from the list
+  ,Elision:
+    function(m){return m.text().replace(/[^,]*,/g,COMMA())}
+
+  ,ObjectLiteral:
+    function(m,cn){return '{'+cn[0]+'}'}
+
+  ,PropertyNameAndValueList:
+    function(m,cn){return cn.join(
+      opts.object_literal_comma_first?'\n,':',\n')}
+
+  ,PropertyAssignment:
+    function(m,cn){
+      if(/^[gs]et\s/.test(m.text()))throw new Error('TODO: handle getters and setters here')
+      return cn[0]+':'+cn[1]}
+
+  ,PropertyName:itself
+  ,PropertySetParameterList:itself
+
+  ,Literal:itself
+
+  ,Comment:itself
+
+  ,Identifier:itself
+  ,IdentifierName:itself
   }
 
  function EOS(){
@@ -192,6 +296,15 @@ function format(s,opts){var res,cbs,out,hide,state
 
  function OP(op){
   return opts.space_around_operators?' '+op+' ':op}
+
+ function ENDBRACE(){
+  return opts.newline_before_closing_brace?'\n}':'}'}
+
+ function indent(s){
+  if(!opts.indentation)return s
+  return s.replace(/\n/g,'\n'+spaces)}
+
+ function repeat(s,n){return new Array(n+1).join(s)}
 
  function itself(m,cn){return m.text()}
  function transparent(m,cn){return cn.join('')}
@@ -218,7 +331,8 @@ function format(s,opts){var res,cbs,out,hide,state
    cbs[rule]=function(m,cn){var ret=[],i
      for(i=0;i<cn.length;i++){
        if(i%2) ret.push(OP(cn[i]))
-       else    ret.push(cn[i])}}})
+       else    ret.push(cn[i])}
+     return ret.join('')}})
 
  // prefix operators
  ;
@@ -261,6 +375,23 @@ function format(s,opts){var res,cbs,out,hide,state
  // regular output:
  //return out
 
+ // the rest is for testing and debugging, comment out the normal return statement above to see the verbose debugging output
+
+ var warnings,trace,p
+
+ trace=[]
+
+ // wrap each callback to add itself to the trace
+ for(p in cbs){
+  cbs[p]=(function(cb,p){
+    return function(m,cn){var retval
+      retval=cb(m,cn)
+      trace.push(p+' '+retval)
+      return retval}})
+    (cbs[p],p)}
+
+ warnings=treeWalker(cbs,res)
+
  // there are some nodes in the parse tree we just don't care about, so let's hide them
  hide=
   ['IdentifierStart'
@@ -276,4 +407,6 @@ function format(s,opts){var res,cbs,out,hide,state
  // testing output:
  return 'input:\n'+s
       + '\n\noutput:\n'+out
+      + '\n\nwarnings:\n'+warnings.join('\n')
+      + '\n\ntrace:\n'+trace.join('\n')
       + '\n\nparse tree:\n'+showResult(res,{hide:hide})}
