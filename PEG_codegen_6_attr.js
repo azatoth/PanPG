@@ -87,10 +87,13 @@ CodePointRange:
   function(_,cn){return CSET.fromIntRange(cn[0][0],cn[1][0])},
 
 CodePointFrom:transparent,
-CodePointTo:transparent
+CodePointTo:transparent,
+
+warn:function(s){warnings.push(s)}
 
 }
- warnings=treeWalker(dict,result)
+ warnings=[]
+ treeWalker(dict,result)
  if(warnings.length)throw warnings
  return ret
  return pp(ret)+'\n\n'+pp(warnings.slice(0,8))+'\n\n'+st

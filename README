@@ -11,7 +11,7 @@ Grammars are given to the parser generator as a parser expression grammar or PEG
 The arithmetic grammar from the demo makes a good example of the basic features.
 
     Expr ← Add
-    
+     
     Add ← Mult ( S? "+" S? Mult )*
     
     Mult ← Num ( S? "*" S? Num )*

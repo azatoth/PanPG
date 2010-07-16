@@ -61,13 +61,12 @@ var inputPEG_el=document.getElementById('PEG')
   , the_result
   , the_walker_code
   , the_walker
-  , the_output
   , sample_input='arith_test_expr'
   , sample_walker='arith_callbacks'
 
 // report what we are doing and how long it takes:
 function start(s){status_el.innerHTML+=s+'... ';ms=+new Date}
-function finish(){status_el.innerHTML+=(+new Date-ms)+'ms\n';status_el.scrollTop=status_el.scrollHeight}
+function finish(){status_el.innerHTML+=(new Date-ms)+'ms\n';status_el.scrollTop=status_el.scrollHeight}
 
 function xhr(method,uri,body,callback){var headers,p
  // instead of a method string, the first argument can be an object with method and headers properties
@@ -129,12 +128,13 @@ function updateWalker(){var x
  finish()
  updateWalkerOutput()}
 
-function updateWalkerOutput(){var x,warnings
+function updateWalkerOutput(){var x,warnings=[],output
  start('walk the parse tree')
- try{warnings=treeWalker(the_walker/*actually the dict...*/,the_result)}
+ if(!the_walker.warn)the_walker.warn=function(s){warnings.push(s)}
+ try{output=treeWalker(the_walker/*actually the dict...*/,the_result)}
  catch(e){output_el.value=e;finish();return}
- if(warnings.length){output_el.value=warnings.join('\n')+'\n\n'+the_output}
- else output_el.value=the_output
+ if(warnings.length){output_el.value=warnings.join('\n')+'\n\n'+output}
+ else output_el.value=output
  finish()}
 
 function updateIfChanged(){if(the_input!=inputText_el.value) updateParseTree()}

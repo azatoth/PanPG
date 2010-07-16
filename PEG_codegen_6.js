@@ -1,53 +1,67 @@
-function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,function_emit,dbg,function_fail,function_assert,nameline,asserts,single_call_special_case,id_names,commonjs_begin,commonjs_end
+function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,function_emit,dbg,function_fail,function_assert,nameline,asserts,single_call_special_case,id_names,commonjs_begin,commonjs_end,function_dbg,dfa_table,dbg_tree
  //opts.debug=true
  //opts.trace=true
  //opts.asserts=true
- //return pp(named_res)
  //opts=extend({},opts) // we mutate this argument
+ // the 'opts' variable includes our options, but since we have to pass these into every part of the code generator, it makes a convenient place to store state, such as caches, various assigned numbers, etc.
  opts.elide=opts.elide||[]
  opts.drop=opts.drop||[]
+ opts.leaf=opts.leaf||[]
  opts.prefix=opts.prefix||''
  opts.start=opts.start||named_res[0][0]
  opts.fname=opts.fname||opts.prefix+opts.start
  opts.target_language=opts.target_language||'ES3'
  opts.commonjs=!!opts.commonjs
  opts.S_map=[]
- rules=v6_named_res_to_rules(opts,named_res)
- rules=v6_expr_fixups(opts,rules)
- rules=v6_dependencies(opts,rules)
- rules=v6_add_shadow_start_rule(opts,rules)
- nameline=v6_nameline(opts,rules)
+ opts.dfa_table=[]
+ rules=v6_named_res_to_rules(opts,named_res)  // build our "rule" structures
+ rules=v6_expr_fixups(opts,rules)             // simple syntactic transformations
+ rules=v6_dependencies(opts,rules)            // dependency analysis (we don't generate code for unused rules)
+ rules=v6_add_shadow_start_rule(opts,rules)   // see doc/* for information on the shadow start rule
+ nameline=v6_nameline(opts,rules)             // the nameline is an array of the rule names
+ rules=v6_tree_attribution(rules)             // next-gen TAL prototype
+ if(opts.debug) dbg_tree=pp(rules)
  if(opts.t_bufferout) // caller-provided flags
   v6_apply_flags(opts,rules)
  else{
   v6_calculate_flags(opts,rules)
   v6_calculate_streamability(opts,rules)}
- rules=v6_assign_ids(opts,rules)
- rules=v6_step_three(opts,rules) // assign T, M, and F states
+ //rules=v6_leaf_dfas(opts,rules)               // generate leaf DFAs where desired and possible
+ rules=v6_cset_equiv(opts,rules)              // calculate and store the cset equivalence classes
+ rules=v6_assign_ids(opts,rules)              // assign state IDs to the rule sub-expressions
+ rules=v6_TMF(opts,rules)                     // assign T, M, and F states
  dbg=opts.trace?v6_dbg(opts,rules):function(){return ''}
  asserts=opts.asserts
  id_names=opts.commonjs?'exports.names':opts.fname+'.names'
  vars=['eof=false'
       ,'s=\'\'','l=0'
       ,'S='+rules._.expr.S_flags
-      ,'T','M','F','R'
+      ,'T','M','F','D','R'
       ,'tbl=[]','x'
       ,'pos=0','offset=0'
-      ,'buf=[]','bufs=[]','states=[]','posns=[]','c']
+      ,'buf=[]','bufs=[]','states=[]','posns=[]','c'
+      ,'equiv']
  if(opts.trace) vars.push('S_map=[\''+opts.S_map.join('\',\'')+'\']')
- ft=v6_flag_test(opts)
+ ft=v6_flag_test(opts) // ft takes a varname and flagname and returns an expression to test that var for that flag
+
+ dfa_table=opts.dfa?v6_dfa_table(opts,rules)('D')+'\n':''
+
  commonjs_begin=';(function(exports){'
   + 'exports.names='+nameline
   + ';exports.parse='+opts.fname
   + '\n'
+
  commonjs_end='})(typeof exports==\'object\'?exports:'+opts.fname+'={});'
+
  function_emit='function emit(){var x='
   + 'bufs.length?bufs[0]:buf;'
   + 'if(x.length){out(\'tree segment\',x);'
   +  'if(bufs.length)bufs[0]=[];else buf=[]}}'
+
  function_fail='function fail(s){'
   + 'out(\'fail\',pos,s)'
   + '}'
+
  function_m_x='function(m,x){'
   + 'switch(m){\n'
     // probably some room for optimization in this while() loop (i.e. getting rid of it)
@@ -55,15 +69,28 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
   + 'case \'eof\':eof=true;mainloop();break\n'
   + 'default:throw new Error(\'unhandled message: \'+m)'
   + '}}\n'
+
  function_assert='function assert(x,msg){if(!x)throw new Error(\'assertion failed\'+(msg?\': \'+msg:\'\'))}'
+
+ function_dbg="function dbg(msg){"
+  + "out(msg,'S:'+(S_map[S>>>"+opts.flagbits+"]||'S>>>"+opts.flagbits+")"
+  + "+' pos:'+pos+' '+s.charAt(pos)'"
+  + "+' R:'+R"
+  + "+' stack:'+states.map(function(s){return s>>>"+opts.flagbits+"})"
+  + "+' posns:'+posns"
+  + "+' bufs:'+bufs.map(function(b){return '['+b+']'})"
+  + "+' buf:'+buf"
+  + ")}"
+
  single_call_special_case='if(typeof out==\'string\'){s=out;out=[];'
-  +  'x='+opts.fname+'(function(m,x,y){if(m==\'fail\')out=[false,x,y];'
+  +  'x='+opts.fname+'(function(m,x,y){if(m==\'fail\')out=[false,x,y,s];'
   +    'if(m==\'tree segment\')out=out.concat(x)});'
   +  'x(\'chunk\',s);'
   +  'x(\'eof\');'
   +  'return out[0]===false?out:[true,{names:'+id_names
   +                                  ',tree:out'
   +                                  ',input:s}]}'
+
  mainloop='function mainloop(){for(;;){'
   + dbg('main')+'\n'
   + 'if('+v6_is_not_prim_test(opts)('S')+')t_block:{\n'
@@ -83,9 +110,22 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
   + (asserts?'assert(T[S>>>'+opts.flagbits+'],\'T\')\n':'')
   + 'S=T[S>>>'+opts.flagbits+']'
   + '}\n' // end if not prim test
-  //+ 'else{\n' // prim test state
+  + (opts.dfa
+    ?''
+
+  // new DFA tests
+
+  + '// call DFA\n'
+  + 'if(D[S]){'
+  +  'R=D[S]()'
+  + '}\n'
+
+  // old primitive tests
+
+    :''
+
   + 'if('+v6_is_prim_test(opts)('S')+'){\n' // prim test state
-  +  v6_ε_ifstmt(opts)('S','R')
+  +  v6_ε_ifstmt(opts)('S','R')+'\n'
   +  'else{\n'
   +   'c=s.charCodeAt(pos);'
   +   'if(isNaN(c)){'
@@ -93,14 +133,12 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
   +    'else{'
   +     'emit();'
   +     'R=undefined;'
-  // +     'S=states.pop();'
   +     (asserts?'assert(S,\'popped state\');':'')
   +     dbg('waiting…')
   +     'out(\'ready\');'
   +     'return}'
   +    '}\n'
   +   'else switch(S){\n'
- //    + v6_ε_case(opts)('pos','R')
   +    v6_prim_test_case_statements_BMP(opts)('c','R')
   +    '}\n'
   +   'if(R)pos++\n'
@@ -116,7 +154,7 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
   +       'return}}'
   +     'else{' // the next code unit is available
   +      'c=(c&0x3FF)<<10 | s.charCodeAt(pos+1)&0x3FF | 0x10000\n'
-  +      'switch(S){'
+  +      'switch(S){' 
   +       v6_prim_test_case_statements_supplementary(opts)('c','R')
   +       '\ndefault:R=false'
   +       '}\n'
@@ -129,6 +167,7 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
   +  (asserts?'assert(R==true||R==false,\'have result\')\n':'')
   +  'S=states.pop()'
   +  '}\n' // end prim test state
+    ) // end DFA ternary
     // has_result loop
   + 'while(R!=undefined){'
   + dbg('result')+'\n'
@@ -157,19 +196,33 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
   + 'if(S=='+opts.S_succeed+'){R=true;S=states.pop()}'
   + 'else if(S=='+opts.S_fail+'){R=false;S=states.pop()}'
   + 'else R=undefined'
-  + ';'+dbg('res_end')+'\n'
+  + ';'+dbg('res_end')
   + '}' // end has_result loop
   + '}}'
- return (opts.debug?(v6_sexp(rules)+'\n\n'
-               + pp(opts)+'\n\n'
-               + pp(opts.prim_test_assignments)+'\n\n'
-               + pp(rules)+'\n\n'):'')
+ return (opts.debug?
+              ( '/*\n\n'
+              //+ v6_sexp(rules)+'\n\n'
+              //+ dir(opts)+'\n\n'
+              //+ pp(opts.S_map)+'\n\n'
+              //+ pp(opts.prim_test_assignments)+'\n\n'
+              + dbg_tree+'\n\n'
+              + log.get()+'\n\n'
+              + pp(rules,{string_limit:0})+'\n'
+              + 'opts.equiv_classes\n' + pp(opts.equiv_classes)+'\n\n'
+              + 'opts.all_csets\n' + pp(opts.all_csets)+'\n\n'
+              + 'opts.cset_cache\n' + pp(opts.cset_cache)+'\n\n'
+              + pp(opts.dfa_table)+'\n\n'
+              + '*/\n\n' ):'')
       + (opts.commonjs?commonjs_begin:'')
       + (opts.trace?v6_legend(opts,rules)+'\n':'')
+ 
       + opts.fname+'.names='+(opts.commonjs?id_names:nameline)+'\n'
       + 'function '+opts.fname+'(out){'
           +varstmt(vars)+'\n'
+          +(opts.trace?function_dbg+'\n':'')
+          +v6_cset_equiv_array(opts,rules,'equiv')
           +v6_TMF_tables(opts,rules)
+          +dfa_table
           +single_call_special_case+'\n'
           +'return '+function_m_x
           +mainloop+'\n'
@@ -181,30 +234,20 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
  }
 
 function v6_dbg(opts,rules){return function(msg){
-  return 'out(\''+msg+'\',\'S:\'+(S_map[S>>>'+opts.flagbits+']||\'unknown state \'+S>>>'+opts.flagbits+')'
- + '+\' pos:\'+pos+\' \'+s.charAt(pos)'
- + '+\' R:\'+R'
- + '+\' stack:\'+states.map(function(s){return s>>>'+opts.flagbits+'})'
- + '+\' posns:\'+posns'
- + '+\' bufs:\'+bufs.map(function(b){return \'[\'+b+\']\'})'
- + '+\' buf:\'+buf'
- + ');'}}
+  return 'dbg("'+msg+'")'}}
 
 function v6_legend(opts,rules){
  return opts.fname+'.legend="'+v6_sexp(rules).replace(/\n/g,'\\n')+'";'}
 
 function v6_sexp(res){var name,ret=[]
-// return pp(res)
  for(name in res){
   ret.push(name+' ← '+f(res[name].expr))}
  return ret.join('\n')
  function f(expr){var ret=[]
-  //return pp(expr)
   ret=[expr.id
       ,re_shortnames[expr.type]
       ]
   if(expr.type==0) ret.push(CSET.show(expr.cset).replace(/\n/g,' ').replace(/(.{16}).+/,"$1…"))
-  //if(expr.type==0) ret.push(pp(expr.cset))
   if(expr.type==1) ret.push(expr.strLit)
   if(expr.type==4) ret[1]='rep' // we only have *-rep by this point
   if(expr.type==5) ret.push(expr.ref)
@@ -212,15 +255,15 @@ function v6_sexp(res){var name,ret=[]
   return "("+ret.join(' ')+")"}}
 
 re_shortnames=
-['cset' // 0
-,'strLit' // 1
-,'seq' // 2
-,'ordC' // 3
-,'mn_rep' // 4
-,'ref' // 5
-,'neg' // 6
-,'pos' // 7
-,'ϵ'
+['cset'    // 0
+,'strLit'  // 1
+,'seq'     // 2
+,'ordC'    // 3
+,'mn_rep'  // 4
+,'ref'     // 5
+,'neg'     // 6
+,'pos'     // 7
+,'ϵ'       // 8
 ]
 
 function v6_dependencies(opts,rules){var ret={},deps
@@ -231,7 +274,8 @@ function v6_dependencies(opts,rules){var ret={},deps
   rule=rules[rule_name]
   if(!rule) throw new Error('Rule required but not defined: '+rule_name)
   ret[rule_name]=rule
-  v6_direct_dependencies(rule.expr).map(go)}}
+  rule.direct_deps=v6_direct_dependencies(rule.expr)
+  rule.direct_deps.map(go)}}
 
 // Re → [String]
 function v6_direct_dependencies(expr){var ret=[]
@@ -239,7 +283,7 @@ function v6_direct_dependencies(expr){var ret=[]
   (expr)
  return ret}
 
-function v6_nameline(opts,rules){var names=[]
+function v6_nameline(opts,rules){var names=[],p
  for(p in rules)names[rules[p].S]=rules[p].name
  return '[\''+names.join('\',\'')+'\']'}
 
@@ -266,15 +310,15 @@ function v6_add_shadow_start_rule(opts,rules){var shadow_re
 function v6_expr_fixups(opts,rules){var p
  for(p in rules){
   rules[p].expr=v6_subexpr_fixups(opts,rules[p])
-  delete rules[p].re}
+  //delete rules[p].re
+  }
  return rules}
 
 function v6_subexpr_fixups(opts,rule){var n=0
- //return re_subexprs(rule.re)
  if(rule.re[0]!=2) rule.re=[2,[rule.re]]
  return go(rule)(rule.re)
  function go(parent){return function(re){var ret
-   if(re[0]==4) re=v6_munge_mnrep(opts,ret,re)
+   if(re[0]==4) re=v6_munge_mnrep(re)
    if(re[0]==1) re=v6_strLit2seq(re)
    ret={id:rule.name+'+'+n++
        ,type:re[0]
@@ -288,13 +332,11 @@ function v6_subexpr_fixups(opts,rule){var n=0
    if(ret.type==1) ret.strLit=re[1]
    if(ret.type==5) ret.ref=re[1]
    ret.flag_n=0
-   //ret.flags=v6_expr_flags(opts,ret)
-   //ret.S_flags=0
-   //ret.S_flags_='debugging'
    ret.subexprs=re_subexprs(re).map(go(ret))
    return ret}}}
 
-function v6_munge_mnrep(opts,ret,re){var m,n,required,optional,i
+// replace any m,n-reps with 0,0-reps, sequences, and optionals
+function v6_munge_mnrep(re){var m,n,required,optional,i
  m=re[1]
  n=re[2]
  if(m==0&&n==0) return re
@@ -346,6 +388,7 @@ function v6_expr_apply_flags(opts,expr){var ret={}
   ret[s]=opts[s].indexOf(expr.id)>-1}}
 
 function v6_calculate_flags(opts,rules){var p
+ // N.B. flags can also be set in v6_leaf_dfas
  for(p in rules)
   if(p != '_')
    v6_calculate_flags_expr(opts,rules[p])({})(rules[p].expr)
@@ -362,6 +405,19 @@ function v6_calculate_flags(opts,rules){var p
   ,m_resetpos:false
   ,m_tossbuf:false
   ,f_tossbuf:false}}
+
+function v6_dfa_flags(opts,rule){var ret=
+ {cache:false
+ ,t_bufferout:false
+ ,pushpos:false
+ ,m_emitstate:true
+ ,m_emitclose:true
+ ,m_emitanon:false
+ ,m_emitlength:true
+ ,m_resetpos:false
+ ,m_tossbuf:false
+ ,f_tossbuf:false}
+ rule.expr.flags=ret}
 
 function v6_calculate_flags_expr(opts,rule){return function loop(parent){return function(expr,i){var ret={},subs_anon_consume=[],sub_can_emit_named=false
    function makeAnonEmit(sub){
@@ -395,10 +451,11 @@ function v6_calculate_flags_expr(opts,rule){return function loop(parent){return 
     if(expr.anon_consume && expr.can_emit_named){
      subs_anon_consume.forEach(makeAnonEmit)
      expr.anon_consume=false}}
+   if(!expr.can_emit_named){
+    expr.dfa=v6_leaf_dfa(opts,expr)}
    ret.t_bufferout=!!(  isLookahead(expr.type)
                      || expr.toplevel
-                     || isProperSequence(expr)
-                     )
+                     || isProperSequence(expr) )
    ret.pushpos=!!(  expr.toplevel
                  || isLookahead(expr.type)
                  || expr.emits_anon
@@ -445,6 +502,50 @@ function v6_calculate_streamability(opts,rules){var p,parents=[]
 
 function v6_always_regular(n){return isCset(n)||isStrLit(n)||isEmpty(n)}
 
+function v6_rle_enc(arr){var i,l,count,x,ret=[]
+ for(x=arr[0],count=1,i=1,l=arr.length;i<l;i++){
+  if(arr[i]==x){count++;continue}
+  ret.push(count,x)
+  x=arr[i]
+  count=1}
+ ret.push(count,x)
+ return ret}
+
+// RLE encode if the result is shorter by at least 16 chars
+function v6_rle_if_shorter(arr){var x,y
+ x='rle_dec(['+v6_rle_enc(arr).join(',')+'])'
+ y='['+arr.join(',')+']'
+ if(y.length - x.length > 16) return x
+ return y}
+
+function v6_substitute(name,value){return function self(re){var i,l
+  switch(re[0]){
+  case 0: case 1: case 8:
+   return re
+  case 2: case 3:
+   return [re[0],re[1].map(self)]
+  case 4:
+   return [re[0],re[1],re[2],self(re[3])]
+  case 5:
+   if(re[1]===name)return value
+   return re
+  case 6: case 7:
+   return [re[0],self(re[1])]
+  default:
+   throw new Error('v6_substitute: unknown re type: '+re[0])}}}
+
+function v6_collect_csets(re){
+ switch(re[0]){
+ case 0:return [re[1]]
+ case 1:return re[1].split('').map(CSET.fromString)
+ case 2:
+ case 3:return concat(re[1].map(v6_collect_csets))
+ case 4:return v6_collect_csets(re[3])
+ case 5:throw new Error('named ref not handled.')
+ case 6:
+ case 7:return v6_collect_csets(re[1])
+ case 8:return []}}
+
 function varstmt(vars){
  if(!vars.length) return ''
  return 'var '+vars.join(',')+';'}
@@ -463,7 +564,7 @@ function isEmpty(n){return n==8}
 0 → cset
 1 → string literal
 2 → sequence of res
-3 → union or ordC of res
+3 → ordC of res
 4 → m to n reps of re
 5 → named reference
 6 → re negative lookahead
@@ -523,10 +624,9 @@ function v6_obj_to_bitfield(flags,bitfield_order){var p,n=0
  return n}
 
 function v6_flag_test(opts){return function(varname,flagname){
-  //return pp(opts.bitfield_map)
   return varname+'&'+opts.bitfield_map[flagname]+'/*'+flagname+'*/'}}
 
-function v6_step_three(opts,rules){var name,rule
+function v6_TMF(opts,rules){var name,rule
  for(name in rules){rule=rules[name]
   go()(rule.expr)}
  return rules
@@ -562,6 +662,10 @@ function v6_step_three(opts,rules){var name,rule
             expr.M=opts.S_succeed
             expr.F=opts.S_fail;break
      default:throw new Error('unexpected parent type '+parent.type)}}
+   if(expr.dfa){
+    opts.dfa_table[expr.S]=expr.dfa
+    expr.T=undefined
+    return} // no TMF entries for subexpressions when using a DFA
    expr.subexprs.forEach(go(expr))}}}
 
 function v6_assign_prim_test_id(opts,cset){var string_representation,x
@@ -583,7 +687,7 @@ function v6_is_prim_test(opts){return function(varname){
 
 function v6_is_not_prim_test(opts){return function(id_S){
   return id_S+'>'+(opts.highest_prim_test)
-    +'||'+id_S+'<'+(opts.lowest_prim_test)}}
+   +'||'+id_S+'<'+(opts.lowest_prim_test)}}
 
 function v6_prim_test_case_statements_BMP(opts){return function(id_c,id_R){var ret=[],p,cset,BMP_no_surrogates,surrogates
   surrogates=CSET.fromIntRange(0xD800,0xDFFF)
@@ -607,14 +711,14 @@ function v6_cset_to_case_stmt(opts){return function(id_c,id_R,_case,cset){
 function v6_ε_case(opts){return function(id_pos,id_R){
   return 'case '+opts.S_ε+':'+id_R+'=true;'+id_pos+'--;break\n'}}
 function v6_ε_ifstmt(opts){return function(id_S,id_R){
-  return 'if('+id_S+'=='+opts.S_ε+')'+id_R+'=true\n'}}
+  return 'if('+id_S+'=='+opts.S_ε+')'+id_R+'=true'}}
 
 function v6_TMF_tables(opts,rules){var T=[],M=[],F=[],name
  for(name in rules){
   v6_walk(f)(rules[name].expr)}
- return 'T=['+T.join()+']\n'
-      + 'M=['+M.join()+']\n'
-      + 'F=['+F.join()+']\n'
+ return 'T='+v6_rle_if_shorter(T)+'\n'
+      + 'M='+v6_rle_if_shorter(M)+'\n'
+      + 'F='+v6_rle_if_shorter(F)+'\n'
  function f(expr){
   assert(expr.S_flags>>>opts.flagbits === expr.S,'S vs S_flags')
   T[expr.S]=expr.T

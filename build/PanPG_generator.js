@@ -8,19 +8,37 @@
 exports.generateParser=generateParser
 exports.generateParserThrowing=generateParserThrowing
 
-function generateParser(peg,opts){var parse_result,named_res
+function generateParser(peg,opts){var parse_result,named_res,i,l,patch,pr,nr
+ opts=opts||{}
  parse_result=parsePEG(peg)
  if(!parse_result[0])return parse_result
  named_res=v6_named_res(parse_result)
+ if(opts.patches)
+  for(i=0,l=opts.patches.length;i<l;i++){patch=opts.patches[i]
+   pr=parsePEG(patch)
+   if(!pr[0])return pr
+   nr=v6_named_res(pr)
+   named_res=apply_patch(named_res,nr)}
  try{return [1,codegen_v6(opts||{},named_res)]}
- catch(e){return [0,e]}}
+ catch(e){return [0,e]}
+ function apply_patch(nr1,nr2){var o={},i,l,name,rule,ret=[]
+  for(i=0,l=nr1.length;i<l;i++){
+   name=nr1[i][0]
+   ret[i]=nr1[i]
+   o[name]=i}
+  for(i=0,l=nr2.length;i<l;i++){
+   name=nr2[i][0]
+   // if it was already there, replace it
+   if(o.hasOwnProperty(name)) ret[o[name]]=nr2[i]
+   // otherwise add it at the end
+   else ret.push(nr2[i])}
+  return ret}}
 
 function generateParserThrowing(peg,opts){var x
  x=generateParser(peg,opts)
  if(!x[0])throw new Error(x[1])
  return x[1]}
 
-function patchPEG(original,patch){}
 
  /* parsePEG.js */ 
 
@@ -221,6 +239,7 @@ function re_dependency(re){var i,l,r
  switch(re[0]){
  case 0:
  case 1:
+ case 8:
   return
  case 2:
  case 3:
@@ -469,6 +488,15 @@ function fL(a){var i,l,ret=[]
   if(a[i-1]!==0x10ffff)ret.push(a[i-1]+1)}
  return ret}
 
+function tL(cset){var i,l,state=false,ret=[]
+ for(i=0,l=cset.length;i<l;i++){
+  if(state)fill(cset[i-1],cset[i])
+  state=!state}
+ if(state)fill(cset[i-1],0x10FFFF)
+ return ret
+ function fill(a,b){
+  for(;a<b;a++)ret.push(a)}}
+
 function fS(s){var res=[]
  s.replace(/[\u0000-\uD7FF\uDC00-\uFFFF]|([\uD800-\uDBFF][\uDC00-\uDFFF])|[\uD800-\uDBFF]/g,
   function(m,u){
@@ -666,6 +694,7 @@ return {'import':function(prefix,object){object=object||g
  ,['fromUnicodeGeneralCategory',fGC]
  ,['complement',comp]
  ,['fromList',fL]
+ ,['toList',tL]
  ,['fromString',fS]
  ,['member',member]
  ,['equal',eq]
@@ -683,7 +712,6 @@ CSET.import('',CSET)
 /* PEG_codegen_6_attr.js */ 
 
 function v6_named_res(result){var dict,ret,hide,warnings,st
- //var result=[1,{tree:tree[1],names:names,input:s}]
  hide=
   ['anonymous']
  //st=showTree(result,{hide:hide})
@@ -772,10 +800,13 @@ CodePointRange:
   function(_,cn){return CSET.fromIntRange(cn[0][0],cn[1][0])},
 
 CodePointFrom:transparent,
-CodePointTo:transparent
+CodePointTo:transparent,
+
+warn:function(s){warnings.push(s)}
 
 }
- warnings=treeWalker(dict,result)
+ warnings=[]
+ treeWalker(dict,result)
  if(warnings.length)throw warnings
  return ret
  return pp(ret)+'\n\n'+pp(warnings.slice(0,8))+'\n\n'+st
@@ -796,8 +827,8 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
  //opts.debug=true
  //opts.trace=true
  //opts.asserts=true
- //return pp(named_res)
  //opts=extend({},opts) // we mutate this argument
+ // the 'opts' variable includes our options, but since we have to pass these into every part of the code generator, it makes a convenient place to store state, such as caches, various assigned numbers, etc.
  opts.elide=opts.elide||[]
  opts.drop=opts.drop||[]
  opts.prefix=opts.prefix||''
@@ -806,18 +837,20 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
  opts.target_language=opts.target_language||'ES3'
  opts.commonjs=!!opts.commonjs
  opts.S_map=[]
- rules=v6_named_res_to_rules(opts,named_res)
- rules=v6_expr_fixups(opts,rules)
- rules=v6_dependencies(opts,rules)
- rules=v6_add_shadow_start_rule(opts,rules)
- nameline=v6_nameline(opts,rules)
+ rules=v6_named_res_to_rules(opts,named_res)  // build our "rule" structures
+ rules=v6_expr_fixups(opts,rules)             // simple syntactic transformations
+ rules=v6_dependencies(opts,rules)            // dependency analysis (we don't generate code for unused rules)
+ rules=v6_add_shadow_start_rule(opts,rules)   // see doc/* for information on the shadow start rule
+ nameline=v6_nameline(opts,rules)             // the nameline is an array of the rule names
  if(opts.t_bufferout) // caller-provided flags
   v6_apply_flags(opts,rules)
  else{
   v6_calculate_flags(opts,rules)
   v6_calculate_streamability(opts,rules)}
- rules=v6_assign_ids(opts,rules)
- rules=v6_step_three(opts,rules) // assign T, M, and F states
+ rules=v6_leaf_dfas(opts,rules)               // generate leaf DFAs where desired and possible
+ rules=v6_cset_equiv(opts,rules)              // calculate and store the cset equivalence classes
+ rules=v6_assign_ids(opts,rules)              // assign state IDs to the rule sub-expressions
+ rules=v6_TMF(opts,rules)                     // assign T, M, and F states
  dbg=opts.trace?v6_dbg(opts,rules):function(){return ''}
  asserts=opts.asserts
  id_names=opts.commonjs?'exports.names':opts.fname+'.names'
@@ -827,9 +860,10 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
       ,'T','M','F','R'
       ,'tbl=[]','x'
       ,'pos=0','offset=0'
-      ,'buf=[]','bufs=[]','states=[]','posns=[]','c']
+      ,'buf=[]','bufs=[]','states=[]','posns=[]','c'
+      ,'equiv']
  if(opts.trace) vars.push('S_map=[\''+opts.S_map.join('\',\'')+'\']')
- ft=v6_flag_test(opts)
+ ft=v6_flag_test(opts) // ft takes a varname and flagname and returns an expression to test that var for that flag
  commonjs_begin=';(function(exports){'
   + 'exports.names='+nameline
   + ';exports.parse='+opts.fname
@@ -954,15 +988,24 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
   + ';'+dbg('res_end')+'\n'
   + '}' // end has_result loop
   + '}}'
- return (opts.debug?(v6_sexp(rules)+'\n\n'
-               + pp(opts)+'\n\n'
-               + pp(opts.prim_test_assignments)+'\n\n'
-               + pp(rules)+'\n\n'):'')
+ return (opts.debug?
+              ( '/*\n\n'
+              //+ v6_sexp(rules)+'\n\n'
+              //+ dir(opts)+'\n\n'
+              //+ pp(opts.S_map)+'\n\n'
+              //+ pp(opts.prim_test_assignments)+'\n\n'
+              + pp(rules.CharEscape,{string_limit:0})+'\n'
+              + pp(opts.equiv_classes)+'\n'
+              + pp(opts.all_csets)+'\n'
+              + pp(opts.cset_cache)+'\n\n'
+              + '*/\n\n' ):'')
       + (opts.commonjs?commonjs_begin:'')
       + (opts.trace?v6_legend(opts,rules)+'\n':'')
+ 
       + opts.fname+'.names='+(opts.commonjs?id_names:nameline)+'\n'
       + 'function '+opts.fname+'(out){'
           +varstmt(vars)+'\n'
+          +v6_cset_equiv_array(opts,rules,'equiv')
           +v6_TMF_tables(opts,rules)
           +single_call_special_case+'\n'
           +'return '+function_m_x
@@ -976,29 +1019,26 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
 
 function v6_dbg(opts,rules){return function(msg){
   return 'out(\''+msg+'\',\'S:\'+(S_map[S>>>'+opts.flagbits+']||\'unknown state \'+S>>>'+opts.flagbits+')'
- + '+\' pos:\'+pos+\' \'+s.charAt(pos)'
- + '+\' R:\'+R'
- + '+\' stack:\'+states.map(function(s){return s>>>'+opts.flagbits+'})'
- + '+\' posns:\'+posns'
- + '+\' bufs:\'+bufs.map(function(b){return \'[\'+b+\']\'})'
- + '+\' buf:\'+buf'
- + ');'}}
+   + '+\' pos:\'+pos+\' \'+s.charAt(pos)'
+   + '+\' R:\'+R'
+   + '+\' stack:\'+states.map(function(s){return s>>>'+opts.flagbits+'})'
+   + '+\' posns:\'+posns'
+   + '+\' bufs:\'+bufs.map(function(b){return \'[\'+b+\']\'})'
+   + '+\' buf:\'+buf'
+   + ');'}}
 
 function v6_legend(opts,rules){
  return opts.fname+'.legend="'+v6_sexp(rules).replace(/\n/g,'\\n')+'";'}
 
 function v6_sexp(res){var name,ret=[]
-// return pp(res)
  for(name in res){
   ret.push(name+' ← '+f(res[name].expr))}
  return ret.join('\n')
  function f(expr){var ret=[]
-  //return pp(expr)
   ret=[expr.id
       ,re_shortnames[expr.type]
       ]
   if(expr.type==0) ret.push(CSET.show(expr.cset).replace(/\n/g,' ').replace(/(.{16}).+/,"$1…"))
-  //if(expr.type==0) ret.push(pp(expr.cset))
   if(expr.type==1) ret.push(expr.strLit)
   if(expr.type==4) ret[1]='rep' // we only have *-rep by this point
   if(expr.type==5) ret.push(expr.ref)
@@ -1006,15 +1046,15 @@ function v6_sexp(res){var name,ret=[]
   return "("+ret.join(' ')+")"}}
 
 re_shortnames=
-['cset' // 0
-,'strLit' // 1
-,'seq' // 2
-,'ordC' // 3
-,'mn_rep' // 4
-,'ref' // 5
-,'neg' // 6
-,'pos' // 7
-,'ϵ'
+['cset'    // 0
+,'strLit'  // 1
+,'seq'     // 2
+,'ordC'    // 3
+,'mn_rep'  // 4
+,'ref'     // 5
+,'neg'     // 6
+,'pos'     // 7
+,'ϵ'       // 8
 ]
 
 function v6_dependencies(opts,rules){var ret={},deps
@@ -1025,7 +1065,8 @@ function v6_dependencies(opts,rules){var ret={},deps
   rule=rules[rule_name]
   if(!rule) throw new Error('Rule required but not defined: '+rule_name)
   ret[rule_name]=rule
-  v6_direct_dependencies(rule.expr).map(go)}}
+  rule.direct_deps=v6_direct_dependencies(rule.expr)
+  rule.direct_deps.map(go)}}
 
 // Re → [String]
 function v6_direct_dependencies(expr){var ret=[]
@@ -1060,15 +1101,15 @@ function v6_add_shadow_start_rule(opts,rules){var shadow_re
 function v6_expr_fixups(opts,rules){var p
  for(p in rules){
   rules[p].expr=v6_subexpr_fixups(opts,rules[p])
-  delete rules[p].re}
+  //delete rules[p].re
+  }
  return rules}
 
 function v6_subexpr_fixups(opts,rule){var n=0
- //return re_subexprs(rule.re)
  if(rule.re[0]!=2) rule.re=[2,[rule.re]]
  return go(rule)(rule.re)
  function go(parent){return function(re){var ret
-   if(re[0]==4) re=v6_munge_mnrep(opts,ret,re)
+   if(re[0]==4) re=v6_munge_mnrep(re)
    if(re[0]==1) re=v6_strLit2seq(re)
    ret={id:rule.name+'+'+n++
        ,type:re[0]
@@ -1082,13 +1123,11 @@ function v6_subexpr_fixups(opts,rule){var n=0
    if(ret.type==1) ret.strLit=re[1]
    if(ret.type==5) ret.ref=re[1]
    ret.flag_n=0
-   //ret.flags=v6_expr_flags(opts,ret)
-   //ret.S_flags=0
-   //ret.S_flags_='debugging'
    ret.subexprs=re_subexprs(re).map(go(ret))
    return ret}}}
 
-function v6_munge_mnrep(opts,ret,re){var m,n,required,optional,i
+// replace any m,n-reps with 0,0-reps, sequences, and optionals
+function v6_munge_mnrep(re){var m,n,required,optional,i
  m=re[1]
  n=re[2]
  if(m==0&&n==0) return re
@@ -1239,6 +1278,272 @@ function v6_calculate_streamability(opts,rules){var p,parents=[]
 
 function v6_always_regular(n){return isCset(n)||isStrLit(n)||isEmpty(n)}
 
+function v6_leaf_dfas(opts,rules){var i,l,rule
+ if(!opts.leaf)return rules
+ for(i=0,l=opts.leaf.length;i<l;i++){
+  rule=rules[opts.leaf[i]]
+  if(!rule)throw new Error('rule '+opts.leaf[i]+' given in opts.leaf does not appear in rule set')
+  if(!rule.known_regular[0])continue
+  rule.dfa=v6_dfa(opts,rules,rule)}
+ return rules}
+
+function v6_dfa(opts,rules,rule){var next_dep,re
+ re=rule.re
+ while(next_dep=re_dependency(re))
+  re=v6_substitute(next_dep,rules[next_dep].re)(re)
+ rule.all_csets=v6_collect_csets(re)
+ return v6_dfa_2(re,{})
+ return pp(re)+'\n'+v6_dfa_2(re,{})+log.get()}
+
+function v6_dfa_2(re,state){
+ switch(re[0]){
+ case 0:
+  return v6_dfa_cset(re[1],state)
+ case 1:
+  return v6_dfa_2(v6_strLit2seq(re),state)
+ case 2:
+  return v6_dfa_seq(re[1],state)
+ case 3:
+  return v6_dfa_ordC(re[1],state)
+ case 4:
+  if(re[1]==0 && re[2]==0) return v6_dfa_rep(re[3],state)
+  return v6_dfa_2(v6_munge_mnrep(re),state)
+ case 5:
+  throw new Error('no named references here')
+ case 6:
+  return v6_dfa_neg(re[1],state)
+ case 7:
+  return v6_dfa_pos(re[1],state)
+ case 8:
+  return v6_dfa_2([2,[]],state)
+ default:
+  throw new Error('v6_dfa: unexpected re type')}}
+
+function v6_dfa_cset(cset,state){
+ return {type:'transition'
+        ,transition:[[cset,{type:'match'}]]}}
+
+function v6_dfa_seq(seq,state){var d1,d2
+ log('seq '+pp(seq))
+ if(!seq.length)return {type:'match'}
+ d1=v6_dfa_2(seq[0],state)
+ //assert(d1,'d1 from seq[0]: '+pp(seq[0]))
+ d2=v6_dfa_seq(seq.slice(1),state)
+ log({seq_d1:d1})
+ log({seq_d2:d2})
+ return log(go(d1,d2))
+ function go(d1,d2){
+  if(!d1 || !d2) return
+  if(d1.type=='fail')return d1
+  if(d2.type=='fail')return d2
+  if(d1.type=='match')return d2
+  if(d2.type=='match')return d1
+  return v6_dfa_transition_map(d1,function(d){return go(d,d2)})}}
+
+function v6_dfa_transition_map(d,f){var i,l,ret=[],existing
+ assert(d.type=='transition','DFA type is transition')
+ for(i=0,l=d.transition.length;i<l;i++){existing=d.transition[i]
+  ret[i]=[existing[0],f(existing[1])]}
+ return {type:'transition'
+        ,transition:ret}}
+
+function v6_dfa_ordC(exprs,state){var d1,d2,merged
+ log('ordC '+pp(exprs))
+ if(!exprs.length)return {type:'fail'}
+ d1=v6_dfa_2(exprs[0],state)
+ d2=v6_dfa_ordC(exprs.slice(1),state)
+ log({ordc_d1:d1})
+ log({ordc_d2:d2})
+ return log(go(d1,d2))
+ function go(d1,d2){
+  if(!d1 || !d2)return
+  if(d1.type=='fail')return d2
+  if(d2.type=='fail')return d1
+  if(d1.type=='match')return d1
+  if(d2.type=='match')return v6_dfa_opt(d1,state)
+  return v6_dfa_ordC_(v6_dfa_merge_transitions(d1,d2))}}
+
+function v6_dfa_ordC_(x){var i,l,cset,t1,t2,ret,res,res2,cache,j
+ ret=[]
+ cache=[[],[]]
+ for(i=0,l=x.length;i<l;i++){
+  cset=x[i][0];t1=x[i][1];t2=x[i][2]
+  if(t1.type=='fail')res=t2; else
+  if(t2.type=='fail')res=t1; else
+  if(t1.type=='match')res=t1; else
+  if(t2.type=='match') return; // decline
+  else{ // both are transition states
+   res=v6_dfa_ordC_(v6_dfa_merge_transitions(t1,t2))}
+  log({i:i,res:res})
+  if(res.type=='fail')continue
+  res2=[cset,res]
+  if((j=cache[0].indexOf(res))>-1){
+   cache[1][j][0]=CSET.union(cache[1][j][0],cset)
+   continue}
+  cache[0].push(res);cache[1].push(res2)
+  ret.push(res2)}
+ return {type:'transition',transition:ret}}
+
+function v6_dfa_merge_transitions(d1,d2){var i,l1,l2,j1s,j2s,t1,t2,fail,low1,low2,low1i,low2i,states1,states2,a,t1_next,t2_next,ret,prev,low,cset
+ assert(d1.type=='transition'&&d2.type=='transition','called with transitions')
+ fail={type:'fail'}
+ t1=d1.transition;t2=d2.transition
+ l1=t1.length;l2=t2.length
+ states1=[];j1s=[];for(i=l1;i--;)states1[i]=j1s[i]=0
+ states2=[];j2s=[];for(i=l2;i--;)states2[i]=j2s[i]=0
+ prev=0
+ ret=[]
+ for(;;){
+  a=lowest(t1,j1s);low1=a[0];low1i=a[1]
+  a=lowest(t2,j2s);low2=a[0];low2i=a[1]
+  t1_next=get_state(get_index(states1),t1)
+  t2_next=get_state(get_index(states2),t2)
+  if (low1 <= low2) {bump(states1,j1s,low1i);low=low1}
+  if (low2 <= low1) {bump(states2,j2s,low2i);low=low2}
+  if(low>0){
+   // here we only produce single-range csets
+   // a subsequent step could combine them
+   cset= low==Infinity ? [prev] : [prev,low]
+   ret.push([cset,t1_next,t2_next])}
+  prev=low
+  if(low1==Infinity && low2==Infinity)break}
+ return log(ret)
+ // find the lowest unseen values in all csets in a transition
+ // these represent flips between on and off, initially off
+ // there may be more than one cset that flips on the same code point, so we use an array to store the i indices of the low values
+ function lowest(transition,indices){var i,l,low_water_mark,val,j,ret_i
+  low_water_mark=Infinity
+  for(i=transition.length;i--;){
+   j=indices[i]
+   val=transition[i][0][j] // the jth value of the cset of the ith (cset,state) pair in the transition
+   if(val<low_water_mark){
+    low_water_mark=val
+    ret_i=[i]}
+   else if(val==low_water_mark){
+    ret_i.push(i)}}
+  return [low_water_mark,ret_i]}
+ function bump(states,indices,is){var k,i
+  if(!is)return
+  for(k=0;k<is.length;k++){
+   i=is[k]
+   indices[i]++
+   states[i]=!states[i]}}
+ // get the active cset, assert at most one
+ function get_index(states){var i,x
+  for(i=states.length;i--;) if(states[i]){
+   assert(x==undefined,'no overlapping csets in DLO')
+   x=i}
+  return x}
+ function get_state(index,transition){
+  if(index==undefined)return fail
+  return transition[index][1]}}
+
+// from an expression of the form α / ε, where d1 is a DFA-like corresponding to α
+// here we currently only handle the case where α is determinate in one character, i.e. where d1 is a cset type, i.e. a transition which transitions only to fail or match states, not to any other transition state.
+// other cases would require lookahead or backtracking, which we do not yet handle here
+// actually, even this case involves lookahead, because the match needs to happen at the previous position, i.e. the position has already been advanced once by the time we read the next character.
+// so we just decline here for now
+function v6_dfa_opt(d1,state){}
+
+function v6_dfa_rep(re,state){throw pp(re)}
+
+function v6_dfa_neg(re,state){}
+
+function v6_dfa_pos(re,state){}
+
+function v6_cset_equiv(opts,rules){var p,cgroup_set,big_arr,all_csets,cset_cache,i,char_count,cset_id,equiv_class,equiv_classes,equiv_class_id
+ // here we "condense" or collapse the csets into a single array which maps code units which are treated the same in every case in the grammar onto a single value
+ cgroup_set=[]
+ char_count=65536 // 2^16 distinct UTF-16 code units
+ all_csets=[],cset_cache={}
+ // first we construct a big array which contains, for each UTF-16 code unit, a list of csets in which it is included.
+ big_arr=Array(char_count)
+ for(i=0;i<char_count;i++)big_arr[i]=[]
+ // collect all the csets in all_csets, and cache them in cset_cache, keyed by canonical string representation
+ cset_id=0
+ for(p in rules)go(rules[p])
+ // we fill the big_arr by iterating over each character in each cset
+ for(p in cset_cache) populate_big_arr(cset_cache[p])
+ // we then iterate over the big array and calculate the quotient set and equivalence relation, character by character
+ // in the big array, we replace each character's list of csets with the id of its equivalence class
+ // in each cached cset object, we store the id of each equivalence class that contributes to that cset
+ equiv_classes={}
+ equiv_class_id=0
+ for(i=0;i<char_count;i++){
+  equiv_class=get_equiv_class(big_arr[i])
+  big_arr[i]=equiv_class.id}
+ opts.all_csets=all_csets
+ opts.cset_cache=cset_cache
+ opts.equiv_classes=equiv_classes
+ opts.cset_equiv_class_array=big_arr
+ return rules
+ function populate_big_arr(cset){var arr,i,l
+  arr=CSET.toList(cset.cset)
+  for(i=0,l=arr.length;i<l;i++) big_arr[arr[i]].push(cset.id)}
+ function get_equiv_class(cset_ids){var key
+  key='equiv_class_'+cset_ids.join(',')
+  if(key in equiv_classes)return equiv_classes[key]
+  cset_ids.forEach(function(cset_id){all_csets[cset_id].equivs.push(equiv_class_id)})
+  return equiv_classes[key]={id:equiv_class_id++,key:key,member_cset_ids:cset_ids}}
+ function go(rule){
+  if(!opts.leaf || opts.leaf.indexOf(rule.name)<0)return
+  rule.all_csets.forEach(go_cset)
+  function go_cset(cset){var key
+   key='cset_'+cset.join(',')
+   if(key in cset_cache)return
+   all_csets[cset_id]=cset_cache[key]={key:key,cset:cset,equivs:[],id:cset_id}
+   cset_id++}}}
+
+function v6_cset_equiv_array(opts,rules,varname){var function_rle_dec
+ function_rle_dec=
+  'function rle_dec(a){var r=[],i,l,n,x,ll;'+
+   'for(i=0,l=a.length;i<l;i+=2){'+
+    'n=a[i];x=a[i+1];'+
+    'r.length=ll=r.length+n;'+
+    'for(;n;n--)r[ll-n]=x}'+
+   'return r}'
+ return varname+'=rle_dec(['
+      + v6_rle_enc(opts.cset_equiv_class_array).join(',')
+      + '])\n'
+      + function_rle_dec+'\n'}
+
+function v6_rle_enc(arr){var i,l,count,x,ret=[]
+ for(x=arr[0],count=1,i=1,l=arr.length;i<l;i++){
+  if(arr[i]==x){count++;continue}
+  ret.push(count,x)
+  x=arr[i]
+  count=1}
+ ret.push(count,x)
+ return ret}
+
+function v6_substitute(name,value){return function self(re){var i,l
+  switch(re[0]){
+  case 0: case 1: case 8:
+   return re
+  case 2: case 3:
+   return [re[0],re[1].map(self)]
+  case 4:
+   return [re[0],re[1],re[2],self(re[3])]
+  case 5:
+   if(re[1]===name)return value
+   return re
+  case 6: case 7:
+   return [re[0],self(re[1])]
+  default:
+   throw new Error('v6_substitute: unknown re type: '+re[0])}}}
+
+function v6_collect_csets(re){
+ switch(re[0]){
+ case 0:return [re[1]]
+ case 1:return re[1].split('').map(CSET.fromString)
+ case 2:
+ case 3:return concat(re[1].map(v6_collect_csets))
+ case 4:return v6_collect_csets(re[3])
+ case 5:throw new Error('named ref not handled.')
+ case 6:
+ case 7:return v6_collect_csets(re[1])
+ case 8:return []}}
+
 function varstmt(vars){
  if(!vars.length) return ''
  return 'var '+vars.join(',')+';'}
@@ -1257,7 +1562,7 @@ function isEmpty(n){return n==8}
 0 → cset
 1 → string literal
 2 → sequence of res
-3 → union or ordC of res
+3 → ordC of res
 4 → m to n reps of re
 5 → named reference
 6 → re negative lookahead
@@ -1317,10 +1622,9 @@ function v6_obj_to_bitfield(flags,bitfield_order){var p,n=0
  return n}
 
 function v6_flag_test(opts){return function(varname,flagname){
-  //return pp(opts.bitfield_map)
   return varname+'&'+opts.bitfield_map[flagname]+'/*'+flagname+'*/'}}
 
-function v6_step_three(opts,rules){var name,rule
+function v6_TMF(opts,rules){var name,rule
  for(name in rules){rule=rules[name]
   go()(rule.expr)}
  return rules
