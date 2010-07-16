@@ -52,6 +52,16 @@ function fL(a){var i,l,ret=[]
   if(a[i-1]!==0x10ffff)ret.push(a[i-1]+1)}
  return ret}
 
+/* To a list of ascending integers, each of which is a code point included in the set. */
+function tL(cset){var i,l,state=false,ret=[]
+ for(i=0,l=cset.length;i<l;i++){
+  if(state)fill(cset[i-1],cset[i])
+  state=!state}
+ if(state)fill(cset[i-1],0x10FFFF)
+ return ret
+ function fill(a,b){
+  for(;a<b;a++)ret.push(a)}}
+
 /* from a string which may contain any Unicode characters in any order and may contain duplicates. */
 function fS(s){var res=[]
  // here using replace as an iterator over Unicode characters
@@ -291,6 +301,7 @@ return {'import':function(prefix,object){object=object||g
  ,['fromUnicodeGeneralCategory',fGC]
  ,['complement',comp]
  ,['fromList',fL]
+ ,['toList',tL]
  ,['fromString',fS]
  ,['member',member]
  ,['equal',eq]

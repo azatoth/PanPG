@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-var js_pp=require('./js_pp')
+var js_pp=require('js_pp')
 
 var stdin = process.openStdin()
   , input = ''

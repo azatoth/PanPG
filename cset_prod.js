@@ -73,6 +73,15 @@ function fL(a){var i,l,ret=[]
   if(a[i-1]!==0x10ffff)ret.push(a[i-1]+1)}
  return ret}
 
+function tL(cset){var i,l,state=false,ret=[]
+ for(i=0,l=cset.length;i<l;i++){
+  if(state)fill(cset[i-1],cset[i])
+  state=!state}
+ if(state)fill(cset[i-1],0x10FFFF)
+ return ret
+ function fill(a,b){
+  for(;a<b;a++)ret.push(a)}}
+
 function fS(s){var res=[]
  s.replace(/[\u0000-\uD7FF\uDC00-\uFFFF]|([\uD800-\uDBFF][\uDC00-\uDFFF])|[\uD800-\uDBFF]/g,
   function(m,u){
@@ -270,6 +279,7 @@ return {'import':function(prefix,object){object=object||g
  ,['fromUnicodeGeneralCategory',fGC]
  ,['complement',comp]
  ,['fromList',fL]
+ ,['toList',tL]
  ,['fromString',fS]
  ,['member',member]
  ,['equal',eq]

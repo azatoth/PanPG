@@ -68,11 +68,11 @@ function showError(pos,msg,str){var line_number,col,lines,line,start,end,prefix,
  arrow=Array(col).join('-')+'^'
  return msg+' at line '+line_number+' column '+col+'\n'+line+'\n'+arrow}
 
-function showResult(r,names,str,opts){
- if(r[0])return showTree(r[1],names,str,opts)
- return showError(r[1],r[2],str)}
+function showResult(r,opts){
+ if(r[0])return showTree(r[1],opts)
+ return showError(r[1],r[2],r[3])}
 
-function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb={},stack=[],frame,pos=0,warnings=[],i,l,x,retval,events
+function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb=[],stack=[],frame,pos=0,i,l,x,retval,events,begin=[],match,target
  fail=dict.fail
  except=dict.exception
  if(!result[0]){
@@ -87,13 +87,20 @@ function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb={},st
   if(p=='other'){other=dict[p];continue}
   if(p=='fail'){fail=dict[p];continue}
   if(p=='exception'){except=dict[p];continue}
+  if(p=='warn'){continue}
+  target=cb
+  if(match=/(.*) start/.exec(p)){p=m[1];target=begin}
   index=names.indexOf(p)
   if(index==-1)return err('rule not found in rule names: '+p)
-  cb[index]=dict[p]}
+  target[index]=dict[p]}
+ frame={cn:[]}
  for(i=0,l=events.length;i<l;i++){x=events[i]
   if(x>0){ // named rule start
    stack.push(frame)
    frame={index:x,start:pos}
+   if(begin[x]){
+    try{retval=begin[x](pos)}
+    catch(e){return err('exception in '+names[x]+' start:'+e)}}
    if(cb[x]||any||other) frame.cn=[]}
   else if(x==-1){ // anonymous node
    i++
@@ -105,20 +112,22 @@ function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb={},st
    if(i==l)return err('incomplete rule close')
    pos=frame.start+events[i]
    x=frame.index
-   if(other && !cb[x])cb[x]=other
-   if(cb[x])
-    try{retval=cb[x](m(frame.start,pos),frame.cn)}
-    catch(e){return err('exception in '+names[x]+': '+e.toString())}
+   try{
+    if(cb[x])     retval=cb[x](m(frame.start,pos),frame.cn)
+    else if(other)retval=cb[x](m(frame.start,pos),frame.cn,names[x])}
+   catch(e){return err('exception in '+names[x]+': '+e)}
    frame=stack.pop() // the parent node
    if(cb[x] && retval!==undefined)
     if(frame.cn)frame.cn.push(retval)
-    else warnings.push('ignored return value of '+names[x]+' in '+names[frame.index])}
+    else warn('ignored return value of '+names[x]+' in '+names[frame.index])}
   else return err('invalid event stream (saw '+x+' at position '+i+')')}
- return warnings
+ if(frame.cn)return frame.cn[0]
  function m(s,e){
   return {start:s
          ,end:e
          ,text:function(){return result.input.slice(s,e)}}}
  function err(s){
   if(except)return except(s)
-  throw new Error('treeWalker: '+s)}}
+  throw new Error('treeWalker: '+s)}
+ function warn(s){
+  if(dict.warn)dict.warn(s)}}

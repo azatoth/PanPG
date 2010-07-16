@@ -1,10 +1,10 @@
 <!doctype html>
 
-<title>PEG README</title>
+<title>PanPG README</title>
 
 <style>
 html {background:#ddd}
 body {padding:0 12.5%}
 </style>
 
-<h1>PEG API</h1>
+<h1>PanPG API</h1>
