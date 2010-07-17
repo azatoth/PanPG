@@ -26,7 +26,7 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
  else{
   v6_calculate_flags(opts,rules)
   v6_calculate_streamability(opts,rules)}
- //rules=v6_leaf_dfas(opts,rules)               // generate leaf DFAs where desired and possible
+ rules=v6_leaf_dfas(opts,rules)               // generate leaf DFAs where desired and possible
  rules=v6_cset_equiv(opts,rules)              // calculate and store the cset equivalence classes
  rules=v6_assign_ids(opts,rules)              // assign state IDs to the rule sub-expressions
  rules=v6_TMF(opts,rules)                     // assign T, M, and F states
@@ -40,11 +40,14 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
       ,'tbl=[]','x'
       ,'pos=0','offset=0'
       ,'buf=[]','bufs=[]','states=[]','posns=[]','c'
-      ,'equiv']
+      ,'equiv'
+      ,'ds','dp' // DFA state and position saved between chunks
+      ,'failed=0'
+      ]
  if(opts.trace) vars.push('S_map=[\''+opts.S_map.join('\',\'')+'\']')
  ft=v6_flag_test(opts) // ft takes a varname and flagname and returns an expression to test that var for that flag
 
- dfa_table=opts.dfa?v6_dfa_table(opts,rules)('D')+'\n':''
+ dfa_table=opts.dfa?v6_dfa_table(opts,rules)('D','s','pos','equiv','ds','dp')+'\n':''
 
  commonjs_begin=';(function(exports){'
   + 'exports.names='+nameline
@@ -59,10 +62,12 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
   +  'if(bufs.length)bufs[0]=[];else buf=[]}}'
 
  function_fail='function fail(s){'
-  + 'out(\'fail\',pos,s)'
+  + 'out(\'fail\',pos,s);'
+  + 'failed=1'
   + '}'
 
  function_m_x='function(m,x){'
+  + 'if(failed){out(\'fail\',pos,\'parse already failed\');return}\n'
   + 'switch(m){\n'
     // probably some room for optimization in this while() loop (i.e. getting rid of it)
   + 'case \'chunk\':s+=x;l=s.length;while(tbl.length<l+1)tbl.push([]);mainloop();break\n'
@@ -73,8 +78,8 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
  function_assert='function assert(x,msg){if(!x)throw new Error(\'assertion failed\'+(msg?\': \'+msg:\'\'))}'
 
  function_dbg="function dbg(msg){"
-  + "out(msg,'S:'+(S_map[S>>>"+opts.flagbits+"]||'S>>>"+opts.flagbits+")"
-  + "+' pos:'+pos+' '+s.charAt(pos)'"
+  + "out(msg,'S:'+(S_map[S>>>"+opts.flagbits+"]||'unknown state'+S>>>"+opts.flagbits+")"
+  + "+' pos:'+pos+' '+s.charAt(pos)"
   + "+' R:'+R"
   + "+' stack:'+states.map(function(s){return s>>>"+opts.flagbits+"})"
   + "+' posns:'+posns"
@@ -97,33 +102,45 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
   + (asserts?'assert(typeof S=="number","S")\n'
      + 'assert((S>>>'+opts.flagbits
      +   ')<='+opts.highest_used_S+',"S in range: "+S)\n'
-     + "assert(R==undefined,'result is unknown (R:'+R+',S:'+S+')')\n"
+     + "assert(R==undefined,'result is unknown (R:'+R+',S:'+(S>>>"+opts.flagbits+")+')')\n"
      :'')
   + 'if('+ft('S','pushpos')+')posns.push(pos)\n'
   + 'if('+ft('S','t_bufferout')+'){bufs.push(buf);buf=[]}\n'
   + 'if('+ft('S','cache')+'&&(x=tbl[pos-offset][S])!=undefined){'
   +  'if(x){R=true;pos=x[0];buf=x[1]}else{R=false}'
-  +  dbg('cache hit')
+  +  dbg('cache hit')+'\n'
   +  'break t_block}\n'
   + 'if('+ft('S','t_emitstate')+'){buf.push(S>>>'+opts.flagbits+')}\n'
-  + 'states.push(S)\n'
-  + (asserts?'assert(T[S>>>'+opts.flagbits+'],\'T\')\n':'')
-  + 'S=T[S>>>'+opts.flagbits+']'
-  + '}\n' // end if not prim test
+
+
   + (opts.dfa
     ?''
 
   // new DFA tests
 
   + '// call DFA\n'
-  + 'if(D[S]){'
-  +  'R=D[S]()'
-  + '}\n'
+  + 'if(D[S>>>'+opts.flagbits+']){'
+  +  'R=D[S>>>'+opts.flagbits+'](ds||0,dp||pos);'
+  +  'if(R==undefined){' // need more data from caller
+  +   'if(eof){R=false}'
+  +   'else{out(\'ready\');return}'
+  +  '}' // end if need more data
+  + '}\n' // end if dfa exists
+  + 'else{'
+  +  'states.push(S);'
+  +  (asserts?'assert(T[S>>>'+opts.flagbits+'],\'T\');':'')
+  +  'S=T[S>>>'+opts.flagbits+']'
+  + '}' // end else
+  + '}\n' // end if not prim test
 
   // old primitive tests
 
     :''
 
+  + 'states.push(S)\n'
+  + (asserts?'assert(T[S>>>'+opts.flagbits+'],\'T\')\n':'')
+  + 'S=T[S>>>'+opts.flagbits+']'
+  + '}\n' // end if not prim test
   + 'if('+v6_is_prim_test(opts)('S')+'){\n' // prim test state
   +  v6_ε_ifstmt(opts)('S','R')+'\n'
   +  'else{\n'
@@ -134,7 +151,7 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
   +     'emit();'
   +     'R=undefined;'
   +     (asserts?'assert(S,\'popped state\');':'')
-  +     dbg('waiting…')
+  +     dbg('waiting…')+';'
   +     'out(\'ready\');'
   +     'return}'
   +    '}\n'
@@ -149,7 +166,7 @@ function codegen_v6(opts,named_res){var vars,rules,function_m_x,mainloop,ft,func
   +      'else{'
   +       'emit();'
   +       'R=undefined;'
-  +       dbg('waiting (surrogate pair)')
+  +       dbg('waiting (surrogate pair)')+';'
   +       'out(\'ready\');'
   +       'return}}'
   +     'else{' // the next code unit is available
@@ -451,8 +468,6 @@ function v6_calculate_flags_expr(opts,rule){return function loop(parent){return 
     if(expr.anon_consume && expr.can_emit_named){
      subs_anon_consume.forEach(makeAnonEmit)
      expr.anon_consume=false}}
-   if(!expr.can_emit_named){
-    expr.dfa=v6_leaf_dfa(opts,expr)}
    ret.t_bufferout=!!(  isLookahead(expr.type)
                      || expr.toplevel
                      || isProperSequence(expr) )

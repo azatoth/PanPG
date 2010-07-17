@@ -1,11 +1,11 @@
-function v6_leaf_dfas(opts,rules){var i,l,rule
- for(i=0,l=opts.leaf.length;i<l;i++){
-  rule=rules[opts.leaf[i]]
-  if(!rule)throw new Error('rule '+opts.leaf[i]+' given in opts.leaf does not appear in rule set')
-  if(!rule.known_regular[0])continue
-  rule.dfa=v6_dfa(opts,rules,rule)
-  if(rule.dfa) v6_dfa_flags(opts,rule)}
- return rules}
+function v6_leaf_dfas(opts,rules){var p
+ for(p in rules){
+  go(rules[p].expr)}
+ return rules
+ function go(expr){var dfa
+  if(dfa=v6_leaf_dfa(opts,expr))expr.dfa=dfa
+  expr._dfa='reached'
+  expr.subexprs.map(go)}}
 
 function v6_leaf_dfa(opts,expr){
  switch(expr.type){

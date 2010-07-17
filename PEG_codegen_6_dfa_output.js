@@ -1,6 +1,6 @@
-function v6_dfa_table(opts,rules){return function(id_D,id_s,id_pos,id_equiv){
-  return id_D+'='+v6_dfa_table_2(opts,rules)+'\n'
-       + v6_dfa_reviver(id_s,id_pos,id_equiv)}}
+function v6_dfa_table(opts,rules){return function(id_D,id_s,id_pos,id_equiv,id_dfa_state,id_dfa_pos){
+  return id_D+'='+v6_dfa_table_2(opts,rules)+'.map(revive)\n'
+       + v6_dfa_reviver(id_s,id_pos,id_equiv,id_dfa_state,id_dfa_pos)}}
 
 // generate the actual D table
 function v6_dfa_table_2(opts,rules){
@@ -79,7 +79,7 @@ function v6_stringify(x){var a=[],p
   return '{'+a.join(',')+'}'}
  return String(x)}
 
-function v6_dfa_reviver(id_s,id_pos,id_equiv){var function_dfa
+function v6_dfa_reviver(id_s,id_pos,id_equiv,id_dfa_state,id_dfa_pos){var function_dfa
  function_dfa=
   // ss     states
   // l_ss   length of ss
@@ -95,20 +95,30 @@ function v6_dfa_reviver(id_s,id_pos,id_equiv){var function_dfa
   +     'a[t[0][k]]=t[1]==true?l_ss:t[1]}}'
   +   'for(j=0,l=a.length;j<l;j++)if(a[j]==undefined)a[j]=l_ss+1;'
   +   'd[i]=a}' + '\n  '
-  +  'return function _dfa(){var st=0,eq,i='+id_pos+';'
+  +  'return function _dfa(st,i){var eq,pr;'
   +   'while(st<l_ss){'
   +    'eq='+id_equiv+'['+id_s+'.charCodeAt(i++)];'
-  +    'st=d[st][eq]}'
+  +    'st=d[pr=st][eq]}'
+      // only after the state transition fails do we test for end-of-chunk
+      // if at EOC, then s.charCodeAt(i) == NaN and equiv[NaN] == undefined
+  +   'if(eq==undefined&&i>='+id_s+'.length){'
+      // we store the previous state (current state is undefined) and position
+  +    id_dfa_state+'=pr;'+id_dfa_pos+'=i-1;'
+      // return undefined to signal that we need more data
+  +    'return'
+  +   '}' // close if EOS
+  +   id_dfa_state+'=0;'
+  +   id_dfa_pos+'=undefined;'
   +   'if(st==l_ss){'+id_pos+'=i;return true}'
   +   'return false'
   +  '}' // close function _dfa()
   + '}' // close function dfa()
  return ''
-  + 'function revive(dfa){var i,l,state,j,l2,all=[],t,ts;'
-  +  'for(i=0,l=dfa.length;i<l;i++){state=dfa[i];'
+  + 'function revive(x){var i,l,state,j,l2,all=[],t,ts;'
+  +  'for(i=0,l=x.length;i<l;i++){state=x[i];'
   +   'ts=[];' // transitions
   +   'for(j=0,l2=state.length;j<l2;j++){t=state[j];'
-  +    'if(state[1]==l) ts.push([t[0],true]);'
+  +    'if(t[1]==l) ts.push([t[0],true]);'
   +    'else ts.push([t[0],t[1]==undefined?j+1:t[1]])}'
   +   'all.push(ts)}'
   +  'return dfa(all)'

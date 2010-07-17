@@ -4,6 +4,13 @@ function buildES5_commonjs(es5,patch,opts){
 
 function xyzzy(){return dir(this)}
 
+function test_dfa_json(){var s,ret=[],p
+ s='10'
+ p=parseJSON(function(m,x,y){ret.push(m+'\t'+x+(y?' '+y:''))})
+ p('chunk',s)
+ p('eof')
+ return ret.join('\n')}
+
 function test_treeWalker(){var dict,out=[],result,names,parser,s
  s="1+2*3"
  out.push(s+'\n\n')
@@ -19,12 +26,13 @@ function test_treeWalker(){var dict,out=[],result,names,parser,s
  return out.join('')}
 
 function DFA_benchmarks(){var out=[],ms,input
- ms=2000
+ ms=800
  input='abcde'
  //return DFA_bench_loop('abcdx')()
  out.push(simple(DFA_bench_loop (input),ms,'loop' ,5))
  out.push(simple(DFA_bench_loop2(input),ms,'loop2',5))
  out.push(simple(DFA_bench_loop3(input),ms,'loop3',5))
+ out.push(simple(DFA_bench_loop4(input),ms,'loop4',5))
  out.push(simple(DFA_bench_funcs(input),ms,'funcs',5))
  return out.join('\n')}
 
@@ -73,6 +81,20 @@ function DFA_bench_loop3(input){var states
   while(state<5){
    eq_class=DFA_bench_equiv[input.charCodeAt(i++)]
    state=states[state][eq_class]}
+  return state==5}}
+
+// adds a store of the previous state (for recovery from EOF)
+function DFA_bench_loop4(input){var states
+ states=[[,1] // state 0
+        ,[,,2] // state 1
+        ,[,,,3] // state 2
+        ,[,,,,4] // state 3
+        ,[,,,,,5]]// state 4
+ return function(){
+  var i=0,state=0,eq_class,prev
+  while(state<5){
+   eq_class=DFA_bench_equiv[input.charCodeAt(i++)]
+   state=states[prev=state][eq_class]}
   return state==5}}
 
 function DFA_bench_funcs(input){
