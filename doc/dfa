@@ -709,3 +709,6 @@ So, no state is changed, except for the R variable which becomes false, indicati
 // the 'match state' is the state one past the end of the array
 
 expand_dfa([[[[2]]],[[[1]],[[3],5]],[[[1]]],[[[1]]],[[[1],5]]])
+
+
+T=[,20480,24576,,28672,10927,,6831,36864,14] 

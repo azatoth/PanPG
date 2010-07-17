@@ -14,7 +14,9 @@
 
 //,cfunc:'generateParserThrowing',ciset:'test_gen_dfa',outfn:'test_dfa.js',outct:'text/javascript'
 
-,cfunc:'generateParserThrowing',ciset:'dfa_json',outfn:'dfa_json.js',outct:'text/javascript'
+,cfunc:'test_dfa_json'
+
+//,cfunc:'generateParserThrowing',ciset:'dfa_json',outfn:'dfa_json.js',outct:'text/javascript'
 
 //,cfunc:'generateParser',ciset:'PEG.peg_gen_v6'
 
