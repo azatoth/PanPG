@@ -15,11 +15,11 @@ function v6_dfa_table_2(opts,rules){
 //   a state id, omitted when = current + 1
 function v6_dfa_encode(opts){return function _v6_dfa_encode(dfa){var key,i,l,match={},slots=[],indices=[],index,keys=[],equiv_states=[],parents=[],ret=[],equiv_count=0
   // state cache maps state keys onto slots
-  log(dfa)
+  //log(dfa)
   go(dfa)
-  log(slots)
-  log(keys)
-  log(equiv_states)
+  //log(slots)
+  //log(keys)
+  //log(equiv_states)
   go2()
   return v6_stringify(ret)
   function go(state){var i,l,a,cset,substate,equiv_classes,tr_keys,slot,st_key,n
@@ -41,7 +41,7 @@ function v6_dfa_encode(opts){return function _v6_dfa_encode(dfa){var key,i,l,mat
      st_key=go(substate)
      tr_keys.push(equiv_classes+'→'+st_key)}
     key='['+tr_keys.join(';')+']'}
-   log({key:key})
+   //log({key:key})
    n=keys.indexOf(key)
    if(n>-1){
     equiv_states[slot]=n

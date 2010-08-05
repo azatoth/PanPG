@@ -14,7 +14,11 @@
 
 //,cfunc:'generateParserThrowing',ciset:'test_gen_dfa',outfn:'test_dfa.js',outct:'text/javascript'
 
-,cfunc:'test_dfa_json'
+//,cfunc:'JSON_benchmarks',ciset:'JSON_examples'
+
+//,cfunc:'test_dfa_json',ciset:'JSON_examples'
+
+,cfunc:'explain',ciset:'test_explain'
 
 //,cfunc:'generateParserThrowing',ciset:'dfa_json',outfn:'dfa_json.js',outct:'text/javascript'
 
@@ -112,6 +116,15 @@
  ,test_abc:['abc_peg']
  ,buildFailTree:['failTree','failNames']
  ,streaming_test:['arith_expr2']
+ ,JSON_examples:['file(scratch2)'
+                ,'file(corpus/JSON/example1.json)'
+                ,'file(corpus/JSON/example2.json)'
+                ,'file(corpus/JSON/example3.json)'
+                ,'file(corpus/JSON/example4.json)'
+                ,'file(corpus/JSON/example5.json)']
+ ,test_explain:['file(x.peg)'
+               ,'emptyOpts'
+               ,'file(corpus/JSON/example1.json)']
  }
 
 
@@ -271,10 +284,10 @@
    //,'CodePointTo'
    ]}
  ,dfa_json_opts:{fname:'parseJSON'
-                ,trace:true
-                ,asserts:true
+                //,trace:true
+                //,asserts:true
                 ,dfa:true
-                ,debug:true
+                //,debug:true
                 }
  ,PEGpeg_prefix_v5:'p_PEG_v5_'
  ,PEGpeg_prefix_v5_1:'p_PEG_v5_1_'

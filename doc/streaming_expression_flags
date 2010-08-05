@@ -33,72 +33,75 @@ Here is a snippet of diagnostic output from the generator:
                        ,S:7
                        ,T:8364
 
-For each expression, the T, M, and F states are set, these are the states the parser will transition to when the expression is tested, matches, or fails, respectively.
-The complement of flags are:
+The flags and their meanings:
 
-cache
-t_bufferout
-pushpos
-t_emitstate
-m_emitstate
-m_emitclose
-m_emitanon
-m_emitlength
-m_resetpos
-m_emitbuf
-m_tossbuf
-f_tossbuf
+cache            should the parse result be cached?
+t_bufferout      should child nodes of this node be buffered, or committed to the output stream immediately?
+pushpos          does the start position need to be pushed onto the stack?
+t_emitstate      should the start state be emitted as part of the output stream before the parse result is known?
+m_emitstate      should the start state be emitted when the expression matches?
+m_emitclose      should a close event be emitted when the expression matches?
+m_emitanon       should an anonymous node be emitted on match?
+m_emitlength     should the length of the matched node be emitted?
+m_resetpos       should the position be reset to the pushed position on match (e.g. a lookahead)?
+m_emitbuf        should the input stream that is currently being buffered be committed (possibly to be buffered by some containing expression) on match?
+m_tossbuf        should the buffered input stream be thrown out on match (i.e. for lookaheads)?
+f_tossbuf        should the buffered input stream be thrown out on failure?
 
-All of these flags are currently provided by the caller to the code generator, and to enable streaming at least some of the streamable expressions will probably have to be designated by the caller.
-Ultimately these can be derived from the grammar by an analyzer.
-In the meantime we would like to assign reasonable defaults for each flag that will give correct results.
+The t_ m_ and f_ prefixes identify flags that apply to the test, match, or fail phases of parsing the expression.
 
-Defaults should be safe for all expressions, then we can add increasingly fine-grained tuning for performance.
+A "top-level expression" means the entire right-hand side of a parse rule.
+For example when the rule "S ← A (B / C) D" is parsed, the top-level expression is a sequence with three children.
+It is the top-level expression of a rule which is responsible for emitting the node in the output stream when the rule matches.
 
-cache: true for Rule top-level exprs
-t_bufferout: for the first subexpr of a sequence, for any lookahead, and whenever `cache` is set[1,2]
-pushpos: anything with m_emitlength set[3], anything that can fail without failing the containing expression, any lookahead
-t_emitstate: any rule that is entered in streaming mode[5]
-m_emitstate: rule for which t_emitstate is not set
-m_emitclose: union of t_emitstate and m_emitstate[8]
-m_emitanon: definition of an expr that produces an anonymous node
-m_emitlength: union of m_emitclose, m_emitanon
-m_resetpos: positive lookaheads only
-m_emitbuf: commit points corresponding to a preceding t_bufferout[9,10]
-m_tossbuf: positive lookaheads only[11]
-f_tossbuf: sequence subexprs before a commit point[12]
+How the flags are set:
 
-[1] turning this on for the sequence, instead of the first subexpr, would be just as good
-[2] t_bufferout can always be turned off if the expression can't generate any child nodes (bufferout should be called buffer_child_nodes since that is actually what it does)
-[3] i.e. that emits a node, whether named or anon
-[5] by default this will never be set, but some intelligence can be used to determine when this is and is not safe
-[8] but not m_emitanon, since anon nodes are self-closing
-[9] these and t_bufferout should be paired
-[10] by default before doing any analysis, the commit point is the last expression in a sequence
-[11] when a negative lookahead succeeds, the subexpr failed, which means it emitted no children and did not advance the position, so only positive lookaheads require m_resetpos and m_tossbuf (which can probably be combined)
-[12] there may be more than one fail point per t_bufferout, but only one commit point
+cache            true for Rule top-level exprs
+t_bufferout      true for proper sequences[1], top-level rule expressions, and lookaheads [2]
+pushpos          top-level exprs, lookaheads, emits_anon exprs, and proper sequences[3]
+t_emitstate      set on every top-level rule[4] except those which are elided
+m_emitstate      always false [7]
+m_emitclose      equal to t_emitstate [8]
+m_emitanon       by definition, any expr that always produces an anonymous node, see below
+m_emitlength     union of m_emitclose and m_emitanon
+m_resetpos       positive lookaheads only
+m_emitbuf        proper sequences and top-level exprs [9]
+m_tossbuf        positive lookaheads only [11]
+f_tossbuf        proper sequences, lookaheads, and top-level exprs
 
-So, to find reasonable defaults:
+[1] a proper sequence is a sequence with two or more sub-expressions
+[2] t_bufferout can always be turned off if the expression can't generate child nodes (bufferout should be called buffer_child_nodes since that is actually what it does)
+[3] pushpos also implies that the position is popped on match or failure
+[4] however since t_bufferout is also set, the rule will only be pushed to the output stream when it matches
+[7] this could be set on rules which are streamable (i.e. don't buffer input) but can also fail without failing the entire parse; it is only suitable for rules which cannot have children, as otherwise the start will be emitted after the child nodes
+[9] this is everything that sets t_bufferout, except for lookaheads, in which the buffered output if any should be dropped rather than emitted
+[11] when a negative lookahead succeeds, the subexpr failed, which means it emitted no children and (by contract) did not advance the position, therefore only the positive lookaheads require resetting the position on the match state
 
-cache: for top-level exprs of each named rule
-t_bufferout: for top-level exprs[13], for the first subexpr of a (non-singleton) sequence, and for lookaheads
-pushpos: for any top-level rule, any anonymous node, any lookahead, and any proper sequence[14]
-t_emitstate: every top-level expr[15]
-m_emitstate: never set[16]
-m_emitclose: same as m_emitstate[18]
-m_emitanon: true for anonymous nodes[19]
-m_emitlength: union of m_emitstate (== m_emitclose) and m_emitanon
-m_resetpos: positive lookaheads
-m_emitbuf: top-level exprs, commit points, i.e. the last expression in a proper sequence (by default in lieu of any deeper analysis)
-m_tossbuf: any lookahead
-f_tossbuf: set on every subexpression of a proper sequence, and on any lookahead
+Anonymous nodes are sometimes required because the output format requires sibling nodes to completely tile their parent.
+Some expressions can emit anonymous nodes every time they match, but in some cases it is desirable for anonymous nodes to be combined, or not to appear in the output stream except when actually followed by a named node.
 
-[13] this is set because t_emitstate is currently set on every top-level expression, but this can be optimized
-[14] pushpos also implies that the position is popped on match or failure (these could be separated if there were a need of course)
-[15] "top-level" here means the expression at the top level of a rule (which is always a sequence in the v6 codegen)
-[16] this could be set on rules which are streamable (i.e. don't buffer input) but can also fail without failing the entire parse; it is only suitable for rules which cannot have children, as otherwise the start will be emitted after the child nodes
-[18] note that a rule must emit the start, then emit the child nodes, then emit the close, which means that m_emitstate, m_emitbuf, and m_emitclose must come in that order
-[19] an anonymous expression is any expression that can emit an anonymous node, i.e. any expression which can match non-zero-length input and also can have at least one named rule sibling.
+Anonymous nodes can be emitted when they are needed as follows:
+
+on parent expr having both anon_consume and can_emit_named: on test, push pos twice
+on child expr emitting named on test: peek at position on stack, subtract from current position, if non-zero, emit (to buffer) an anon node
+on child expr match: emit node as normal, then pop top stack position, and push current position.
+on parent expr fail: drop buffered output, drop top position on stack, reset to next position from stack
+on parent expr match: pop top two positions from stack, compare with current position and each other.  If top two differ, a node was emitted, if additionally top position differed from current position then emit an anonymous node to fill the gap, in all other cases do not emit any anonymous node.
+
+The above only works if there is never an intermediate subexpression that uses the position stack, which is not the case.
+
+We could add a separate emit stack, and not add any new flags.
+Never set m_emitanon, this makes t_emitstate, m_emitclose, and m_emitlength all equal.
+When a node that has t_emitstate (which is all top-level exprs) is tested, before emitting the start tag, compare the input position and emit position.
+If there is a difference then also emit an anonymous node.
+Then push the current position onto the emit stack.
+This means that, in an expression which emits a node, the position at the top of the emit stack is initially the position at the start of the node.
+When a t_emitstate expr succeeds, if the top if the emit stack is not equal to the top of the position stack, then a child node must have been emitted.
+If the emit stack top is also not equal to the current position then emit an anonymous node to cover the end of the current node.
+
+
+push the position onto the emit stack.
+When 
 
 To determine which expressions are "anonymous expressions" (i.e. can generate an anonymous node) first we consider atomic expressions.
 Once string literals are replaced with sequences of csets, there are only three kinds of atomic expressions: named references, csets, and ϵ.

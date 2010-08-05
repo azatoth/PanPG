@@ -8,7 +8,7 @@ function showTree(res,opts,state){var names,str,a,i,l,indent,name,x,out=[],outpu
  names=res.names
  a=res.tree
  str=res.input
- opts=opts||{};opts.hide=opts.hide||[]
+ opts=opts||{};opts.hide=opts.hide||['anonymous']
  state_was_passed=!!state
  state=state||{stack:[],indent:'',pos:0}
  for(i=0,l=a.length;i<l;i++){x=a[i]
@@ -38,8 +38,7 @@ function showTree(res,opts,state){var names,str,a,i,l,indent,name,x,out=[],outpu
    state.indent=state.indent.slice(0,-1)
    if(out_pos!=undefined){
     out[out_pos]=show(state,y)}}
-  else return err('invalid event '+x+' at position '+i)
-  }
+  else return err('invalid event '+x+' at position '+i)}
  if(state_was_passed || state.stack.length) return [out.join(''),state]
  else return out.join('')
  function err(s){return ['showTree: '+s]}
@@ -47,7 +46,7 @@ function showTree(res,opts,state){var names,str,a,i,l,indent,name,x,out=[],outpu
   if(opts.hide.indexOf(node.name)>-1)return ''
   if(node.end!=undefined && str){
    text=show_str(str.slice(node.start,node.end))}
-  return state.indent+node.name+' '+node.start+'-'+(node.end||'?')+' '+text+'\n'}
+  return state.indent+node.name+' '+node.start+'-'+(node.end==undefined?'?':node.end)+' '+text+'\n'}
  function show_str(s){
   return '"'+s.replace(/\n/g,'\\n').replace(/\r/g,'\\r').replace(/(.{16}).{8,}/,"$1…")+'"'}}
 
