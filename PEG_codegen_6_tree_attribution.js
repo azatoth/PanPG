@@ -66,12 +66,23 @@ function v6_tree_rules(){var stack=[]
  //{expr:x←{}}
  ,[obj(key('expr',collect('x',obj()))),
      'all_csets',function(m){return attr('all_csets')(m.x)}]
- ,[obj(and(key('type',eq(0))
-          ,key('cset',collect('cset')))),
-     'all_csets',function(m){return [m.cset]}]
- //,[obj(and(key('type',eq(1))
- //         ,key('strLit'
+ ////{type:0,cset:cset←_}
+ //,[obj(and(key('type',eq(0))
+ //         ,key('cset',collect('cset')))),
+ //    'all_csets',function(m){return [m.cset]}]
+ //{dfa:trans←{type:'transition'}}
+ ,[obj(key('dfa',collect('trans',obj(key('type',eq('transition')))))),
+     'all_csets',function(m){return v6_csets_from_dfa(m.trans)}]
  ])
+
+function v6_csets_from_dfa(d){var all,i,l,t
+ if(d.type!='transition')return []
+ all=[]
+ t=d.transition
+ for(i=0,l=t.length;i<l;i++){
+  all.push(t[i][0])
+  all=all.concat(v6_csets_from_dfa(t[i][1]))}
+ return all}
 
 function among(as){return function _among(x){
   return as.indexOf(x.current)>-1}}
@@ -102,8 +113,9 @@ function list(p){return function _list(x){var i,l,xs
  x.current=xs
  return true}}
 
-function collect(n,p){return function _collect(x){
-  return (!p || p(x)) && (x.bindings[n]=x.current, true)}}
+function collect(n,p){return function _collect(x){var it
+  it=x.current
+  return (!p || p(x)) && (x.bindings[n]=it, true)}}
 
 function obj(p){return function _obj(x){
   return typeof x=='object' && (!p || p(x))}}

@@ -45,7 +45,7 @@ cset_output=function(){var cat,cats={},
   if(! (cat in cats)) cats[cat]=start()
   push(cats[cat],cp)})
  for(cat in cats) cats[cat] = close(cats[cat])
- return 'cset_unicode_categories=\n'+cset_cat_js(cats)+';'}
+ return 'var cset_unicode_categories=\n'+cset_cat_js(cats)+';'}
 
 function cset_cat_js(o){var p,r=[]
  function tohex(n){return (n>9?'0x':'')+n.toString(16).toUpperCase()}

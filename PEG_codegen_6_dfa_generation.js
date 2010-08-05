@@ -4,7 +4,6 @@ function v6_leaf_dfas(opts,rules){var p
  return rules
  function go(expr){var dfa
   if(dfa=v6_leaf_dfa(opts,expr))expr.dfa=dfa
-  expr._dfa='reached'
   expr.subexprs.map(go)}}
 
 function v6_leaf_dfa(opts,expr){
@@ -43,9 +42,22 @@ function v6_dfa_2(re,state){
  default:
   throw new Error('v6_dfa: unexpected re type')}}
 
-function v6_dfa_cset(cset,state){
+function v6_dfa_cset(cset,state){var sr,surrogates,bmp,i,l,srps,hi_cset,lo_cset,trans
+ sr=CSET.toSurrogateRepresentation(cset)
+ if(sr.surrogate_range_pairs.length == 0)
+  return {type:'transition'
+         ,transition:[[cset,{type:'match'}]]}
+ surrogates=CSET.fromIntRange(0xD800,0xDFFF)
+ // here we take the position that unmatched surrogates simply can never be accepted by a PanPG parser; this is the same as the v5 codegen and the v6 codegen without DFAs.  Other alternatives exist, however, and there are cases where searching for unmatched surrogates specifically is what is desired.
+ bmp=CSET.difference(sr.bmp,surrogates)
+ srps=sr.surrogate_range_pairs
+ trans=[[bmp,{type:'match'}]]
+ for(i=0,l=srps;i<l;i++){
+  hi_cset=srps[i][0];lo_cset=srps[i][1]
+  trans.push([hi_cset,{type:'transition'
+                      ,transition:[[lo_cset,{type:'match'}]]}])}
  return {type:'transition'
-        ,transition:[[cset,{type:'match'}]]}}
+        ,transition:trans}}
 
 function v6_dfa_seq(seq,state){var d1,d2
  log('seq '+pp(seq))

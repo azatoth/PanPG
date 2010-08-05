@@ -62,7 +62,7 @@ function tL(cset){var i,l,state=false,ret=[]
  function fill(a,b){
   for(;a<b;a++)ret.push(a)}}
 
-/* from a string which may contain any Unicode characters in any order and may contain duplicates. */
+/* from a string which may contain any Unicode characters in any order and may contain duplicates to the set of distinct characters appearing in the string. */
 function fS(s){var res=[]
  // here using replace as an iterator over Unicode characters
  s.replace(/[\u0000-\uD7FF\uDC00-\uFFFF]|([\uD800-\uDBFF][\uDC00-\uDFFF])|[\uD800-\uDBFF]/g,
@@ -195,7 +195,7 @@ function reCC_bmp(cset){var res=[],state=0,i,l,c
 
 /* This algorithm described above can be followed in the reCC function, which is preceded below by other helper functions. */
 
-/* This simply splits a cset into two, one for the BMP range and one for the rest. */
+/* This simply splits a cset into two, the subset within the BMP and one for the supplementary subset. */
 function splitAtBMP(cset){var bmp=[],i=0,l=cset.length,c,state
  for(;i<l;i++){
   c=cset[i]
@@ -220,7 +220,7 @@ function surrogatePair(n){
 
 /* We also return a cset of all high surrogates to save recalculating this from the primary output. */
 
-/* This function was written all at one go and passed every test.  If it is later found to contain bug, starting over is recommended. */
+/* This function was written all at one go and passed every test.  If it is later found to contain a bug, the author suggests starting over. */
 
 function surrogateSet(cset){var i=0,l=cset.length,state,c,prev,hi,lo,ret=[],prev_hi,prev_lo,full=[],cur,all_hi=[],a
  if(l&1){cset[l++]=0x110000} //normalize
@@ -271,6 +271,12 @@ function reCC(cset){var a,bmp,sup,all_hi,surr,d,i,ret=[]
  if(!empty(i)) ret.push(reCC_bmp(i))
  return ret.join('|')}
 
+/* toSurrogateRepresentation is similar to reCC but returns an intermediate form (e.g. for constructing a DFA).  reCC above could be implemented externally in terms of this.  This is for UTF-16 but a UTF-8 version should be added too.  Possibly all of this should be moved into a separate module. */
+function tSR(cset){var a,bmp,sup,all_hi,surr,d,i
+ a=splitAtBMP(cset);bmp=a[0];sup=a[1]
+ a=surrogateSet(sup);all_hi=a[0];surr=a[1]
+ return {bmp:bmp,surrogate_range_pairs:surr,high_surrogates:all_hi}}
+
 /* return a cset from a Unicode General Category. */
 function fGC(x){
  var ret=cset_unicode_categories[x]
@@ -309,6 +315,7 @@ return {'import':function(prefix,object){object=object||g
  ,['union',union]
  ,['intersection',inter]
  ,['toRegex',reCC]
+ ,['toSurrogateRepresentation',tSR]
  ,['show',show]
  ]
  for(i=0,l=es.length;i<l,e=es[i];i++)
