@@ -3,8 +3,8 @@
 <title>JavaScript Syntax Highlighting Demo</title>
 
 <style>
-textarea {width:40%;height:256px;float:right;clear:right}
-#output_text {font-family:monospace}
+textarea {width:40%;height:256px;float:right;clear:right;z-index:1}
+#output_text {width:58%;overflow:auto;font-family:monospace}
 body.dark {background:#000;color:#fff}
 .dark textarea {background:#000;color:#fff;border:1px solid #777}
 </style>
@@ -14,10 +14,11 @@ body.dark {background:#000;color:#fff}
 <p>
 This page demonstrates true syntax highlighting of JavaScript source code, with HTML output.
 The input, code, and CSS on the right is "live".
-The CSS is just a start.
 </p>
 
-<textarea id=input spellcheck=false>function x(){if(1>0) throw new Error("1>0")}
+<textarea id=input spellcheck=false>// SAMPLE INPUT
+
+function x(){if(1>0) throw new Error("1>0")}
 
 if(1>0) throw new Error("1>0");
 if(0&lt;1) return;
@@ -27,7 +28,9 @@ return 0;
 if(0&lt;1) return 0;
 else return 1;
 
-function f(x){return function g(y){return x+y}}
+function f(x){
+ return function g(y){return x+h(y)}
+ function h(x){return x*x}}
 
 // this is a comment
 
@@ -45,61 +48,48 @@ var tags=[]
   , i,l
   , result
   , input
-  , tag_rules
-  , replace_rules
+  , callbacks
   , end_markers
 
-// which parse rules get surrounded by tags?
-tag_rules=
-['Identifier'
-,'FunctionTok'
-,'FunctionDeclaration'
-,'ReturnStatement'
-,'ReturnTok'
-,'IfStatement'
-,'IfTok'
-,'ThrowStatement'
-,'ThrowTok'
-,'FunctionExpr'
-,'VariableStatement'
-,'Comment'
-,'Block'
-,'Program'
-,'FunctionBody'
-]
+// we collect tags in our pass over the parse tree, and then inject them into the input string in a separate step at the end.
 
-// the entire contents of some rules get replaced
-replace_rules=
-{WhiteSpace:'&amp;nbsp;'
-,LineTerminatorSequence:'&lt;br>\n'
+function insert_tag(tag,pos){
+ tags[pos]=tag + (tags[pos]||'')}
+
+callbacks=
+{Program:
+ function(m){
+  insert_tag('&lt;pre>&lt;code class=JavaScript>',m.start)
+  insert_tag('&lt;/code>&lt;/pre>',m.end)}
+,FunctionDeclaration:
+ function(m){
+  insert_tag('&lt;span class=Function>',m.start)
+  insert_tag('&lt;/span>',m.end)}
+,FunctionExpr:
+ function(m){
+  insert_tag('&lt;span class=Function>',m.start)
+  insert_tag('&lt;/span>',m.end)}
+// this is getting repetitive, so...
 }
 
-end_markers=
-{//'FunctionDeclaration':1
-//,'Statement':1
-}
+// ...let's do something a little more concise:
+;
+[['IfStatement','&lt;span class=IfStatement>','&lt;/span>']
+,['ThrowStatement','&lt;span class=ThrowStatement>','&lt;/span>']
+,['Comment','&lt;span class=Comment>','&lt;/span>']
+,['FunctionBody','&lt;span class=FunctionBody>','&lt;/span>']
+].forEach(function(a){
+ callbacks[a[0]]=function(m){
+  insert_tag(a[1],m.start)
+  insert_tag(a[2],m.end)}})
 
-function rule_callback(m,cn,rule){
- if(tag_rules.indexOf(rule)>-1){
-  push(m.start,'&lt;span class='+rule+'>')
-  push(m.end,'&lt;/span>')}
- if(rule in replace_rules){
-  replacements[m.start]=[replace_rules[rule],m.end-m.start]}
- if(rule in end_markers){
-  push(m.start,'&lt;span class='+rule+'_start>&lt;/span>')
-  push(m.end,'&lt;span class='+rule+'_end>&lt;/span>')}}
-
-function push(pos,s){
- if(!tags[pos])tags[pos]=[]
- tags[pos].unshift(s)}
-
-treeWalker({other:rule_callback},parse_result)
+treeWalker(callbacks,parse_result)
 
 input=parse_result[1].input
 
 result=''
 for(i=0;i&lt;=input.length;i++){
- if(tags[i])result+=tags[i].join('')
+ if(tags[i])result+=tags[i]
  if(replacements[i]){
   result+=replacements[i][0]
   i=i+replacements[i][1]-1
@@ -112,8 +102,7 @@ return result</textarea>
 
 #output_html {font-family:monospace;line-height:1.3}
 
-.light .FunctionDeclaration,
-.light .FunctionExpr {
+.light .Function {
  background:rgba(0,0,255,0.05);
  border:1px solid rgba(0,0,255,0.5)}
 
@@ -133,18 +122,16 @@ return result</textarea>
  background:rgba(255,127,0,0.05);
  border:1px solid rgba(255,127,0,0.5)}
 
-.Comment {
+.light .Comment {
  color:green}
 
 .dark #output_html {background:#070707}
 
-.dark .FunctionDeclaration,
-.dark .FunctionExpr {
- background:green}
+.dark .Function {
+ background:#00f}
 
-.dark .FunctionBody .FunctionDeclaration,
-.dark .FunctionBody .FunctionExpr {
- background:#f70}
+.dark .FunctionBody .Function {
+ background:#080}
 
 .dark .FunctionBody{
  background:#000}
@@ -156,7 +143,7 @@ return result</textarea>
 <p><a href=#light id=a_light>light</a> <a href=#dark id=a_dark>dark</a></p>
 <div id=output_html></div>
 <h2>output</h2>
-<p id=output_text></p>
+<pre id=output_text></pre>
 
 <h2>parse tree</h2>
 <pre id=pt></pre>

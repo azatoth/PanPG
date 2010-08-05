@@ -9,9 +9,7 @@ function v6_cset_equiv(opts,rules){var p,cgroup_set,big_arr,all_csets,cset_cache
  // collect all the csets in all_csets, and cache them in cset_cache, keyed by canonical string representation
  cset_id=0
  for(p in rules)go(rules[p])
- log(dir(this))
- log({all_csets:all_csets})
- log({cset_cache:cset_cache})
+ //log({cset_cache:cset_cache})
  opts.cset_equiv_class_array=big_arr
  // we fill the big_arr by iterating over each character in each cset
  for(p in cset_cache) populate_big_arr(cset_cache[p])
@@ -24,18 +22,16 @@ function v6_cset_equiv(opts,rules){var p,cgroup_set,big_arr,all_csets,cset_cache
  for(i=0;i<char_count;i++){
   equiv_class=get_equiv_class(big_arr[i])
   big_arr[i]=equiv_class.id}
- opts.all_csets=all_csets
  opts.cset_cache=cset_cache
  opts.equiv_classes=equiv_classes
  opts.cset_equiv_class_array=big_arr
- log(v6_rle_enc(big_arr))
+ //log(v6_rle_enc(big_arr))
  return rules
  function populate_big_arr(cset){var arr,i,l,subset
   subset=CSET.intersection(CSET.fromIntRange(0,char_count-1),cset.cset)
   arr=CSET.toList(subset)
   //log({arr:arr})
   for(i=0,l=arr.length;i<l;i++){
-   //if(!(arr[i]<65536))return log([i,arr[i]])
    big_arr[arr[i]].push(cset.id)}}
  function get_equiv_class(cset_ids){var key
   key='equiv_class_'+cset_ids.join(',')
@@ -50,16 +46,9 @@ function v6_cset_equiv(opts,rules){var p,cgroup_set,big_arr,all_csets,cset_cache
    all_csets[cset_id]=cset_cache[key]={key:key,cset:cset,equivs:[],id:cset_id}
    cset_id++}}}
 
-function v6_cset_equiv_array(opts,rules,varname){var function_rle_dec
- function_rle_dec=
-  'function rle_dec(a){var r=[],i,l,n,x,ll;'+
-   'for(i=0,l=a.length;i<l;i+=2){'+
-    'n=a[i];x=a[i+1];'+
-    'r.length=ll=r.length+n;'+
-    'for(;n;n--)r[ll-n]=x}'+
-   'return r}'
+function v6_cset_equiv_array(opts,rules,varname){
  return varname+'='+v6_rle_if_shorter(opts.cset_equiv_class_array)+ '\n'
-      + function_rle_dec+'\n'}
+      + v6_function_rle_dec+'\n'}
 
 function v6_cset_equiv_lookup(opts){return function _v6_cset_equiv_lookup(cset){var key
   key='cset_'+cset.join(',')

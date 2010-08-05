@@ -253,6 +253,11 @@ function reCC(cset){var a,bmp,sup,all_hi,surr,d,i,ret=[]
  if(!empty(i)) ret.push(reCC_bmp(i))
  return ret.join('|')}
 
+function tSR(cset){var a,bmp,sup,all_hi,surr,d,i
+ a=splitAtBMP(cset);bmp=a[0];sup=a[1]
+ a=surrogateSet(sup);all_hi=a[0];surr=a[1]
+ return {bmp:bmp,surrogate_range_pairs:surr,high_surrogates:all_hi}}
+
 function fGC(x){
  var ret=cUC[x]
  if(!ret) throw Error('unknown Unicode General Category '+x)
@@ -287,6 +292,7 @@ return {'import':function(prefix,object){object=object||g
  ,['union',union]
  ,['intersection',inter]
  ,['toRegex',reCC]
+ ,['toSurrogateRepresentation',tSR]
  ,['show',show]
  ]
  for(i=0,l=es.length;i<l,e=es[i];i++)
