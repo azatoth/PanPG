@@ -91,7 +91,7 @@
  ,'test_gen_dfa':['file(PEG.peg)'
                  //,'PEG_features_opts']
                  ,'PEG.peg_opts_dfa']
- ,'dfa_json':['file(x.peg)'
+ ,'dfa_json':['file(grammars/JSON.peg)'
              ,'dfa_json_opts']
  ,'PEG_features_gen_v5':['file(PEG_features.peg)'
                         ,'emptyOpts']
@@ -122,7 +122,7 @@
                 ,'file(corpus/JSON/example3.json)'
                 ,'file(corpus/JSON/example4.json)'
                 ,'file(corpus/JSON/example5.json)']
- ,test_explain:['file(x.peg)'
+ ,test_explain:['file(grammars/JSON.peg)'
                ,'emptyOpts'
                ,'file(corpus/JSON/example1.json)']
  }
