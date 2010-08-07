@@ -16,34 +16,10 @@ This page demonstrates true syntax highlighting of JavaScript source code, with 
 The input, code, and CSS on the right is "live".
 </p>
 
-<textarea id=input spellcheck=false>// SAMPLE INPUT
+<textarea id=input spellcheck=false>return x
+</textarea>
 
-function x(){if(1>0) throw new Error("1>0")}
-
-if(1>0) throw new Error("1>0");
-if(0&lt;1) return;
-throw new Error('xyz');
-return 0;
-
-if(0&lt;1) return 0;
-else return 1;
-
-function f(x){
- return function g(y){return x+h(y)}
- function h(x){return x*x}}
-
-// this is a comment
-
-var tags=[]
-  , replacements=[]
-  , i,l</textarea>
-
-<textarea id=code spellcheck=false>// `parse_result` is provided by the environment
-// `parse_result.input` is the input string
-
-// this code is wrapped in a function, so `return` is needed to return the generated HTML which is then displayed
-
-var tags=[]
+<textarea id=code spellcheck=false>var tags=[]
   , replacements=[]
   , i,l
   , result
@@ -51,10 +27,8 @@ var tags=[]
   , callbacks
   , end_markers
 
-// we collect tags in our pass over the parse tree, and then inject them into the input string in a separate step at the end.
 
-function insert_tag(tag,pos){
- tags[pos]=tag + (tags[pos]||'')}
+function insert_tag(tag,pos){tags[pos]=tag + (tags[pos]||'')}
 
 callbacks=
 {Program:
@@ -78,6 +52,7 @@ callbacks=
 ,['ThrowStatement','&lt;span class=ThrowStatement>','&lt;/span>']
 ,['Comment','&lt;span class=Comment>','&lt;/span>']
 ,['FunctionBody','&lt;span class=FunctionBody>','&lt;/span>']
+,['StringLiteral','&lt;span class=StringLiteral>','&lt;/span>']
 ].forEach(function(a){
  callbacks[a[0]]=function(m){
   insert_tag(a[1],m.start)
@@ -98,21 +73,19 @@ for(i=0;i&lt;=input.length;i++){
 
 return result</textarea>
 
-<textarea id=css spellcheck=false>body {background:#eee}
+<textarea id=css spellcheck=false>body {background:#ffe}
 
 #output_html {font-family:monospace;line-height:1.3}
 
-.light .Function {
- background:rgba(0,0,255,0.05);
- border:1px solid rgba(0,0,255,0.5)}
+.light .Function {color:#404;background:rgba(0,0,128,0.1)}
+
+.light .StringLiteral {background:#ff0}
 
 .light .IfStatement {
  background:rgba(0,255,0,0.05);
  border:1px solid rgba(0,255,0,0.5)}
 
-.light .ThrowStatement {
- background:rgba(255,0,0,0.05);
- border:1px solid rgba(255,0,0,0.5)}
+.light .ThrowStatement {color:#00c;background:rgba(0,0,255,0.15);}
 
 .light .ReturnStatement {
  background:rgba(128,0,255,0.05);
