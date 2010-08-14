@@ -1,0 +1,6 @@
+{"name":        "PanPG"
+,"version":     "0.0.6pre"
+,"description": "JavaScript PEG parser generator."
+,"directories": {"lib":"build"}
+,"main":        "build/PanPG"
+}
