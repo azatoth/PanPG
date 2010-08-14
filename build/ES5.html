@@ -12,7 +12,7 @@ h1 {margin-bottom:1.5em}
 </style>
 
 <!-- the parser itself -->
-<script src=../ES5_v6_default.js></script>
+<script src=ES5Parser.js></script>
 
 <!-- the showResult function to pretty-print the parse tree -->
 <script src=PanPG_util.js></script>
@@ -30,7 +30,7 @@ The benefit of this release is the new output format, which supports streaming, 
 See <a href=http://inimino.org/~inimino/blog/peg_roadmap>the project roadmap</a> for the details.
 </p>
 
-<p>You can also look at the <a href=../ECMAScript_unified.peg>PEG input</a> from which the parser is generated.</p>
+<p>You can also look at the <a href=../grammars/ECMAScript_5.peg>PEG input</a> from which the parser is generated.</p>
 
 <p>Generating the ES5 parser from the PEG takes about a minute of CPU time, which is why it isn't part of this demo.
 The <a href=demo.html>arithmetic demo</a> includes generating a parser from a (much smaller) grammar.
@@ -73,10 +73,10 @@ xhr('GET','Y.js',null,function(x){
 function parseAndShow(s){var result,parser
  the_input=s
  start('parsing')
- result=ES5Parser(s)
+ result=ES5Parser.parse(s)
  finish()
  start('rendering parser output')
- parseTree_el.value=showResult(result)
+ parseTree_el.value=PanPG_util.showTree(result)
  finish()
  if(result[0]){
   start('displaying raw parse tree')

@@ -3,26 +3,46 @@
 <title>PanPG demo</title>
 
 <style>
-body,html {margin:0;padding:0;background:#bbb}
-fieldset {width:96%;border:0;padding:0 2%;margin:0;position:relative}
-label {display:inline-block;width:40%;border:2px solid black;margin:1em 4.5%;position:relative;background:#AAA}
-textarea {width:100%;height:24em;border:0}
+* {margin:0;padding:0;border:0;border-radius:2px;-moz-border-radius:2px;-webkit-border-radius:2px}
+body,html {background:#1d1a1a;color:#fff}
+a:link {color:#88f}
+a:visited {color:#90c}
+fieldset {width:96%;padding:0 2%;margin:0;position:relative}
+label, .lgroup {display:inline-block;width:42%;border:3px solid #111600;margin:1em 3.5%;position:relative;background:#110800;color:#cce}
+.lgroup label {width:100%;border:0;margin:0}
+.lgroup textarea {height:24em}
+textarea {width:100%;margin:auto;height:49em;color:#fff;background:#236;-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing;border-box;-ms-box-sizing:border-box;padding:8px}
 h1,p,pre {width:80%;margin:1em auto}
-h1 {margin-bottom:1.5em}
-#status {height:8em;overflow:auto}
+h1 {margin-bottom:72px}
+#status {height:96px;overflow:auto;position:fixed;top:22px;right:4px;width:35%;background:#444;background:rgba(0,0,0,0.9);color:#fff;z-index:2;padding:2px;border:4px solid #222}
 #choose_grammar select {float:right;display:block}
+label .error {position:absolute;top:1px;right:1px;background:rgba(128,0,0,0.6);color:#fff}
+#menu {position:fixed;top:0;right:0;background:#238;border:3px solid #333;padding:0 8px;font:12px Verdana
+      ;border-radius:10px;-moz-border-radius:10px;-webkit-border-radius:10px}
+#menu li {display:inline-block;padding:2px 4px;margin:0}
+#menu li + li {border-left:1px solid #aaa}
+#menu a {color:#eee;text-decoration:none;padding:2px}
 </style>
 
 <script src=PanPG_generator.js></script>
 <script src=PanPG_util.js></script>
 
-<h1>PanPG demo 2010-04-28</h1>
+<ul id=menu>
+<li><a href=../about.html>about PanPG</a>
+<li><a href=../README.html>documentation</a>
+<li><a href=../build/demo.html>demos</a>
+<li><a href=../about.html#downloads>download</a>
+<li><a href=../about.html#contact>contact</a>
+</ul>
 
-<p>This is a very simple demo that demonstrates the PanPG API.
-We load a PEG from a file, generate a parser, use that parser to parse some input, display the resulting parse or error, and finally walk the parse tree to generate a result.
-You can edit the grammar, the arithmetic expression, and the parse tree callbacks, and your changes will take effect in real time.
+<h1>PanPG demo 2010-08-12</h1>
 
-<p>The parser generator also has Unicode support, including characters outside the BMP, though this demo doesn't use them.
+<p>Demonstrating the PanPG API.
+
+<p>We load a PEG from a file, generate a parser, eval it, use it, display the parse tree, and walk the tree to calculate a result.
+You can edit the grammar, the parser generator options, the input text, and the tree walker callbacks, and your changes will take effect in real time.
+
+<p>The grammar here doesn't require it, but PanPG has full Unicode support, including characters outside the BMP.
 
 <p>This is the new codegen, you can see <a href=http://boshi.inimino.org/3box/asof/1269629763069/PEG/build/demo.html>the previous version</a>, or read <a href=http://inimino.org/~inimino/blog/peg_roadmap>the project roadmap</a>.
 There's also an <a href=ES5.html>an ECMAScript parser demo</a>.
@@ -38,24 +58,33 @@ There's also an <a href=ES5.html>an ECMAScript parser demo</a>.
 -->
 
 <fieldset>
+
+<div class=lgroup>
 <label>Grammar: <br><textarea id=PEG spellcheck=false></textarea></label>
+<label>Opts: (<a href=../README.html#opts>docs</a>)<br><textarea id=opts spellcheck=false></textarea></label>
+</div>
 <label>Generated parser: <br><textarea readonly id=parser></textarea></label>
+
 <label>Input: <br><textarea id=text spellcheck=false></textarea></label>
 <label>Parse tree: <br><textarea readonly id=parse_tree></textarea></label>
+
 <label>Callbacks: <br><textarea id=walker spellcheck=false></textarea></label>
 <label>Output: <br><textarea id=output readonly></textarea></label>
+
 </fieldset>
 
 <script>
-var inputPEG_el=document.getElementById('PEG')
+var grammar_el=document.getElementById('PEG')
   , inputText_el=document.getElementById('text')
   , inputWalker_el=document.getElementById('walker')
   , parser_el=document.getElementById('parser')
   , parseTree_el=document.getElementById('parse_tree')
   , status_el=document.getElementById('status')
   , output_el=document.getElementById('output')
+  , opts_el=document.getElementById('opts')
   , ms
   , the_grammar
+  , the_opts
   , the_parser
   , the_input
   , the_result
@@ -78,21 +107,25 @@ function xhr(method,uri,body,callback){var headers,p
  x.send(body)}
 
 start('fetching grammar file')
-xhr('GET','../PEG_arith.peg',null,function(x){finish();updateParser(x.responseText)})
+xhr('GET','../grammars/arith.peg',null,function(x){finish();grammar_el.value=x.responseText;updateOpts()})
 
-function updateParser(peg){var result,compilerOpts,parser
- the_grammar=peg
- inputPEG_el.value=the_grammar
+opts_el.value='{}'
+
+function updateParser(peg){var result,opts,parser,_state
+ the_grammar=grammar_el.value
  start('generating parser')
- compilerOpts=
- {} // see the API documentation for the available options, here we just accept the defaults
- result=generateParser(the_grammar,compilerOpts)
+ opts=the_opts
+ _state={}
+ // we pass an (undocumented) third argument here, to access the internal state of the parser generator after it returns
+ // we need that here since the grammar isn't under our control and so the name of the generated function could be anything
+ // in typical cases PanPG.generateParser(the_grammar,opts) is sufficient.
+ try{result=PanPG.generateParser(the_grammar,opts,_state)}
+ catch(e){parser_el.value=e.toString();return}
  finish()
- if(result[0])parser_el.value=result[1]
- else{parser_el.value='Error: '+result[1];return}
+ parser_el.value=result
  start('loading the parser...')
  eval(parser_el.value) // here we use eval, but more commonly the generated parser will be written to a file and used more than once
- the_parser=Expr // put Expr, the generated parser, in the outer scope
+ the_parser=eval(_state.fname) // put the generated parser in the outer scope
  finish()
  if(inputText_el.value==''){ // if there is no input to parse, then fetch the sample file
   start('fetching the input file')
@@ -104,12 +137,13 @@ function updateParser(peg){var result,compilerOpts,parser
   updateParseTree()}}
 
 function updateParseTree(){
+ if(!the_parser)return
  the_input=inputText_el.value
  start('parsing')
  the_result=the_parser(the_input)
  finish()
  start('rendering the parser output')
- parseTree_el.value=showResult(the_result)
+ parseTree_el.value=PanPG_util.showTree(the_result)
  finish()
  if(!the_walker_code){
   start('fetching the tree walker')
@@ -130,16 +164,37 @@ function updateWalker(){var x
 
 function updateWalkerOutput(){var x,warnings=[],output
  start('walk the parse tree')
- if(!the_walker.warn)the_walker.warn=function(s){warnings.push(s)}
- try{output=treeWalker(the_walker/*actually the dict...*/,the_result)}
+ the_walker.warn=function(s){warnings.push(s)}
+ try{output=PanPG_util.treeWalker(the_walker/*actually the dict...*/,the_result)}
  catch(e){output_el.value=e;finish();return}
  if(warnings.length){output_el.value=warnings.join('\n')+'\n\n'+output}
  else output_el.value=output
  finish()}
 
-function updateIfChanged(){if(the_input!=inputText_el.value) updateParseTree()}
+function updateOpts(){var new_opts,p
+ try{new_opts=eval('('+opts_el.value+')')}
+ catch(e){setError(opts_el,e.toString());return}
+ setError(opts_el,'')
+ if(equiv(the_opts,new_opts))return
+ the_opts=new_opts
+ setTimeout(updateParser,125)}
 
-function updateParserIfChanged(){if(the_grammar!=inputPEG_el.value) updateParser(inputPEG_el.value)}
+function equiv(a,b){
+ for(p in a) if(a[p]!==b[p]) return false
+ for(p in b) if(!(p in a)) return false}
+
+function setError(el,s){var el2,i,l,el_c
+ el=el.parentNode // the el is the textarea the parent is the label in which we report the error
+ for(i=0,l=el.childNodes.length;i<l;i++){el_c=el.childNodes.item(i)
+  if(el_c.className=='error') el_c.parentNode.removeChild(el_c)}
+ if(!s)return
+ el2=el.appendChild(document.createElement('span'))
+ el2.appendChild(document.createTextNode(s))
+ el2.className='error'}
+
+function updateTreeIfChanged(){if(the_input!=inputText_el.value) updateParseTree()}
+
+function updateParserIfChanged(){if(the_grammar!=grammar_el.value) updateParser()}
 
 function updateWalkerIfChanged(){if(the_walker_code!=inputWalker_el.value) updateWalker()}
 
@@ -150,10 +205,12 @@ function delay(f,ms){return function(){
 function onChange(el,f,ms){
  el.onkeydown=el.onkeyup=el.onclick=delay(f,ms)}
 
-onChange(inputText_el,updateIfChanged,50)
-onChange(inputPEG_el,updateParserIfChanged,50)
+onChange(inputText_el,updateTreeIfChanged,50)
+onChange(grammar_el,updateParserIfChanged,50)
+onChange(opts_el,updateOpts,50)
 onChange(inputWalker_el,updateWalkerIfChanged,50)
 
-inputText_el.focus()
+//inputText_el.focus()
+grammar_el.focus()
 
 </script>

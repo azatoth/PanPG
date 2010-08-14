@@ -100,6 +100,8 @@ When a t_emitstate expr succeeds, if the top if the emit stack is not equal to t
 If the emit stack top is also not equal to the current position then emit an anonymous node to cover the end of the current node.
 
 
+[ 20100810: TODO: we can eliminate most drop rules from having t_bufferout set by determining that none of their descendants have non_drop_ctx, which will frequently be the case.  As it is we cannot do this (although if there is a DFA we can). ]
+
 push the position onto the emit stack.
 When 
 
