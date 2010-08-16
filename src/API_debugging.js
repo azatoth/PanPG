@@ -30,10 +30,10 @@ function checkTrace(msgs){var i,l,m
 
    if(msg=='result'){
         call=callstack.pop()
-        if(!call){calls.push({error:'empty stack'});continue}
+        if(!call){/*calls.push({error:'empty stack'});*/continue}
         call.result=R
         call.end=pos
-        if(S != call.expr) call.expr = 'XXX:' + call.expr + '!=' + S
+        //if(S != call.expr) call.expr = 'XXX:' + call.expr + '!=' + S
         call.result_stack=stack
         call.result_posns=posns
         call.result_bufs=bufs}
@@ -57,7 +57,7 @@ function checkTrace(msgs){var i,l,m
   if(call.error)return 'ERROR: '+call.error
   if(call.resuming)return '────────┤chunk├────────'
   indent=Array(call.depth+1).join(' ').replace(/.../g,'  ↓')
-  if(call.result==undefined)return indent + call.expr + ' [-]'
+  if(call.result==undefined)return indent + call.expr + ' [?]'
   return indent
        + call.expr
        + ' '+call.start+'→'+call.end+''
@@ -73,18 +73,15 @@ function checkTrace(msgs){var i,l,m
 
 // TODO: this could be in a third file API_debugging since it is not necessary for compiling and is not exactly part of the support API (which should not depend on the compiler).
 
-function explain(grammar,opts,input){var either_error_parser,parser,trace,streaming_parser,tree,e,result,fail,fail_msg
+function explain(grammar,opts,input,verbose){var either_error_parser,parser,trace,streaming_parser,tree,e,result,fail,fail_msg
  // generate a parser
  opts=extend({},opts)
- opts.dfa=true // XXX added during testing because parsers currently don't work otherwise (at least the tested JSON parser)
  opts.fname='trace_test'
  opts.trace=true
  //opts.debug=true
  //opts.asserts=true
  either_error_parser=memoized(grammar)
  if(!either_error_parser[0])return'Cannot generate parser: '+either_error_parser[1]
- //return either_error_parser
- //return(either_error_parser[1]+'\n;'+opts.fname)
  parser=eval(either_error_parser[1]+'\n;'+opts.fname)
 
  // parse the input
@@ -106,14 +103,23 @@ function explain(grammar,opts,input){var either_error_parser,parser,trace,stream
  return [input
         ,'input length '+input.length
         ,'result: '+result
-        ,'tree:\n'+showTree({tree:tree,input:input,names:parser.names})
+        ,'tree:\n'+showTree([true,{tree:tree,input:input,names:parser.names}])
         ,'trace analysis:\n'+checkTrace(trace)
         ,'legend:\n'+parser.legend
-        ,'trace:\n'+trace.join('\n')
-        ].join('\n\n')
+        ,verbose?'trace:\n'+trace.join('\n'):''
+        ].filter(function(x){return x!=''})
+         .join('\n\n')
 
  // helpers
- function memoized(grammar){var cache // XXX should test opts too
+ function memoized(grammar){var cache,cached
   cache = explain.cache = explain.cache || {}
-  return cache[grammar] = cache[grammar] || generateParserAlt(grammar,opts)}
- function extend(a,b){for(var p in b)a[p]=b[p];return a}}
+  cached = cache[grammar]
+  if(!cached || !deepEq(cached[0],opts)) cached = cache[grammar] = [opts,generateParserAlt(grammar,opts)]
+  return cached}
+ function extend(a,b){for(var p in b)a[p]=b[p];return a}
+ function deepEq(x,y){var p
+  if(x===y)return true
+  if(typeof x!='object' || typeof y!='object')return false
+  for(p in x)if(!deepEq(x[p],y[p]))return false
+  for(p in y)if(!(p in x))return false
+  return true}}

@@ -173,7 +173,7 @@ function test_showTree(){var res,out=[],a,s
  s='{"foo": ["bar", 42, "baz"], "seven": 7}'
  res=parseJSON(s)
  out.push('input: '+s)
- a=showTree(res)
+ a=showTree(res,{drop:['Number']})
  out.push(a)
  return out.join('\n\n')}
 

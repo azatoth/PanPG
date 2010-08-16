@@ -137,7 +137,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   + '}' // end if not prim test (i.e. t_block)
   + 'if(R==undefined){' // if no cached result
   +  dbg('test')
-  +  '\n// call DFA\n'
+  +  '\n'// call DFA\n'
   +  'if(D[S>>>'+opts.flagbits+']){'
   +   'R=D[S>>>'+opts.flagbits+'](ds||0,dp||pos);'
   +   'if(R==undefined){' // need more data from caller
