@@ -1,3 +1,12 @@
+/* Utility functions on PanPG parse trees.
+ * PanPG_util as of PanPG version 0.0.6
+ * built on Mon, 16 Aug 2010 21:44:53 GMT
+ * http://inimino.org/~inimino/blog/peg_v0.0.6
+ * MIT Licensed
+ */
+
+;(function(exports){
+
 // (event array (can be partial), [name array], [input string], [state]) → [ascii-art tree, state]
 // -or-
 // (complete event array, [name array], [input string]) → ascii-art
@@ -143,3 +152,8 @@ function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb=[],st
   throw new Error('treeWalker: '+s)}
  function warn(s){
   if(dict.warn)dict.warn(s)}}
+
+exports.showTree=showTree
+exports.treeWalker=treeWalker
+
+})(typeof exports=='object'?exports:PanPG_util={});

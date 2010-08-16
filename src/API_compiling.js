@@ -9,7 +9,7 @@ function generateParserAlt(peg,opts,_opts){var parse_result,named_res,i,l,patch,
   opts.patches=peg.slice(1)
   peg=opts.patches[0]}
  parse_result=parsePEG(peg)
- if(!parse_result[0])return parse_result
+ if(!parse_result[0])return [0,new Error(showError(parse_result))]
  named_res=v6_named_res(parse_result)
  if(opts.patches)
   for(i=0,l=opts.patches.length;i<l;i++){patch=opts.patches[i]

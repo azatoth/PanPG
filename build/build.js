@@ -1,5 +1,5 @@
-var reference_url='http://inimino.org/~inimino/blog/peg_v0.0.5'
-  , current_version='0.0.6pre'
+var reference_url='http://inimino.org/~inimino/blog/peg_v0.0.6'
+  , current_version='0.0.6'
 
 function build_compiler
  (API_compiling
