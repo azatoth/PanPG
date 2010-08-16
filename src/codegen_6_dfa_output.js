@@ -1,10 +1,16 @@
 function v6_dfa_table(opts,rules){return function(id_D,id_s,id_pos,id_equiv,id_dfa_state,id_dfa_pos){
-  return id_D+'='+v6_dfa_table_2(opts,rules)+'.map(revive)\n'
+  return id_D+'='+map_reviver(v6_dfa_table_2(opts,rules))+'\n'
        + v6_dfa_reviver(id_s,id_pos,id_equiv,id_dfa_state,id_dfa_pos)}}
 
 // generate the actual D table
 function v6_dfa_table_2(opts,rules){
  return '['+opts.dfa_table.map(v6_dfa_encode(opts)).join(',')+']'}
+
+// wrap the encoded array in a function call that will map revive() over it
+// we cannot use [].map(revive) because IE (at least 7) does not support it
+function map_reviver(array_literal){
+ return 'function(a,i,l,b){for(i=0,l=a.length,b=[];i<l;i++)b[i]=revive(a[i]);return b}'
+      + '('+array_literal+')'}
 
 // example
 // in:  {type:'transition',transition:[[[48,58],{type:'match'}]]}
@@ -115,6 +121,7 @@ function v6_dfa_reviver(id_s,id_pos,id_equiv,id_dfa_state,id_dfa_pos){var functi
   + '}' // close function dfa()
  return ''
   + 'function revive(x){var i,l,state,j,l2,all=[],t,ts;'
+  +  'if(!x)return;'
   +  'for(i=0,l=x.length;i<l;i++){state=x[i];'
   +   'ts=[];' // transitions
   +   'for(j=0,l2=state.length;j<l2;j++){t=state[j];'
