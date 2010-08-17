@@ -1,5 +1,5 @@
 {"name":        "PanPG"
-,"version":     "0.0.6pre"
+,"version":     "0.0.6"
 ,"description": "JavaScript PEG parser generator."
 ,"directories": {"lib":"build"}
 ,"main":        "build/PanPG"
