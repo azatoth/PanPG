@@ -18,7 +18,7 @@ NegativeSpec      ← "[:^" PropSpec ":]"
 CodePoint         ← UPlusCodePoint
                   / CodePointLit
 
-CodePointLit      ← [ [:^Zs:] − U+005D − U+2212 ]
+CodePointLit      ← !"except" [ [:^Zs:] − U+005D − U+2212 ]
 CodePointFrom     ← CodePoint
 CodePointTo       ← CodePoint
 CodePointRange    ← CodePointFrom "-" CodePointTo
@@ -31,15 +31,14 @@ CodePointExpr     ← UnicodePropSpec
 
 CharSetUnion      ← ( CodePointExpr S? )+
 
-CharSetIntersection ← CharSetUnion (S? "∩" S? CharSetUnion)*
-
 HEXDIG            ← [0-9A-F]
 
-CharSetDifference ← CharSetIntersection
-                       (S? [U+2212] S? CharSetIntersection)*
+CharSetDifference ← CharSetUnion
+                       (S? ([U+2212]/"except") S? CharSetUnion)*
 
 CharEscape        ← [U+005C] HEXDIG{4,4}
                   / [U+005C] [ f n r t v ]
+                  / [U+005C] [U+0022]
 
 CharSetExpr       ← CharSetDifference S?
 
@@ -49,9 +48,9 @@ CharSet           ← NegCharSet / PosCharSet
 PosCharSet        ← "["  S? ( CharSetExpr / ϵ ) "]"
 NegCharSet        ← "[^" S? ( CharSetExpr / ϵ ) "]"
 
-Empty             ← "ϵ"
+Epsilon           ← "ϵ"
 
-AtomicExpr        ← Empty / CharSet / NonTerminal / StrLit
+AtomicExpr        ← Epsilon / CharSet / NonTerminal / StrLit
 
 ParenthExpr       ← "(" OrdChoice ")"
 
@@ -89,7 +88,7 @@ NonTerminal       ← IdentStartChar IdentChar*
 
 Comment           ← ";" [^ U+000A U+000D ]*
 
-Rule              ← NonTerminal S "←" S OrdChoice
+Rule              ← NonTerminal S ("←"/"<-") S OrdChoice
 
 RuleSet           ← LB* (Comment / Rule) (LB+ (Comment / Rule))* LB*
                   / ϵ
