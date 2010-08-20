@@ -318,14 +318,14 @@ re_shortnames=
 function v6_dependencies(opts,rules){var ret={},deps
  go('_')(opts.start)
  return ret
- function go(caller){return function(rule_name){var rule
+ function go(caller){return function _go(rule_name){var rule
    rule=rules[rule_name]
+   if(!rule) throw new Error('Rule required but not defined: '+rule_name)
    rule.callers=rule.callers||[]
    if(rule.callers.indexOf(caller)==-1)rule.callers.push(caller)
    rule.drop=opts.drop.indexOf(rule_name)>-1
    rule.elide=opts.elide.indexOf(rule_name)>-1
    if(ret[rule_name])return // it has already been processed
-   if(!rule) throw new Error('Rule required but not defined: '+rule_name)
    ret[rule_name]=rule
    rule.direct_deps=v6_direct_dependencies(rule.expr)
    rule.direct_deps.map(go(rule_name))}}}
