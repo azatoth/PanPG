@@ -9,7 +9,11 @@ function v6_leaf_dfas(opts,rules){var p
 function v6_leaf_dfa(opts,expr){
  switch(expr.type){
  case 0:
-  return v6_dfa_cset(expr.cset)}}
+  return v6_dfa_cset(expr.cset)
+ case 1:
+  return 
+ case 2:
+  return v6_dfa_seq(expr.subexprs,{})}}
 
 function v6_dfa(opts,rules,rule){var next_dep,re
  re=rule.re
@@ -18,29 +22,31 @@ function v6_dfa(opts,rules,rule){var next_dep,re
  return v6_dfa_2(re,{})
  return pp(re)+'\n'+v6_dfa_2(re,{})+log.get()}
 
-function v6_dfa_2(re,state){
- switch(re[0]){
+function v6_dfa_2(expr,state){
+ switch(expr.type){
  case 0:
-  return v6_dfa_cset(re[1],state)
+  return v6_dfa_cset(expr.cset,state)
  case 1:
-  return v6_dfa_2(v6_strLit2seq(re),state)
+  return //v6_dfa_2(v6_strLit2seq(expr.subexprs),state)
  case 2:
-  return v6_dfa_seq(re[1],state)
+  return v6_dfa_seq(expr.subexprs,state)
  case 3:
-  return v6_dfa_ordC(re[1],state)
+  return v6_dfa_ordC(expr.subexprs,state)
  case 4:
-  if(re[1]==0 && re[2]==0) return v6_dfa_rep(re[3],state)
-  return v6_dfa_2(v6_munge_mnrep(re),state)
+  return v6_dfa_rep(only_sub(expr),state)
  case 5:
-  throw new Error('no named references here')
+  return //throw new Error('no named references here')
  case 6:
-  return v6_dfa_neg(re[1],state)
+  return v6_dfa_neg(only_sub(expr),state)
  case 7:
-  return v6_dfa_pos(re[1],state)
+  return v6_dfa_pos(only_sub(expr),state)
  case 8:
-  return v6_dfa_2([2,[]],state)
+  return //v6_dfa_2([2,[]],state)
  default:
-  throw new Error('v6_dfa: unexpected re type')}}
+  throw new Error('v6_dfa: unexpected re type '+expr.type)}
+ function only_sub(expr){
+  assert(expr.subexprs.length==1,'exactly one subexpression')
+  return expr.subexprs[0]}}
 
 function v6_dfa_cset(cset,state){var sr,surrogates,bmp,i,l,srps,hi_cset,lo_cset,trans
  sr=CSET.toSurrogateRepresentation(cset)
@@ -181,7 +187,7 @@ function v6_dfa_merge_transitions(d1,d2){var i,l1,l2,j1s,j2s,t1,t2,fail,low1,low
 // so we just decline here for now
 function v6_dfa_opt(d1,state){}
 
-function v6_dfa_rep(re,state){throw pp(re)}
+function v6_dfa_rep(re,state){}
 
 function v6_dfa_neg(re,state){}
 
