@@ -9,6 +9,10 @@ wget http://boshi.inimino.org/3box/revstore/rvs_get
 chmod +x rvs_get
 ./rvs_get http://boshi.inimino.org/3box/PanPG/
 
+Or in one line:
+
+curl -sS http://boshi.inimino.org/3box/revstore/rvs_get | sh -s http://boshi.inimino.org/3box/PanPG/
+
 You can also download the v0.0.6 release, rather than the latest code, with:
 
 ./rvs_get http://boshi.inimino.org/3box-asof/1282000000000/PanPG/
