@@ -1,5 +1,5 @@
-var reference_url='http://inimino.org/~inimino/blog/peg_v0.0.6'
-  , current_version='0.0.6'
+var reference_url='http://boshi.inimino.org/3box/PanPG/about.html'
+  , current_version='0.0.7pre'
 
 function build_compiler
  (API_compiling

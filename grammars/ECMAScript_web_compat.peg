@@ -29,3 +29,7 @@ Statement
   / DebuggerStatement
 
 ExtendedBlock ← "{" (S? (Statement / FunctionDeclaration))* S? "}"
+
+; Block also appears in TryStatement, Catch, and Finally
+; Perhaps instead of replacing Block with ExtendedBlock, we should just redefine Block
+; Unless browsers disallow FunctionDeclaration in try/catch/finally blocks.
