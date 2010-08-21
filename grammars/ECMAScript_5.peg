@@ -259,7 +259,13 @@ LeftHandSideExpression ←
  / NewExpression
 
 CallExpression ←
-  MemberExpression S? Arguments (S? Arguments / S? "[" S? Expression S? "]" / S? "." S? IdentifierName)*
+  MemberExpression S? Arguments (S? Arguments / S? BracketAccessor / S? DotAccessor)*
+
+BracketAccessor ←
+  "[" S? Expression S? "]"
+
+DotAccessor ←
+  "." S? IdentifierName
 
 Arguments ←
   "(" S? ArgumentList? S? ")"
@@ -296,7 +302,7 @@ ElementList ←
   Elision? S? AssignmentExpression (S? "," Elision? S? AssignmentExpression)*
 
 Elision ←
-  (S? ",")+
+  (S? ",") Elision?
 
 ObjectLiteral ←
   "{" ( S? PropertyNameAndValueList S? ","? )? S? "}"
