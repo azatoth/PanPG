@@ -11,7 +11,7 @@ FunctionBody ←
 FunctionDeclaration ←
   FunctionTok S? Identifier S? "(" S? FormalParameterList? S? ")" S? "{" S? FunctionBody S? "}"
 
-FunctionExpr ←
+FunctionExpression ←
   FunctionTok S? Identifier? S? "(" S? FormalParameterList? S? ")" S? "{" S? FunctionBody S? "}"
 
 FormalParameterList ←
@@ -28,7 +28,7 @@ Statement
   ← Block
   / VariableStatement
   / EmptyStatement
-  / ExprStatement
+  / ExpressionStatement
   / IfStatement
   / IterationStatement
   / ContinueStatement
@@ -50,17 +50,17 @@ VariableDeclarationListNoIn ←
   VariableDeclarationNoIn (S? "," S? VariableDeclarationNoIn)*
 
 VariableDeclaration ←
-  Identifier (S? "=" !("=") S? AssignmentExpr)?
+  Identifier (S? "=" !("=") S? AssignmentExpression)?
 
 VariableDeclarationNoIn ←
-  Identifier (S? "=" !("=") S? AssignmentExprNoIn)?
+  Identifier (S? "=" !("=") S? AssignmentExpressionNoIn)?
 
 ; an empty statement is marked by an explicit semicolon, ASI does not apply
 EmptyStatement ← ";"
 
-ExprStatement ← !("{" / FunctionTok) Expr EOS
+ExpressionStatement ← !("{" / FunctionTok) Expression EOS
 
-IfStatement ← IfTok S? "(" S? Expr S? ")" S? Statement (S? ElseTok S? Statement)?
+IfStatement ← IfTok S? "(" S? Expression S? ")" S? Statement (S? ElseTok S? Statement)?
 
 IterationStatement ←
    DoWhileStatement
@@ -69,18 +69,24 @@ IterationStatement ←
  / ForStatement
 
 DoWhileStatement ←
-  DoTok S? Statement S? WhileTok S? "(" S? Expr S? ")" EOS
+  DoTok S? Statement S? WhileTok S? "(" S? Expression S? ")" EOS
 
 WhileStatement ←
-  WhileTok S? "(" S? Expr S? ")" S? Statement
+  WhileTok S? "(" S? Expression S? ")" S? Statement
 
 ForInStatement ←
-   ForTok S? "(" S? LeftHandSideExpr S? InTok S? Expr S? ")" S? Statement
- / ForTok S? "(" S? VarTok S? VariableDeclarationNoIn S? InTok S? Expr S? ")" S? Statement
+  ForTok S? "(" (ForInLeft/ForInVarLeft) InTok S? Expression S? ")" S? Statement
+
+ForInLeft    ← S? LeftHandSideExpression S? 
+ForInVarLeft ← S? VarTok S? VariableDeclarationNoIn S? 
 
 ForStatement ←
-   ForTok S? "(" S? ExprNoIn? S? ";" S? Expr? S? ";" S? Expr? S? ")" S? Statement
- / ForTok S? "(" S? VarTok S? VariableDeclarationListNoIn S? ";" S? Expr? S? ";" S? Expr? S? ")" S? Statement
+  ForTok S? "(" (ForInit/ForVarInit) ";" ForTest ";" ForUpdate ")" S? Statement
+
+ForInit    ← S? ExpressionNoIn? S?
+ForVarInit ← S? VarTok S? VariableDeclarationListNoIn S?
+ForTest    ← S? Expression? S?
+ForUpdate  ← S? Expression? S?
 
 ContinueStatement ←
   ContinueTok SnoLB? (Identifier EOS / EOSnoLB)
@@ -89,25 +95,25 @@ BreakStatement ←
   BreakTok SnoLB? (Identifier EOS / EOSnoLB)
 
 ReturnStatement ←
-  ReturnTok SnoLB? (EOSnoLB / Expr EOS)
+  ReturnTok SnoLB? (EOSnoLB / Expression EOS)
 
 WithStatement ←
-  WithTok S? "(" S? Expr S? ")" S? Statement
+  WithTok S? "(" S? Expression S? ")" S? Statement
 
 LabelledStatement ←
   Identifier S? ":" S? Statement
 
 SwitchStatement ←
-  SwitchTok S? "(" S? Expr S? ")" S? "{" CaseClause* (DefaultClause CaseClause*)? S? "}"
+  SwitchTok S? "(" S? Expression S? ")" S? "{" CaseClause* (DefaultClause CaseClause*)? S? "}"
 
 CaseClause ←
-  S? CaseTok S? Expr S? ":" (S? Statement)*
+  S? CaseTok S? Expression S? ":" (S? Statement)*
 
 DefaultClause ←
   S? DefaultTok S? ":" (S? Statement)*
 
 ThrowStatement ←
-  ThrowTok SnoLB? (EOSnoLB / Expr EOS)
+  ThrowTok SnoLB? (EOSnoLB / Expression EOS)
 
 TryStatement ←
   TryTok S? Block S? (Catch S? Finally? / Finally)
@@ -123,74 +129,74 @@ DebuggerStatement ←
 
 
 
-; Exprs
+; Expressions
 
-Expr ←
-  AssignmentExpr (S? "," S? AssignmentExpr)*
+Expression ←
+  AssignmentExpression (S? "," S? AssignmentExpression)*
 
-ExprNoIn ←
-  AssignmentExprNoIn (S? "," S? AssignmentExprNoIn)*
+ExpressionNoIn ←
+  AssignmentExpressionNoIn (S? "," S? AssignmentExpressionNoIn)*
 
-AssignmentExpr ←
-   LeftHandSideExpr S? AssignmentOperator S? AssignmentExpr
- / ConditionalExpr
+AssignmentExpression ←
+   LeftHandSideExpression S? AssignmentOperator S? AssignmentExpression
+ / ConditionalExpression
 
-AssignmentExprNoIn ←
-   LeftHandSideExpr S? AssignmentOperator S? AssignmentExprNoIn
- / ConditionalExprNoIn
+AssignmentExpressionNoIn ←
+   LeftHandSideExpression S? AssignmentOperator S? AssignmentExpressionNoIn
+ / ConditionalExpressionNoIn
 
 AssignmentOperator ←
   "=" !("=") / "*=" / "/=" / "%=" / "+=" / "-=" / "<<=" / ">>=" / ">>>=" / "&=" / "^=" / "|="
 
-ConditionalExpr ←
-  LogicalOrExpr (S? "?" S? AssignmentExpr S? ":" S? AssignmentExpr)?
+ConditionalExpression ←
+  LogicalOrExpression (S? "?" S? AssignmentExpression S? ":" S? AssignmentExpression)?
 
-ConditionalExprNoIn ←
-  LogicalOrExprNoIn (S? "?" S? AssignmentExprNoIn S? ":" S? AssignmentExprNoIn)?
+ConditionalExpressionNoIn ←
+  LogicalOrExpressionNoIn (S? "?" S? AssignmentExpressionNoIn S? ":" S? AssignmentExpressionNoIn)?
 
-LogicalOrExpr ←
-  LogicalAndExpr (S? "||" S? LogicalAndExpr)*
+LogicalOrExpression ←
+  LogicalAndExpression (S? "||" S? LogicalAndExpression)*
 
-LogicalOrExprNoIn ←
-  LogicalAndExprNoIn (S? "||" S? LogicalAndExprNoIn)*
+LogicalOrExpressionNoIn ←
+  LogicalAndExpressionNoIn (S? "||" S? LogicalAndExpressionNoIn)*
 
-LogicalAndExpr ←
-  BitwiseOrExpr (S? "&&" S? BitwiseOrExpr)*
+LogicalAndExpression ←
+  BitwiseOrExpression (S? "&&" S? BitwiseOrExpression)*
 
-LogicalAndExprNoIn ←
-  BitwiseOrExprNoIn (S? "&&" S? BitwiseOrExprNoIn)*
+LogicalAndExpressionNoIn ←
+  BitwiseOrExpressionNoIn (S? "&&" S? BitwiseOrExpressionNoIn)*
 
-BitwiseOrExpr ←
-  BitwiseXOrExpr (S? "|" !("=") S? BitwiseXOrExpr)*
+BitwiseOrExpression ←
+  BitwiseXOrExpression (S? "|" !("=") S? BitwiseXOrExpression)*
 
-BitwiseOrExprNoIn ←
-  BitwiseXOrExprNoIn (S? "|" !("=") S? BitwiseXOrExprNoIn)*
+BitwiseOrExpressionNoIn ←
+  BitwiseXOrExpressionNoIn (S? "|" !("=") S? BitwiseXOrExpressionNoIn)*
 
-BitwiseXOrExpr ←
-  BitwiseAndExpr (S? "^" !("=") S? BitwiseAndExpr)*
+BitwiseXOrExpression ←
+  BitwiseAndExpression (S? "^" !("=") S? BitwiseAndExpression)*
 
-BitwiseXOrExprNoIn ←
-  BitwiseAndExprNoIn (S? "^" !("=") S? BitwiseAndExprNoIn)*
+BitwiseXOrExpressionNoIn ←
+  BitwiseAndExpressionNoIn (S? "^" !("=") S? BitwiseAndExpressionNoIn)*
 
-BitwiseAndExpr ←
-  EqualityExpr (S? "&" !("=") S? EqualityExpr)*
+BitwiseAndExpression ←
+  EqualityExpression (S? "&" !("=") S? EqualityExpression)*
 
-BitwiseAndExprNoIn ←
-  EqualityExprNoIn (S? "&" !("=") S? EqualityExprNoIn)*
+BitwiseAndExpressionNoIn ←
+  EqualityExpressionNoIn (S? "&" !("=") S? EqualityExpressionNoIn)*
 
-EqualityExpr ←
-  RelationalExpr (S? EqualityOp S? RelationalExpr)*
+EqualityExpression ←
+  RelationalExpression (S? EqualityOp S? RelationalExpression)*
 
-EqualityExprNoIn ←
-  RelationalExprNoIn (S? EqualityOp S? RelationalExprNoIn)*
+EqualityExpressionNoIn ←
+  RelationalExpressionNoIn (S? EqualityOp S? RelationalExpressionNoIn)*
 
 EqualityOp ← "===" / "!==" / "==" / "!="
 
-RelationalExpr ←
-  ShiftExpr (S? RelationalOp S? ShiftExpr)*
+RelationalExpression ←
+  ShiftExpression (S? RelationalOp S? ShiftExpression)*
 
-RelationalExprNoIn ←
-  ShiftExpr (S? RelationalOpNoIn S? ShiftExpr)*
+RelationalExpressionNoIn ←
+  ShiftExpression (S? RelationalOpNoIn S? ShiftExpression)*
 
 RelationalOp ←
   "<=" / ">=" / "<" / ">" / InstanceOfTok / InTok
@@ -198,88 +204,88 @@ RelationalOp ←
 RelationalOpNoIn ←
   "<=" / ">=" / "<" / ">" / InstanceOfTok
 
-ShiftExpr ←
-  AdditiveExpr (S? ShiftOp S? AdditiveExpr)*
+ShiftExpression ←
+  AdditiveExpression (S? ShiftOp S? AdditiveExpression)*
 
 ShiftOp ←
   "<<" / ">>>" / ">>"
 
-AdditiveExpr ←
-  MultiplicativeExpr (S? AdditiveOp S? MultiplicativeExpr)*
+AdditiveExpression ←
+  MultiplicativeExpression (S? AdditiveOp S? MultiplicativeExpression)*
 
 AdditiveOp ←
    "+" !("+"/"=")
  / "-" !("-"/"=")
 
-MultiplicativeExpr ←
-  UnaryExpr (S? MultiplicativeOp S? UnaryExpr)*
+MultiplicativeExpression ←
+  UnaryExpression (S? MultiplicativeOp S? UnaryExpression)*
 
 MultiplicativeOp ←
   ("*" / "/" / "%") !("=")
 
-UnaryExpr ←
-   PostfixExpr
- / DeleteExpr
- / VoidExpr
- / TypeofExpr
- / PreIncrementExpr
- / PreDecrementExpr
- / UnaryPlusExpr
- / UnaryMinusExpr
- / BitwiseNotExpr
- / LogicalNotExpr
+UnaryExpression ←
+   PostfixExpression
+ / DeleteExpression
+ / VoidExpression
+ / TypeofExpression
+ / PreIncrementExpression
+ / PreDecrementExpression
+ / UnaryPlusExpression
+ / UnaryMinusExpression
+ / BitwiseNotExpression
+ / LogicalNotExpression
 
-DeleteExpr        ← DeleteTok S? UnaryExpr
-VoidExpr          ← VoidTok S? UnaryExpr
-TypeofExpr        ← TypeofTok S? UnaryExpr
-PreIncrementExpr  ← "++" S? UnaryExpr
-PreDecrementExpr  ← "--" S? UnaryExpr
-UnaryPlusExpr     ← "+" S? UnaryExpr
-UnaryMinusExpr    ← "-" S? UnaryExpr
-BitwiseNotExpr    ← "~" S? UnaryExpr
-LogicalNotExpr    ← "!" S? UnaryExpr
+DeleteExpression        ← DeleteTok S? UnaryExpression
+VoidExpression          ← VoidTok S? UnaryExpression
+TypeofExpression        ← TypeofTok S? UnaryExpression
+PreIncrementExpression  ← "++" S? UnaryExpression
+PreDecrementExpression  ← "--" S? UnaryExpression
+UnaryPlusExpression     ← "+" S? UnaryExpression
+UnaryMinusExpression    ← "-" S? UnaryExpression
+BitwiseNotExpression    ← "~" S? UnaryExpression
+LogicalNotExpression    ← "!" S? UnaryExpression
 
-; why isn't ++a++ a valid UnaryExpr?
+; why isn't ++a++ a valid UnaryExpression?
 ; answer: it is, and parses as ++(a++), the evaluation of which must throw a ReferenceError per spec
 
-PostfixExpr ←
-  LeftHandSideExpr (SnoLB? (PostIncrementOp/PostDecrementOp))?
+PostfixExpression ←
+  LeftHandSideExpression (SnoLB? (PostIncrementOp/PostDecrementOp))?
 
 PostIncrementOp ← "++"
 PostDecrementOp ← "--"
 
-LeftHandSideExpr ←
-   CallExpr
- / NewExpr
+LeftHandSideExpression ←
+   CallExpression
+ / NewExpression
 
-CallExpr ←
-  MemberExpr S? Arguments (S? Arguments / S? "[" S? Expr S? "]" / S? "." S? IdentifierName)*
+CallExpression ←
+  MemberExpression S? Arguments (S? Arguments / S? "[" S? Expression S? "]" / S? "." S? IdentifierName)*
 
 Arguments ←
   "(" S? ArgumentList? S? ")"
 
 ArgumentList ←
-  AssignmentExpr (S? "," S? AssignmentExpr)*
+  AssignmentExpression (S? "," S? AssignmentExpression)*
 
-NewExpr ←
-   MemberExpr
- / NewTok S? NewExpr
+NewExpression ←
+   MemberExpression
+ / NewTok S? NewExpression
 
-MemberExpr ←
-  ( PrimaryExpr
-  / FunctionExpr
-  / NewTok S? MemberExpr S? Arguments
-  ) ( S? "[" S? Expr S? "]"
+MemberExpression ←
+  ( PrimaryExpression
+  / FunctionExpression
+  / NewTok S? MemberExpression S? Arguments
+  ) ( S? "[" S? Expression S? "]"
     / S? "." S? IdentifierName
     )*
 
-PrimaryExpr ←
+PrimaryExpression ←
    ThisTok
  / Identifier
  / Literal
  / ArrayLiteral
  / ObjectLiteral
- / "(" S? Expr S? ")"
+ / "(" S? Expression S? ")"
 
 ArrayLiteral ←
    "[" Elision? S? "]"
@@ -287,7 +293,7 @@ ArrayLiteral ←
  / "[" ElementList S? "," Elision? S? "]"
 
 ElementList ←
-  Elision? S? AssignmentExpr (S? "," Elision? S? AssignmentExpr)*
+  Elision? S? AssignmentExpression (S? "," Elision? S? AssignmentExpression)*
 
 Elision ←
   (S? ",")+
@@ -299,9 +305,15 @@ PropertyNameAndValueList ←
   PropertyAssignment (S? "," S? PropertyAssignment)*
 
 PropertyAssignment ←
-   PropertyName S? ":" S? AssignmentExpr
- / "get" S? PropertyName S? "(" S? ")" S? "{" S? FunctionBody S? "}"
- / "set" S? PropertyName S? "(" S? PropertySetParameterList S? ")" S? "{" S? FunctionBody S? "}"
+   PropertyName S? ":" S? AssignmentExpression
+ / PropertyGetter
+ / PropertySetter
+
+PropertyGetter ←
+  "get" S? PropertyName S? "(" S? ")" S? "{" S? FunctionBody S? "}"
+
+PropertySetter ←
+  "set" S? PropertyName S? "(" S? PropertySetParameterList S? ")" S? "{" S? FunctionBody S? "}"
 
 PropertyName ←
   IdentifierName / StringLiteral / NumericLiteral
