@@ -5,6 +5,13 @@ function buildES5_commonjs(es5,stream,opts){
 function buildJSParser(es5,streamable,web_compat,opts){
  return generateParser([es5,streamable,web_compat],opts)}
 
+function showTree_scratch(peg,input){var code
+ code=generateParser(peg,{fname:'showTree_scratch_code'})
+ eval(code)
+ return showTree(showTree_scratch_code(input))}
+
+function explain_scratch(){}
+
 function test_drop(peg,input){var opts
  opts={drop:['JSON'],debug:true}
  //return generateParser(peg,opts)
