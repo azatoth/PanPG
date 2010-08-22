@@ -6,9 +6,11 @@ function codegen_test_all(){var n,i,results=[]
 
 var codegen_test_input_1=
 '["","a",null,true,false,0,-1,1,1.7,-1.7,1e3,-1e3,5.2e8,-5.2e8,{"a":"a","":"","true":true,"false":false,"null":null,"0":0},{},{"":{"":{}}},[],[[[]]]]'
+  , codegen_test_input_2='WhiteSpace ← [ U+0009 U+FEFF [:Zs:] ]'
 
 var codegen_test_grammar_1='True ← "true"'
   , codegen_test_grammar_2='S ← "a"'
+  , codegen_test_grammar_3=''
 
 function must_match(grammar,input){var code
  code=generateParser(grammar,{fname:'__codegen_test'})
@@ -21,3 +23,5 @@ function codegen_test_1(){
 function codegen_test_2(){
  return must_match(codegen_test_grammar_2,'a')}
 
+function codegen_test_3(){
+ return explain}

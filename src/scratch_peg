@@ -1,4 +1,17 @@
-PropSpec          ← [a-z A-Z _ - U+0020 ]+
+RuleSet           ← LB* (Comment / Rule) (LB+ (Comment / Rule))* LB*
+                  / ϵ
+
+PropSpec          ← BinaryUnicodeProperty
+                  / UnicodeProperty ("=" / "≠") PropVal
+                  / ScriptOrCatPropVal ("|" ScriptOrCatPropVal)*
+
+BinaryUnicodeProperty ← UnicodeProperty
+
+UnicodeProperty   ← [a-z A-Z _ - U+0020 ]+
+
+PropVal           ← [a-z A-Z _ - U+0020 ]+
+
+ScriptOrCatPropVal ← [a-z A-Z _ - U+0020 ]+
 
 UPlusCodePoint    ← "U+" HEXDIG{4,6}
 
@@ -19,12 +32,12 @@ CodePointExpr     ← UnicodePropSpec
                   / CodePointRange
                   / CodePoint
 
-CharSetUnion      ← CodePointExpr ( S? CodePointExpr )*
+CharSetUnion      ← ( CodePointExpr S? )+
 
 HEXDIG            ← [0-9A-F]
 
 CharSetDifference ← CharSetUnion
-                     ( S ([U+2212]/"except") S CharSetUnion )*
+                       (S? ([U+2212]/"except") S? CharSetUnion)*
 
 CharEscape        ← [U+005C] HEXDIG{4,4}
                   / [U+005C] [ f n r t v ]
@@ -79,9 +92,6 @@ NonTerminal       ← IdentStartChar IdentChar*
 Comment           ← ";" [^ U+000A U+000D ]*
 
 Rule              ← NonTerminal S ("←"/"<-") S OrdChoice
-
-RuleSet           ← LB* (Comment / Rule) (LB+ (Comment / Rule))* LB*
-                  / ϵ
 
 PosLookahead      ← "&" SeqUnit
 

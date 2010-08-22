@@ -39,7 +39,7 @@ Sequence:
 StrLit:
   function(m){return re_from_str(m.text().slice(1,-1))},
 
-Empty:
+Epsilon:
   function(){return re_from_str('')},
 
 NegLookahead:
@@ -64,8 +64,8 @@ CharSet:
   function(_,cn){return re_from_cset(cn[0])},
 CharSetUnion:
   function(_,cn){return foldl1(CSET.union,cn)},
-CharSetIntersection:
-  function(_,cn){return foldl1(CSET.intersection,cn)},
+//CharSetIntersection:
+//  function(_,cn){return foldl1(CSET.intersection,cn)},
 CharSetDifference:
   function(_,cn){return foldl1(CSET.difference,cn)},
 CharSetExpr:transparent,

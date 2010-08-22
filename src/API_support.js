@@ -124,10 +124,11 @@ function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb=[],st
    if(i==l)return err('incomplete rule close')
    pos=frame.start+events[i]
    x=frame.index
+   match=m(frame.start,pos)
    try{
-    if(cb[x])     retval=cb[x](m(frame.start,pos),frame.cn)
-    else if(other)retval=cb[x](m(frame.start,pos),frame.cn,names[x])}
-   catch(e){return err('exception in '+names[x]+': '+e)}
+    if(cb[x])     retval=cb[x](match,frame.cn)
+    else if(other)retval=cb[x](match,frame.cn,names[x])}
+   catch(e){return err('exception in '+names[x]+': '+e+' (on node at char '+frame.start+')')}
    frame=stack.pop() // the parent node
    if(cb[x] && retval!==undefined)
     if(frame.cn)frame.cn.push(retval)
