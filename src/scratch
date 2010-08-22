@@ -1,9 +1,90 @@
-// Basic Multilingual Plane
+RuleSet           ← LB* (Comment / Rule) (LB+ (Comment / Rule))* LB*
+                  / ϵ
 
-function ϵ(){return "ϵ"} // ϵ U+03F5 LUNATE EPSILON SYMBOL
-function ε(){return "ε"} // ε U+03B5 GREEK SMALL LETTER EPSILON
+PropSpec          ← [a-z A-Z _ - U+0020]+
 
-// Supplementary Characters
+UPlusCodePoint    ← "U+" HEXDIG{4,6}
 
-function 𝑎(𝑎){return 𝑎} // 𝑎 U+1D44E MATHEMATICAL ITALIC SMALL A
-function 𝒻(){return "𝒻"} // 𝒻 U+1D4BB MATHEMATICAL SCRIPT SMALL F
+PositiveSpec      ← "[:"  PropSpec ":]"
+NegativeSpec      ← "[:^" PropSpec ":]"
+
+CodePoint         ← UPlusCodePoint
+                  / CodePointLit
+
+CodePointLit      ← !"except" [ [:^Zs:] − U+005D − U+2212 ]
+CodePointFrom     ← CodePoint
+CodePointTo       ← CodePoint
+CodePointRange    ← CodePointFrom "-" CodePointTo
+
+UnicodePropSpec   ← PositiveSpec / NegativeSpec
+
+CodePointExpr     ← UnicodePropSpec
+                  / CodePointRange
+                  / CodePoint
+
+CharSetUnion      ← ( CodePointExpr S? )+
+
+HEXDIG            ← [0-9A-F]
+
+CharSetDifference ← CharSetUnion
+                       (S? [U+2212] S? CharSetUnion)*
+
+;                       (S? ([U+2212]/"except") S? CharSetUnion)*
+
+CharEscape        ← [U+005C] HEXDIG{4,4}
+                  / [U+005C] [ f n r t v ]
+                  / [U+005C] [U+0022]
+
+CharSetExpr       ← CharSetDifference S?
+
+StrLit            ← [U+0022] ( CharEscape / [^"\] )* [U+0022]
+
+CharSet           ← NegCharSet / PosCharSet
+PosCharSet        ← "["  S? ( CharSetExpr / ϵ ) "]"
+NegCharSet        ← "[^" S? ( CharSetExpr / ϵ ) "]"
+
+Epsilon           ← "ϵ"
+
+AtomicExpr        ← Epsilon / CharSet / NonTerminal / StrLit
+
+ParenthExpr       ← "(" OrdChoice ")"
+
+Replicand         ← ParenthExpr
+                  / AtomicExpr
+
+N                 ← [0-9]*
+M                 ← [0-9]*
+Optional          ← Replicand "?"
+MNRep             ← Replicand "{" M ("," N)? "}"
+PosRep            ← Replicand "+"
+AnyRep            ← Replicand "*"
+
+SeqUnit           ← AnyRep
+                  / PosRep
+                  / MNRep
+                  / Optional
+                  / ParenthExpr
+                  / PosLookahead
+                  / NegLookahead
+                  / AtomicExpr
+
+Sequence          ← (SeqUnit S?)+
+
+IdentChar         ← [ a-z A-Z 0-9 _ ]
+IdentStartChar    ← [ A-Z ]
+
+OrdChoice         ← S? Sequence S? ("/" S? Sequence S?)*
+
+S                 ← SpaceAtom+
+SpaceAtom         ← " " / LB " "
+LB                ← [U+000D][U+000A] / [U+000D U+000A]
+
+NonTerminal       ← IdentStartChar IdentChar*
+
+Comment           ← ";" [^ U+000A U+000D ]*
+
+Rule              ← NonTerminal S ("←"/"<-") S OrdChoice
+
+PosLookahead      ← "&" SeqUnit
+
+NegLookahead      ← "!" SeqUnit
