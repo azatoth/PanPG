@@ -1,6 +1,6 @@
-/* PanPG 0.0.7pre
+/* PanPG 0.0.7
  * PEG → JavaScript parser generator, with its dependencies.
- * built on Sat, 28 Aug 2010 08:57:35 GMT
+ * built on Sat, 28 Aug 2010 09:11:47 GMT
  * See http://boshi.inimino.org/3box/PanPG/about.html
  * MIT Licensed
  */
