@@ -117,7 +117,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   + 'if('+ft('S','t_bufferout')+'){bufs.push(buf);buf=[]}\n'
   + 'if('+ft('S','t_emitstate')+'){'
   +     asrt('emp<=pos','emit position <= pos',';')
-  +     'if(emp<pos)buf.push(-1,pos-emp);'
+  //+     'if(emp<pos)buf.push(-1,pos-emp);'
   +     'emps.push(emp);' // store emit position
   +     'emp=pos;' // will be clobbered by cache hit
   +     'buf.push(S>>>'+opts.flagbits+')}\n' // buf is clobbered by cache hit
@@ -154,7 +154,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +    'if(pos!=emp&&emp!=posns[posns.length-1]){'
   +      'buf.push(-1,pos-emp)}'
   +    'emp=emps.pop();' // no-op since emp is set again below?
-  //+    'if(emp!=posns[posns.length-1]){buf=[-1,posns[posns.length-1]-emp].concat(buf)}'
+  +    'if(emp!=posns[posns.length-1]){buf=[-1,posns[posns.length-1]-emp].concat(buf)}'
   +    '}\n'
   +  'if('+ft('S','m_emitstate')+')buf.push(S>>>'+opts.flagbits+')\n'
   +  'if('+ft('S','m_emitclose')+')buf.push(-2)\n'

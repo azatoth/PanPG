@@ -42,17 +42,16 @@ h1 {margin-bottom:72px}
 <li><a href=../about.html#contact>contact</a>
 </ul>
 
-<h1>PanPG demo 2010-08-12</h1>
+<h1>PanPG demo 2010-08-28</h1>
 
-<p>Demonstrating the PanPG API, version 0.0.6.
+<p>Demonstrating the PanPG API, v0.0.7.
 
 <p>We load a PEG from a file, generate a parser, eval it, use it, display the parse tree, and walk the tree to calculate a result.
 You can edit the grammar, the parser generator options, the input text, and the tree walker callbacks.
 
 <p>The grammar here doesn't require it, but PanPG has full Unicode support, including characters outside the BMP.
 
-<p>You can see <a href=/3box/asof/1270029991384/PEG/build/demo.html>the previous version</a>, or read <a href=http://inimino.org/~inimino/blog/peg_roadmap>the project roadmap</a>.
-There's also an <a href=ES5.html>an ECMAScript parser demo</a>.
+<p>There's also an <a href=ES5.html>an ECMAScript parser demo</a>.
 
 <pre id=status></pre>
 
@@ -130,7 +129,7 @@ function xhr(method,uri,body,callback){var headers,p
 start('fetching grammar file')
 xhr('GET','../grammars/arith.peg',null,function(x){done();grammar_el.value=x.responseText;updateOpts()})
 
-opts_el.value='{}'
+opts_el.value='{drop:[\'S\']}'
 
 function updateParser(peg){var result,opts,parser,_state
  the_grammar=grammar_el.value
@@ -213,8 +212,10 @@ function updateOpts(){var new_opts,p
  setTimeout(updateParser,125)}
 
 function equiv(a,b){
+ if(!a || !b) return false
  for(p in a) if(a[p]!==b[p]) return false
- for(p in b) if(!(p in a)) return false}
+ for(p in b) if(!(p in a)) return false
+ return true}
 
 function setError(el,s){var el2,i,l,el_c
  el=el.parentNode // the el is the textarea the parent is the label in which we report the error

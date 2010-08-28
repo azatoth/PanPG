@@ -1,7 +1,7 @@
-/* PanPG 0.0.6
+/* PanPG 0.0.7pre
  * PEG → JavaScript parser generator, with its dependencies.
- * built on Mon, 16 Aug 2010 21:44:41 GMT
- * See http://inimino.org/~inimino/blog/peg_v0.0.6
+ * built on Sat, 28 Aug 2010 08:57:35 GMT
+ * See http://boshi.inimino.org/3box/PanPG/about.html
  * MIT Licensed
  */
 
@@ -16,7 +16,7 @@ function generateParserAlt(peg,opts,_opts){var parse_result,named_res,i,l,patch,
  opts=opts||{}
  if(peg instanceof Array){
   opts.patches=peg.slice(1)
-  peg=opts.patches[0]}
+  peg=peg[0]}
  parse_result=parsePEG(peg)
  if(!parse_result[0])return [0,new Error(showError(parse_result))]
  named_res=v6_named_res(parse_result)
@@ -45,7 +45,7 @@ function checkTrace(msgs){var i,l,m
  ,msg,S,pos,R,stack,posns,bufs,buf // regex captures
  ,calls=[],callstack=[],call,notes=[],prev_state,parser_is_resuming
  for(i=0,l=msgs.length;i<l;i++){
-  if(m=/^(\w+)\sS:(\S+) pos:(\d+) R:(\S+) stack:((?:,?\d+)*) posns:(\S*) bufs:(\S*) buf:(.*)/.exec(msgs[i])){
+  if(m=/^(\w+)\s+S:(\S+) pos:(\d+) R:(\S+) stack:((?:,?\d+)*) posns:(\S*) bufs:(\S*) buf:(.*)/.exec(msgs[i])){
    msg=m[1],S=m[2],pos=m[3],R=m[4],stack=m[5],posns=m[6],bufs=m[7],buf=m[8]
 
 
@@ -114,15 +114,15 @@ function checkTrace(msgs){var i,l,m
           :'')
        + (call.result=='false'?' [x]':'')}}
 
-// TODO: this could be in a third file API_debugging since it is not necessary for compiling and is not exactly part of the support API (which should not depend on the compiler).
-
-function explain(grammar,opts,input,verbose){var either_error_parser,parser,trace,streaming_parser,tree,e,result,fail,fail_msg
+function explain(grammar,opts,input,verbosity){var either_error_parser,parser,trace,streaming_parser,tree,e,result,fail,fail_msg
  // generate a parser
  opts=extend({},opts)
  opts.fname='trace_test'
  opts.trace=true
- //opts.debug=true
+ if(verbosity>2) opts.debug=true // if code will be shown, generate the big top comment
  //opts.asserts=true
+ //if(verbosity>1) opts.show_trace=true
+ //if(verbosity>2) opts.show_code=true
  either_error_parser=memoized(grammar)
  if(!either_error_parser[0])return'Cannot generate parser: '+either_error_parser[1]
  parser=eval(either_error_parser[1]+'\n;'+opts.fname)
@@ -131,7 +131,8 @@ function explain(grammar,opts,input,verbose){var either_error_parser,parser,trac
  trace=[],tree=[]
  streaming_parser=parser(message_handler)
  function message_handler(m,x,y,z){
-  trace.push(m+'\t'+x+(y?' '+y:''))
+  spaces='                '.slice(m.length)
+  trace.push(m+spaces+x+(y?' '+y:''))
   if(m=='tree segment')tree=tree.concat(x)
   if(m=='fail')fail=[m,x,y,z]}
  try{
@@ -149,7 +150,9 @@ function explain(grammar,opts,input,verbose){var either_error_parser,parser,trac
         ,'tree:\n'+showTree([true,{tree:tree,input:input,names:parser.names}])
         ,'trace analysis:\n'+checkTrace(trace)
         ,'legend:\n'+parser.legend
-        ,verbose?'trace:\n'+trace.join('\n'):''
+        ,verbosity>1?'trace:\n'+trace.join('\n'):''
+        ,verbosity>2?'parser code:\n'+either_error_parser[1]:''
+        ,verbosity>3?'raw tree:\n'+tree.join():''
         ].filter(function(x){return x!=''})
          .join('\n\n')
 
@@ -158,7 +161,7 @@ function explain(grammar,opts,input,verbose){var either_error_parser,parser,trac
   cache = explain.cache = explain.cache || {}
   cached = cache[grammar]
   if(!cached || !deepEq(cached[0],opts)) cached = cache[grammar] = [opts,generateParserAlt(grammar,opts)]
-  return cached}
+  return cached[1]}
  function extend(a,b){for(var p in b)a[p]=b[p];return a}
  function deepEq(x,y){var p
   if(x===y)return true
@@ -293,10 +296,11 @@ function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb=[],st
    if(i==l)return err('incomplete rule close')
    pos=frame.start+events[i]
    x=frame.index
+   match=m(frame.start,pos)
    try{
-    if(cb[x])     retval=cb[x](m(frame.start,pos),frame.cn)
-    else if(other)retval=cb[x](m(frame.start,pos),frame.cn,names[x])}
-   catch(e){return err('exception in '+names[x]+': '+e)}
+    if(cb[x])     retval=cb[x](match,frame.cn)
+    else if(other)retval=cb[x](match,frame.cn,names[x])}
+   catch(e){return err('exception in '+names[x]+': '+e+' (on node at char '+frame.start+')')}
    frame=stack.pop() // the parent node
    if(cb[x] && retval!==undefined)
     if(frame.cn)frame.cn.push(retval)
@@ -316,16 +320,16 @@ function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb=[],st
 
  /* parsePEG.js */ 
 
-parsePEG.names=['','PropSpec','BinaryUnicodeProperty','UnicodeProperty','PropVal','ScriptOrCatPropVal','UPlusCodePoint','PositiveSpec','NegativeSpec','CodePoint','CodePointLit','CodePointFrom','CodePointTo','CodePointRange','UnicodePropSpec','CodePointExpr','CharSetUnion','CharSetIntersection','HEXDIG','CharSetDifference','CharEscape','CharSetExpr','StrLit','CharSet','PosCharSet','NegCharSet','Empty','AtomicExpr','ParenthExpr','Replicand','N','M','Optional','MNRep','PosRep','AnyRep','SeqUnit','Sequence','IdentChar','IdentStartChar','OrdChoice','S','SpaceAtom','LB','NonTerminal','Comment','Rule','RuleSet','PosLookahead','NegLookahead','_']
-function parsePEG(out){var eof=false,s='',l=0,S=204800,T,M,F,D,R,tbl=[],x,pos=0,offset=0,buf=[],bufs=[],states=[],posns=[],c,equiv,ds,dp,failed=0,emp=0,emps=[];
-equiv=rle_dec([10,0,1,1,2,0,1,2,18,0,1,3,1,4,1,5,3,0,1,6,1,0,1,7,1,8,1,9,1,10,1,11,1,12,1,0,1,13,10,14,1,15,1,16,1,0,1,17,1,0,1,18,1,0,6,19,14,20,1,21,5,20,1,22,1,23,1,24,1,25,1,26,1,0,5,26,1,27,7,26,1,27,3,26,1,27,1,26,1,27,1,26,1,27,4,26,1,28,1,29,1,30,34,0,1,31,852,0,1,32,4746,0,1,31,397,0,1,31,2033,0,11,31,36,0,1,31,47,0,1,31,304,0,1,33,129,0,1,34,22,0,1,35,54,0,1,36,3487,0,1,31,43007,0,2048,37,8192,0])
+parsePEG.names=['','PropSpec','UPlusCodePoint','PositiveSpec','NegativeSpec','CodePoint','CodePointLit','CodePointFrom','CodePointTo','CodePointRange','UnicodePropSpec','CodePointExpr','CharSetUnion','HEXDIG','CharSetDifference','CharEscape','CharSetExpr','StrLit','CharSet','PosCharSet','NegCharSet','Epsilon','AtomicExpr','ParenthExpr','Replicand','N','M','Optional','MNRep','PosRep','AnyRep','SeqUnit','Sequence','IdentChar','IdentStartChar','OrdChoice','S','SpaceAtom','LB','NonTerminal','Comment','Rule','RuleSet','PosLookahead','NegLookahead','_']
+function parsePEG(out){var eof=false,s='',l=0,S=184320,T,M,F,D,R,tbl=[],x,pos=0,offset=0,buf=[],bufs=[],states=[],posns=[],c,equiv,ds,dp,failed=0,emp=0,emps=[];
+equiv=rle_dec([10,0,1,1,2,0,1,2,18,0,1,3,1,4,1,5,3,0,1,6,1,0,1,7,1,8,1,9,1,10,1,11,1,12,1,0,1,13,10,14,1,15,1,16,1,17,2,0,1,18,1,0,6,19,14,20,1,21,5,20,1,22,1,23,1,24,1,25,1,26,1,0,2,26,1,27,1,26,1,28,1,29,7,26,1,29,1,26,1,30,1,26,1,29,1,26,1,31,1,26,1,29,1,26,1,32,2,26,1,33,1,0,1,34,34,0,1,35,852,0,1,36,4746,0,1,35,397,0,1,35,2033,0,11,35,36,0,1,35,47,0,1,35,304,0,1,37,129,0,1,38,3565,0,1,35,43007,0,2048,39,8192,0])
 function rle_dec(a){var r=[],i,l,n,x,ll;for(i=0,l=a.length;i<l;i+=2){n=a[i];x=a[i+1];r.length=ll=r.length+n;for(;n;n--)r[ll-n]=x}return r}
-T=[,966656,1024000,1031174,1047558,1063942,838662,1080326,936966,819200,831488,913408,917504,901120,921600,802816,756742,708608,897024,663552,1167360,647168,1142784,593920,1105920,609286,1138688,573440,1216512,561152,1273856,1265664,1290240,1228800,1306624,552960,516096,470022,352256,356352,360448,433158,446464,299008,339968,286720,319488,208896,1298432,1282048,1314816,216070,217088,221184,179207,229376,187567,191663,244742,248838,249856,179207,258048,179207,266240,187567,191663,278528,179207,326,,294912,,306182,307200,,,,183471,171015,,171015,167087,162823,348160,158727,,,364544,171015,326,154799,380928,171015,326,396294,397312,,405504,171015,326,154799,421888,171015,326,434176,175111,442368,175111,450560,,458752,179207,,474118,475136,150703,483328,171015,326,498694,499712,150703,507904,171015,326,520192,146607,142511,138415,134319,117935,199855,203951,113839,122031,,565248,117935,113839,577536,109743,97455,183471,93359,598016,105647,101551,610304,,,622592,171015,326,634880,89263,326,,81071,655360,171015,326,72879,674822,675840,679936,171015,326,,696320,171015,326,72879,68783,719878,720896,724992,171015,326,,741376,171015,326,68783,760838,761856,64687,770048,171015,326,785414,786432,64687,794624,171015,326,806912,60591,56495,40111,823296,27823,44207,,839680,,,851968,76807,76807,76807,76807,875526,876544,76807,884736,76807,326,326,,48303,,52399,40111,40111,925696,31919,36015,937984,,,,7343,958464,,,970752,11439,978944,15535,987136,,,19631,1003520,23727,1014790,1015808,,23727,15535,1032192,,1040384,,1048576,,1056768,,1064960,,1073152,,1081344,,,7343,1097728,,,,1114112,171015,326,1126400,89263,326,,,,1150976,1155072,85167,,,1174534,1175552,,1183744,76807,76807,76807,76807,326,1208320,,,,167087,,122031,,130223,1248262,1249280,,126127,326,,1269760,,1277952,,,150703,122031,,,150703,122031,,195759,1323008,]
-M=rle_dec([1,,52,324,1,225280,1,221184,1,237568,2,324,1,274432,1,244742,1,262144,1,253952,1,324,1,258048,4,324,1,278528,1,324,1,290816,1,324,1,294912,2,324,1,311296,2,324,1,323584,1,327680,1,331776,1,335872,1,324,1,344064,1,324,1,348160,2,324,1,372736,2,324,1,376832,1,389120,3,324,1,396294,1,401408,1,413696,2,324,1,417792,4,324,1,438272,1,324,1,442368,3,324,1,462848,2,324,1,491520,1,479232,4,324,1,498694,1,503808,12,324,1,557056,12,324,1,618496,1,614400,1,324,1,630784,2,324,1,643072,3,324,1,651264,3,324,1,667648,1,324,1,674822,1,688128,2,324,1,692224,1,704512,3,324,1,712704,1,324,1,719878,1,733184,2,324,1,737280,1,749568,4,324,1,778240,1,765952,4,324,1,785414,1,790528,11,324,1,850950,1,843776,2,324,1,856064,1,860160,1,864256,1,868352,2,324,1,880640,5,324,1,905216,1,909312,6,324,1,950272,1,942080,1,946176,1,324,1,957446,1,324,1,962560,4,324,1,983040,1,995328,4,324,1,1007616,1,324,1,1014790,1,1019904,3,324,1,1036288,1,324,1,1040384,1,324,1,1052672,1,324,1,1056768,1,324,1,1069056,1,324,1,1073152,1,1089536,1,1085440,1,324,1,1096710,1,324,1,1101824,1,324,1,1110016,1,1122304,2,324,1,1134592,4,324,1,1146880,1,1163264,1,1150976,5,324,1,1182726,1,324,1,1187840,1,1191936,1,1196032,1,1200128,2,324,1,1212416,1,324,1,1220608,1,1224704,1,324,1,1232896,1,1236992,1,1241088,1,1261568,1,324,1,1253376,4,324,1,1269760,1,324,1,1277952,1,1286144,1,324,1,1294336,1,324,1,1302528,1,324,1,1310720,1,324,1,1318912,1,324,1,325])
-F=rle_dec([1,,51,325,1,282624,1,325,1,324,1,325,1,233472,2,325,1,324,3,325,1,324,1,325,1,270336,2,325,1,324,3,325,1,324,1,325,1,315392,10,325,1,324,3,325,1,368640,3,325,1,385024,2,325,1,324,2,325,1,409600,3,325,1,425984,4,325,1,324,1,325,1,457734,7,325,1,487424,2,325,1,324,2,325,1,512000,2,325,1,524288,1,528384,1,532480,1,536576,1,540672,1,544768,1,548864,4,325,1,569344,2,325,1,581632,1,585728,1,589824,2,325,1,602112,5,325,1,626688,2,325,1,638976,4,325,1,659456,3,325,1,324,1,325,1,684032,3,325,1,700416,4,325,1,324,1,325,1,729088,3,325,1,745472,6,325,1,774144,2,325,1,324,2,325,1,798720,2,325,1,811008,1,815104,2,325,1,827392,11,325,1,892928,2,325,1,888832,9,325,1,929792,10,325,1,977926,1,1002502,2,325,1,991232,5,325,1,324,6,325,1,324,3,325,1,324,3,325,1,324,9,325,1,1118208,2,325,1,1130496,5,325,1,324,1,1159168,3,325,1,1207302,17,325,1,1257472,5,325,1,324,1,325,1,324,10,325,1,324])
-D=function(a,i,l,b){for(i=0,l=a.length,b=[];i<l;i++)b[i]=revive(a[i]);return b}([,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,[[[[16]]]],,[[[[0,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]]]],,,[[[[2]]]],[[[[1]]]],[[[[1,2]]]],,,[[[[33]]]],,,,,,[[[[14,19,20,21,26,27]]]],[[[[19,20,21]]]],,,,,,,,,,[[[[13]]]],,,,,,,,,,,,,[[[[3]]]],,,[[[[3]]]],,,,,,,,,,,,,,,,,,,,,,,[[[[9]]]],,,,,,,,,,,,,[[[[22]]]],[[[[25]]]],,,,,,,[[[[24]]]],,,,,,,,,,,[[[[34]]]],,,,,,,,,,,[[[[35]]]],,,,,,,,,,,,,,,,,,,,,,,,[[[[0,1,2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,25,26,27,28,29,30,32,33,35,36]]]],,[[[[21]]]],[[[[10]]]],,,,,,,,,,,,,[[[[14,19]]]],,[[[[12]]]],,,,,,,,[[[[22]]]],[[[[15]]]],[[[[25]]]],,,[[[[15]]]],[[[[24]]]],,,,,,[[[[17]]]],[[[[36]]]],,,,,,[[[[29]]]],,,,[[[[3,12,19,20,21,26,27]]]],,[[[[3,12,19,20,21,26,27]]]],,[[[[3,12,19,20,21,26,27]]]],,[[[[3,12,19,20,21,26,27]]]],,[[[[3,12,19,20,21,26,27]]]],,[[[[3,12,19,20,21,26,27]]]],,[[[[22]]]],[[[[15]]]],,,[[[[15]]]],[[[[24]]]],[[[[22]]]],,,,,,,[[[[24]]]],[[[[32]]]],[[[[5]]]],,,,[[[[0,1,2,3,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36]]]],[[[[5]]]],,,[[[[23]]]],,,,,,,,[[[[23]]]],[[[[27]]]],[[[[7]]]],,[[[[8]]]],,[[[[28]]]],,,,[[[[11]]]],,,[[[[30]]]],,[[[[14]]]],,[[[[14]]]],[[[[4]]]],,,[[[[18]]]],[[[[6]]]],,,[[[[10]]]],,,[[[[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]]]]])
-function revive(x){var i,l,state,j,l2,all=[],t,ts;if(!x)return;for(i=0,l=x.length;i<l;i++){state=x[i];ts=[];for(j=0,l2=state.length;j<l2;j++){t=state[j];if(t[1]==l) ts.push([t[0],true]);else ts.push([t[0],t[1]==undefined?j+1:t[1]])}all.push(ts)}return dfa(all)
- function dfa(ss){var i,l_ss,st,l_s,t,l_t,a,d=[],j,k,l;for(i=0,l_ss=ss.length;i<l_ss;i++){st=ss[i];a=[];for(j=0,l_s=st.length;j<l_s;j++){t=st[j];for(k=0,l_t=t[0].length;k<l_t;k++){a[t[0][k]]=t[1]==true?l_ss:t[1]}}for(j=0,l=a.length;j<l;j++)if(a[j]==undefined)a[j]=l_ss+1;d[i]=a}
+T=[,949254,818182,965638,916486,765952,780806,892928,897024,880640,901120,749568,720896,,659456,1052672,643072,1028096,589824,991232,605190,,569344,1114112,557056,1171456,1163264,1187840,1126400,1204224,548864,512000,465926,,,356352,429062,442368,278528,335872,266240,299008,188416,1196032,1179648,1212416,195590,196608,200704,158727,208896,167087,171183,224262,228358,229376,158727,237568,158727,245760,167087,171183,258048,158727,301,,274432,,285702,,,,,162991,150535,311296,,,,,150535,146607,142343,344064,138247,,,360448,150535,301,134319,376832,150535,301,392198,393216,,401408,150535,301,134319,417792,150535,301,430080,154631,438272,154631,446464,,454656,158727,,470022,471040,130223,479232,150535,301,494598,495616,130223,503808,150535,301,516096,126127,122031,117935,113839,97455,179375,183471,93359,101551,,561152,97455,93359,573440,89263,76975,162991,72879,593920,85167,81071,,,,618496,150535,301,630784,68783,301,,60591,651264,150535,301,52399,670726,671744,150535,679936,,,,,,,,,150535,52399,48303,732166,733184,737280,150535,301,48303,753664,44207,40111,23727,770048,11439,27823,785414,,,,,,,,,,,,831488,56327,56327,56327,56327,855046,856064,56327,864256,56327,301,301,,31919,,36015,23727,23727,905216,15535,19631,,,,,7343,,,,950272,,958464,,,,,7343,,,,,999424,150535,301,1011712,68783,301,,,,1036288,1040384,64687,,,1059846,1060864,,1069056,56327,56327,56327,56327,301,,,,,,,,146607,,101551,,109743,1145862,1146880,,105647,301,,1167360,,1175552,,,130223,101551,,,130223,101551,,175279,1220608,]
+M=rle_dec([1,,47,299,1,204800,1,200704,1,217088,2,299,1,253952,1,224262,1,241664,1,233472,1,299,1,237568,4,299,1,258048,1,299,1,270336,1,299,1,274432,2,299,2,,1,299,1,303104,1,307200,1,327680,2,299,2,,1,331776,1,299,1,339968,1,299,1,344064,2,,1,368640,2,299,1,372736,1,385024,3,299,1,392198,1,397312,1,409600,2,299,1,413696,4,299,1,434176,1,299,1,438272,3,299,1,458752,2,299,1,487424,1,475136,4,299,1,494598,1,499712,12,299,1,552960,12,299,1,614400,2,,1,626688,2,299,1,638976,3,299,1,647168,3,299,1,663552,1,299,1,670726,1,675840,1,712704,2,299,6,,1,716800,1,299,1,724992,1,299,1,732166,1,745472,10,299,1,811008,1,300,6,,1,299,1,830470,2,,1,299,1,835584,1,839680,1,843776,1,847872,2,299,1,860160,4,299,1,,1,884736,1,888832,6,299,1,929792,3,,1,936966,1,299,2,,1,299,1,954368,1,299,1,958464,1,974848,2,,1,982022,1,299,2,,1,995328,1,1007616,2,299,1,1019904,3,299,1,,1,1032192,1,1048576,1,1036288,5,299,1,1068038,1,299,1,1073152,1,1077248,1,1081344,1,1085440,2,299,2,,1,299,2,,1,1118208,1,1122304,1,299,1,1130496,1,1134592,1,1138688,1,1159168,1,299,1,1150976,4,299,1,1167360,1,299,1,1175552,1,1183744,1,299,1,1191936,1,299,1,1200128,1,299,1,1208320,1,299,1,1216512,1,299,1,300])
+F=rle_dec([1,,46,300,1,262144,1,300,1,299,1,300,1,212992,2,300,1,299,3,300,1,299,1,300,1,249856,2,300,1,299,3,300,1,299,1,300,1,294912,2,,4,300,1,318470,1,300,2,,4,300,1,299,2,,1,300,1,364544,3,300,1,380928,2,300,1,299,2,300,1,405504,3,300,1,421888,4,300,1,299,1,300,1,453638,7,300,1,483328,2,300,1,299,2,300,1,507904,2,300,1,520192,1,524288,1,528384,1,532480,1,536576,1,540672,1,544768,4,300,1,565248,2,300,1,577536,1,581632,1,585728,2,300,1,598016,2,300,2,,1,300,1,622592,2,300,1,634880,4,300,1,655360,3,300,1,299,2,300,1,687110,1,300,6,,4,300,1,299,1,300,1,741376,3,300,1,757760,1,761856,2,300,1,774144,2,300,1,299,6,,2,300,2,,6,300,1,872448,2,300,1,868352,2,300,1,,6,300,1,909312,2,300,3,,2,300,2,,3,300,1,299,1,300,2,,2,300,2,,2,300,1,1003520,2,300,1,1015808,2,300,1,,2,300,1,299,1,1044480,3,300,1,1092614,7,300,1,1104902,2,,1,300,2,,7,300,1,1155072,5,300,1,299,1,300,1,299,10,300,1,299])
+D=function(a,i,l,b){for(i=0,l=a.length,b=[];i<l;i++)b[i]=a[i]&&revive(a[i]);return b}([,,,,,,,,,,,,,[[[[14,19]]]],,,,,,,,[[[[36]]]],,,,,,,,,,,,[[[[14,19,20,21,26,27,28,29,30,31,32]]]],[[[[19,20,21]]]],,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,[[[[16]]]],,[[[[0,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38]]]],,[[[[2]]],[[[1]]]],,,[[[[1,2]]]],,,,[[[[37]]]],[[[[17]]],[[[12]]]],,,,,,,,,,,,,,,,,,,[[[[13]]]],,,,,,,,,,,,,[[[[3]]]],,,[[[[3]]]],,,,,,,,,,,,,,,,,,,,,,,[[[[9]]]],,,,,,,,,,,,[[[[22]]],[[[25]]]],,,,,,,,,[[[[24]]]],,,,,,,,,,[[[[38]]]],[[[[28]]],[[[32]]],[[[27]]],[[[28]]],[[[30]]],[[[31]]]],,,,,,,,,,,,,,,,,,,,,,,,[[[[28]]],[[[32]]],[[[27]]],[[[28]]],[[[30]]],[[[31]]]],,,,,,,[[[[0,1,2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,25,26,27,28,29,30,31,32,33,34,36,37]]]],[[[[21]]],[[[10]]]],,,,,,,,,,,,,,,,,[[[[12]]]],,,,,,,[[[[22]]],[[[15]]],[[[25]]]],,,,,[[[[15]]],[[[24]]]],,,,[[[[3,12,19,20,21,26,27,28,29,30,31,32]]]],,[[[[3,12,19,20,21,26,27,28,29,30,31,32]]]],[[[[22]]],[[[15]]]],,,,[[[[15]]],[[[24]]]],,,[[[[22]]]],,,,,,,[[[[24]]]],,[[[[5]]]],,,,[[[[0,1,2,3,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38]]]],[[[[5]]]],,,[[[[23]]]],,,,,,,[[[[23]]],[[[29,31]]]],,,[[[[23]]],[[[5]]]],,,[[[[7]]]],,[[[[8]]]],,[[[[33]]]],,,,[[[[11]]]],,,[[[[34]]]],,[[[[14]]]],,[[[[14]]]],[[[[4]]]],,,[[[[18]]]],[[[[6]]]],,,[[[[10]]]],,,[[[[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38]]]]])
+function revive(x){var i,l,state,j,l2,all=[],t,ts;if(!x)return;for(i=0,l=x.length;i<l;i++){state=x[i];ts=[];for(j=0,l2=state.length;j<l2;j++){t=state[j];if(t[1]==l) ts.push([t[0],true]);else ts.push([t[0],t[1]==undefined?i+1:t[1]])}all.push(ts)}return dfa(all)
+ function dfa(ss){var i,l_ss,st,l_s,t,l_t,a,d=[],j,k,l;for(i=0,l_ss=ss.length;i<l_ss;i++){st=ss[i];a=[];for(j=0,l_s=st.length;j<l_s;j++){t=st[j];for(k=0,l_t=t[0].length;k<l_t;k++){a[t[0][k]]=t[1]===true?l_ss:t[1]}}for(j=0,l=a.length;j<l;j++)if(a[j]==undefined)a[j]=l_ss+1;d[i]=a}
   return function _dfa(st,i){var eq,pr;while(st<l_ss){eq=equiv[s.charCodeAt(i++)];st=d[pr=st][eq]}if(eq==undefined&&i>=s.length){ds=pr;dp=i-1;return}ds=0;dp=undefined;if(st==l_ss){pos=i;return true}return false}}}
 if(typeof out=='string'){s=out;out=[];x=parsePEG(function(m,x,y){if(m=='fail')out=[false,x,y,s];if(m=='tree segment')out=out.concat(x)});x('chunk',s);x('eof');return out[0]===false?out:[true,{names:parsePEG.names,tree:out,input:s}]}
 return function(m,x){if(failed){out('fail',pos,'parse already failed');return}
@@ -335,17 +339,16 @@ case 'eof':eof=true;mainloop();break
 default:throw new Error('unhandled message: '+m)}}
 //mainloop
 function mainloop(){for(;;){
-if(dp==undefined&&(S>367||S<326))t_block:{
+if(dp==undefined&&(S>328||S<301))t_block:{
 if(S&4/*pushpos*/)posns.push(pos)
 if(S&2/*t_bufferout*/){bufs.push(buf);buf=[]}
 if(S&8/*t_emitstate*/){if(emp<pos)buf.push(-1,pos-emp);emps.push(emp);emp=pos;buf.push(S>>>12)}if(S&1/*cache*/&&(x=tbl[pos-offset][S])!=undefined){if(x){R=true;pos=x[0];buf=x[1];emp=x[2]}else{R=false};break t_block}
 }if(R==undefined){
-// call DFA
 if(D[S>>>12]){R=D[S>>>12](ds||0,dp||pos);if(R==undefined){if(eof){dp=undefined;R=false}else{out('ready');return}}}
 else{states.push(S);S=T[S>>>12]}
-if(S==326){R=true;S=states.pop()}}
+if(S==301){R=true;S=states.pop()}}
 while(R!=undefined){
-if(S==204800){(R?emit:fail)();return}if(R){
+if(S==184320){(R?emit:fail)();return}if(R){
 if(S&1/*cache*/){tbl[posns[posns.length-1]][S]=[pos,buf,emp];buf=buf.slice()}
 if(S&8/*t_emitstate*/){if(pos!=emp&&emp!=posns[posns.length-1]){buf.push(-1,pos-emp)}emp=emps.pop()}if(S&16/*m_emitstate*/)buf.push(S>>>12)
 if(S&32/*m_emitclose*/)buf.push(-2)
@@ -362,7 +365,7 @@ if(S&4/*pushpos*/)pos=posns.pop()
 if(S&2048/*f_tossbuf*/)buf=bufs.pop()
 if(S&8/*t_emitstate*/){emp=emps.pop()}
 S=F[S>>>12]}
-if(S==324){R=true;S=states.pop()}else if(S==325){R=false;S=states.pop()}else R=undefined;}}}
+if(S==299){R=true;S=states.pop()}else if(S==300){R=false;S=states.pop()}else R=undefined;}}}
 function emit(){var x=bufs.length?bufs[0]:buf;if(x.length){out('tree segment',x);if(bufs.length)bufs[0]=[];else buf=[]}}
 function fail(s){out('fail',pos,s);failed=1}}
 
@@ -982,7 +985,7 @@ Sequence:
 StrLit:
   function(m){return re_from_str(m.text().slice(1,-1))},
 
-Empty:
+Epsilon:
   function(){return re_from_str('')},
 
 NegLookahead:
@@ -1007,8 +1010,8 @@ CharSet:
   function(_,cn){return re_from_cset(cn[0])},
 CharSetUnion:
   function(_,cn){return foldl1(CSET.union,cn)},
-CharSetIntersection:
-  function(_,cn){return foldl1(CSET.intersection,cn)},
+//CharSetIntersection:
+//  function(_,cn){return foldl1(CSET.intersection,cn)},
 CharSetDifference:
   function(_,cn){return foldl1(CSET.difference,cn)},
 CharSetExpr:transparent,
@@ -1062,8 +1065,6 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
  // rather than mutating the passed-in opts object, we copy its properties onto _x if it was provided or a new object
  // the undocumented third argument _x can be used to examine the state after the call
  function extend(a,b){for(var p in b)a[p]=b[p];return a}
- // soon, the non-dfa code may be removed, otherwise it needs to be fixed
- opts.dfa=opts.dfa!==false
  opts.elide=opts.elide||[]
  opts.drop=opts.drop||[]
  opts.leaf=opts.leaf||[]
@@ -1110,7 +1111,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
  if(opts.trace) vars.push('S_map=[\''+opts.S_map.join('\',\'')+'\']')
  ft=v6_flag_test(opts) // ft takes varname, flagname → flag test expression
 
- dfa_table=opts.dfa?v6_dfa_table(opts,rules)('D','s','pos','equiv','ds','dp')+'\n':''
+ dfa_table=v6_dfa_table(opts,rules)('D','s','pos','equiv','ds','dp')+'\n'
 
  commonjs_begin=';(function(exports){'
   + 'exports.names='+nameline
@@ -1164,7 +1165,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
 
  mainloop='//mainloop\nfunction mainloop(){for(;;){'
   + dbg('main')+'\n'
-  + 'if(dp==undefined&&('+v6_is_not_prim_test(opts)('S')+'))t_block:{\n'
+  + 'if(dp==undefined&&('+v6_is_not_prim_test(opts)('S')+'))\nt_block:{\n'
   + (asserts?'assert(typeof S=="number","S")\n'
      + 'assert((S>>>'+opts.flagbits
      +   ')<='+opts.highest_used_S+',"S in range: "+S)\n'
@@ -1174,22 +1175,14 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   + 'if('+ft('S','t_bufferout')+'){bufs.push(buf);buf=[]}\n'
   + 'if('+ft('S','t_emitstate')+'){'
   +     asrt('emp<=pos','emit position <= pos',';')
-  +     'if(emp<pos)buf.push(-1,pos-emp);'
+  //+     'if(emp<pos)buf.push(-1,pos-emp);'
   +     'emps.push(emp);' // store emit position
   +     'emp=pos;' // will be clobbered by cache hit
-  +     'buf.push(S>>>'+opts.flagbits+')}' // buf is clobbered by cache hit
+  +     'buf.push(S>>>'+opts.flagbits+')}\n' // buf is clobbered by cache hit
   + 'if('+ft('S','cache')+'&&(x=tbl[pos-offset][S])!=undefined){'
   +     'if(x){R=true;pos=x[0];buf=x[1];emp=x[2]}else{R=false}'
-  +     dbg('cached')+';'
-  +     'break t_block}\n' // now only needed for pre-DFA code path
-
-
-  + (opts.dfa
-    ?''
-
-  // new DFA tests
-
-  + '}' // end if not prim test (i.e. t_block)
+  +     dbg('cached')+'}\n'
+  + '}\n' // end if not prim test (i.e. t_block)
   + 'if(R==undefined){' // if no cached result
   +  dbg('test')
   +  '\n'// call DFA\n'
@@ -1208,59 +1201,6 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +  'if(S=='+opts.S_ε+'){R=true;S=states.pop()}'
   + '}' // end if R==undefined
 
-  // old primitive tests
-
-    :''
-
-  + 'states.push(S)\n'
-  + (asserts?'assert(T[S>>>'+opts.flagbits+'],\'T\')\n':'')
-  + 'S=T[S>>>'+opts.flagbits+']'
-  + '}\n' // end if not prim test
-  + 'if('+v6_is_prim_test(opts)('S')+'){\n' // prim test state
-  +  v6_ε_ifstmt(opts)('S','R')+'\n'
-  +  'else{\n'
-  +   'c=s.charCodeAt(pos);'
-  +   'if(isNaN(c)){'
-  +    'if(eof)R=false;'
-  +    'else{'
-  +     'emit();'
-  +     'R=undefined;'
-  +     (asserts?'assert(S,\'popped state\');':'')
-  +     dbg('waiting…')+';'
-  +     'out(\'ready\');'
-  +     'return}'
-  +    '}\n'
-  +   'else switch(S){\n'
-  +    v6_prim_test_case_statements_BMP(opts)('c','R')
-  +    '}\n'
-  +   'if(R)pos++\n'
-  +   'else if(c>=0xD800&&c<=0xDFFF){' // surrogate code unit
-  +    'if(c<0xDB80){' // high surrogate case
-  +     'if(pos+1==l){' // no more characters available
-  +      'if(eof)return fail(\'unmatched surrogate at EOF\');'
-  +      'else{'
-  +       'emit();'
-  +       'R=undefined;'
-  +       dbg('waiting (surrogate pair)')+';'
-  +       'out(\'ready\');'
-  +       'return}}'
-  +     'else{' // the next code unit is available
-  +      'c=(c&0x3FF)<<10 | s.charCodeAt(pos+1)&0x3FF | 0x10000\n'
-  +      'switch(S){' 
-  +       v6_prim_test_case_statements_supplementary(opts)('c','R')
-  +       '\ndefault:R=false'
-  +       '}\n'
-  +      'if(R)pos+=2\n' // we matched a supplementary character
-  +      '}' // end else
-  +     '}' // end high surrogate case
-  +    'else return fail(\'UTF-16 decoding error: unmatched low surrogate\')' // if not high surrogate, we saw a leading low surrogate which cannot be valid UTF-16
-  +    '}' // end if surrogate code unit
-  +   '}\n' // end else
-  +  (asserts?'assert(R==true||R==false,\'have result\')\n':'')
-  +  'S=states.pop()'
-  +  '}' // end prim test state
-    ) // end DFA ternary
-
   // has_result loop
 
   + '\nwhile(R!=undefined){'
@@ -1268,23 +1208,23 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   + 'if(S=='+rules._.expr.S_flags+'){(R?emit:fail)();return}'
   + 'if(R){\n'
   +  'if('+ft('S','cache')+'){tbl[posns[posns.length-1]][S]=[pos,buf,emp];buf=buf.slice()}\n'
-  +  (opts.dfa?
-     'if('+ft('S','t_emitstate')+'){'
+  +  'if('+ft('S','t_emitstate')+'){'
   +    'if(pos!=emp&&emp!=posns[posns.length-1]){'
   +      'buf.push(-1,pos-emp)}'
-  +    'emp=emps.pop()}':'') // no-op since emp is set again below?
+  +    'emp=emps.pop();' // no-op since emp is set again below?
+  +    'if(emp!=posns[posns.length-1]){buf=[-1,posns[posns.length-1]-emp].concat(buf)}'
+  +    '}\n'
   +  'if('+ft('S','m_emitstate')+')buf.push(S>>>'+opts.flagbits+')\n'
   +  'if('+ft('S','m_emitclose')+')buf.push(-2)\n'
-  +  (opts.dfa?'':'if('+ft('S','m_emitanon')+')buf.push(-1)\n')
   +  'if('+ft('S','m_emitlength')+')buf.push(pos-posns[posns.length-1])\n'
-  +  (opts.dfa?
-       'if('+ft('S','t_emitstate')+'){'
+  +  'if('+ft('S','t_emitstate')+'){'
   +    'emp=pos'
-  +    '}':'')
+  +    '}\n'
   +  'if('+ft('S','m_resetpos')+')pos=posns[posns.length-1]\n'
   +  'if('+ft('S','pushpos')+')posns.pop()\n'
   +  'if('+ft('S','m_tossbuf')+')buf=bufs.pop()\n'
-  +  'if('+ft('S','m_emitbuf')+')buf=bufs.pop().concat(buf)\n'
+  +  'if('+ft('S','m_emitbuf')+'){buf=bufs.pop().concat(buf);'
+  +    '}\n'
   +  'if(!bufs.length&&buf.length>64)emit()\n'
   +  (asserts?'assert(M[S>>>'+opts.flagbits+'],\'M\')\n':'')
   +  'S=M[S>>>'+opts.flagbits+']'
@@ -1293,9 +1233,9 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +  'if('+ft('S','cache')+')tbl[posns[posns.length-1]][S]=false\n'
   +  'if('+ft('S','pushpos')+')pos=posns.pop()\n'
   +  'if('+ft('S','f_tossbuf')+')buf=bufs.pop()\n'
-  +  (opts.dfa?
-     'if('+ft('S','t_emitstate')+'){emp=emps.pop()}\n':'')
-  +  (asserts?'assert(F[S>>>'+opts.flagbits+'],\'F\')\n':'')
+  +  'if('+ft('S','t_emitstate')+'){emp=emps.pop()}\n'
+  +  'if(emp>pos){emp=pos}\n'
+  +  asrt('F[S>>>'+opts.flagbits+']','F','\n')
   +  'S=F[S>>>'+opts.flagbits+']'
   + '}\n'
   + 'if(S=='+opts.S_succeed+'){R=true;S=states.pop()}'
@@ -1311,7 +1251,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
               //+ pp(opts.S_map)+'\n\n'
               //+ pp(opts.prim_test_assignments)+'\n\n'
               + dbg_tree+'\n\n\n\n'
-              //+ log.get()+'\n\n'
+              + log.get()+'\n\n'
               + pp(rules,{string_limit:0})+'\n'
               + 'opts.equiv_classes\n' + pp(opts.equiv_classes)+'\n\n'
               //+ 'opts.all_csets\n' + pp(opts.all_csets)+'\n\n'
@@ -1373,14 +1313,14 @@ re_shortnames=
 function v6_dependencies(opts,rules){var ret={},deps
  go('_')(opts.start)
  return ret
- function go(caller){return function(rule_name){var rule
+ function go(caller){return function _go(rule_name){var rule
    rule=rules[rule_name]
+   if(!rule) throw new Error('Rule required but not defined: '+rule_name)
    rule.callers=rule.callers||[]
    if(rule.callers.indexOf(caller)==-1)rule.callers.push(caller)
    rule.drop=opts.drop.indexOf(rule_name)>-1
    rule.elide=opts.elide.indexOf(rule_name)>-1
    if(ret[rule_name])return // it has already been processed
-   if(!rule) throw new Error('Rule required but not defined: '+rule_name)
    ret[rule_name]=rule
    rule.direct_deps=v6_direct_dependencies(rule.expr)
    rule.direct_deps.map(go(rule_name))}}}
@@ -1881,7 +1821,11 @@ function v6_leaf_dfas(opts,rules){var p
 function v6_leaf_dfa(opts,expr){
  switch(expr.type){
  case 0:
-  return v6_dfa_cset(expr.cset)}}
+  return v6_dfa_cset(expr.cset)
+ case 1:
+  return 
+ case 2:
+  return v6_dfa_seq(expr.subexprs,{})}}
 
 function v6_dfa(opts,rules,rule){var next_dep,re
  re=rule.re
@@ -1890,29 +1834,31 @@ function v6_dfa(opts,rules,rule){var next_dep,re
  return v6_dfa_2(re,{})
  return pp(re)+'\n'+v6_dfa_2(re,{})+log.get()}
 
-function v6_dfa_2(re,state){
- switch(re[0]){
+function v6_dfa_2(expr,state){
+ switch(expr.type){
  case 0:
-  return v6_dfa_cset(re[1],state)
+  return v6_dfa_cset(expr.cset,state)
  case 1:
-  return v6_dfa_2(v6_strLit2seq(re),state)
+  return //v6_dfa_2(v6_strLit2seq(expr.subexprs),state)
  case 2:
-  return v6_dfa_seq(re[1],state)
+  return v6_dfa_seq(expr.subexprs,state)
  case 3:
-  return v6_dfa_ordC(re[1],state)
+  return v6_dfa_ordC(expr.subexprs,state)
  case 4:
-  if(re[1]==0 && re[2]==0) return v6_dfa_rep(re[3],state)
-  return v6_dfa_2(v6_munge_mnrep(re),state)
+  return v6_dfa_rep(only_sub(expr),state)
  case 5:
-  throw new Error('no named references here')
+  return //throw new Error('no named references here')
  case 6:
-  return v6_dfa_neg(re[1],state)
+  return v6_dfa_neg(only_sub(expr),state)
  case 7:
-  return v6_dfa_pos(re[1],state)
+  return v6_dfa_pos(only_sub(expr),state)
  case 8:
-  return v6_dfa_2([2,[]],state)
+  return //v6_dfa_2([2,[]],state)
  default:
-  throw new Error('v6_dfa: unexpected re type')}}
+  throw new Error('v6_dfa: unexpected re type '+expr.type)}
+ function only_sub(expr){
+  assert(expr.subexprs.length==1,'exactly one subexpression')
+  return expr.subexprs[0]}}
 
 function v6_dfa_cset(cset,state){var sr,surrogates,bmp,i,l,srps,hi_cset,lo_cset,trans
  sr=CSET.toSurrogateRepresentation(cset)
@@ -2053,7 +1999,7 @@ function v6_dfa_merge_transitions(d1,d2){var i,l1,l2,j1s,j2s,t1,t2,fail,low1,low
 // so we just decline here for now
 function v6_dfa_opt(d1,state){}
 
-function v6_dfa_rep(re,state){throw pp(re)}
+function v6_dfa_rep(re,state){}
 
 function v6_dfa_neg(re,state){}
 
@@ -2070,7 +2016,7 @@ function v6_dfa_table_2(opts,rules){
 // wrap the encoded array in a function call that will map revive() over it
 // we cannot use [].map(revive) because IE (at least 7) does not support it
 function map_reviver(array_literal){
- return 'function(a,i,l,b){for(i=0,l=a.length,b=[];i<l;i++)b[i]=revive(a[i]);return b}'
+ return 'function(a,i,l,b){for(i=0,l=a.length,b=[];i<l;i++)b[i]=a[i]&&revive(a[i]);return b}'
       + '('+array_literal+')'}
 
 // example
@@ -2080,46 +2026,50 @@ function map_reviver(array_literal){
 //  a list of transitions, each of which is a tuple of
 //   a list of equivalence class ids, and
 //   a state id, omitted when = current + 1
-function v6_dfa_encode(opts){return function _v6_dfa_encode(dfa){var key,i,l,match={},slots=[],indices=[],index,keys=[],equiv_states=[],parents=[],ret=[],equiv_count=0
+function v6_dfa_encode(opts){return function _v6_dfa_encode(dfa){var key,i,l,match={},slots=[],indices=[],index=0,keys=[],equiv_states=[],parents=[],ret=[],equiv_count=0
   // state cache maps state keys onto slots
-  //log(dfa)
+  log(dfa)
   go(dfa)
-  //log(slots)
-  //log(keys)
-  //log(equiv_states)
+  log(slots)
+  log(keys)
+  log({indices:indices})
+  log({equiv_states:equiv_states})
   go2()
+  log({ret:ret})
   return v6_stringify(ret)
-  function go(state){var i,l,a,cset,substate,equiv_classes,tr_keys,slot,st_key,n
+  function go(state){var i,l,a,cset,substate,equiv_classes,tr_keys,slot,st_key,n,our_index
    // if the state already has been assigned a slot, return it
    n=parents.indexOf(state)
    slot=slots.indexOf(state)
-   if(n>-1)return '{'+n-parents.length+'}'
+   if(n>-1)return log('{'+(n-parents.length)+'}')
    if(slot>-1)return slot
    if(state.type=='match') key='[m]'
    if(state.type=='fail') key='[f]'
    if(state.type=='transition'){
+    our_index=index++
     slot=slots.length
-    index=ret.length
     slots[slot]=state
     tr_keys=[]
-    for(i=0,l=dfa.transition.length;i<l;i++){a=dfa.transition[i]
+    for(i=0,l=state.transition.length;i<l;i++){a=state.transition[i]
      cset=a[0];substate=a[1]
      equiv_classes=v6_cset_equiv_lookup(opts)(cset)
      st_key=go(substate)
      tr_keys.push(equiv_classes+'→'+st_key)}
+log({our_index:our_index})
     key='['+tr_keys.join(';')+']'}
-   //log({key:key})
+   log({key:key})
    n=keys.indexOf(key)
    if(n>-1){
     equiv_states[slot]=n
     equiv_count++}
    else{
     keys[slot]=key
-    indices[slot]=index
-    ret[index]=state}
+    indices[slot]=our_index
+    ret[our_index]=state}
    return key}
   function go2(){var trs,i,l,j,l2,a,state,tr,index,target
    for(i=0,l=slots.length;i<l;i++){state=slots[i]
+log({i:i,state:state})
     assert(state.type='transition')
     if(equiv_states[i])continue
     index=indices[i]
@@ -2159,7 +2109,7 @@ function v6_dfa_reviver(id_s,id_pos,id_equiv,id_dfa_state,id_dfa_pos){var functi
   +   'a=[];'
   +   'for(j=0,l_s=st.length;j<l_s;j++){t=st[j];'
   +    'for(k=0,l_t=t[0].length;k<l_t;k++){'
-  +     'a[t[0][k]]=t[1]==true?l_ss:t[1]}}'
+  +     'a[t[0][k]]=t[1]===true?l_ss:t[1]}}'
   +   'for(j=0,l=a.length;j<l;j++)if(a[j]==undefined)a[j]=l_ss+1;'
   +   'd[i]=a}' + '\n  '
   +  'return function _dfa(st,i){var eq,pr;'
@@ -2187,7 +2137,7 @@ function v6_dfa_reviver(id_s,id_pos,id_equiv,id_dfa_state,id_dfa_pos){var functi
   +   'ts=[];' // transitions
   +   'for(j=0,l2=state.length;j<l2;j++){t=state[j];'
   +    'if(t[1]==l) ts.push([t[0],true]);'
-  +    'else ts.push([t[0],t[1]==undefined?j+1:t[1]])}'
+  +    'else ts.push([t[0],t[1]==undefined?i+1:t[1]])}'
   +   'all.push(ts)}'
   +  'return dfa(all)'
   +  '\n '+function_dfa
@@ -2290,19 +2240,6 @@ function v6_calculate_flags(opts,rules){var p
   if(p != '_')
    v6_calculate_flags_expr(opts,rules[p],rules)({})(rules[p].expr)
  // special cases for the shadow start rule
- if(opts.dfa){
- rules._.expr.flags=   // as below with m_emitanon removed
-  {cache:false
-  ,t_bufferout:false
-  ,pushpos:false
-  ,t_emitstate:false
-  ,m_emitstate:false
-  ,m_emitclose:false
-  ,m_emitlength:false
-  ,m_resetpos:false
-  ,m_tossbuf:false
-  ,f_tossbuf:false}
- }else{
  rules._.expr.flags=
   {cache:false
   ,t_bufferout:false
@@ -2310,19 +2247,12 @@ function v6_calculate_flags(opts,rules){var p
   ,t_emitstate:false
   ,m_emitstate:false
   ,m_emitclose:false
-  ,m_emitanon:false
   ,m_emitlength:false
   ,m_resetpos:false
   ,m_tossbuf:false
-  ,f_tossbuf:false}}}
+  ,f_tossbuf:false}}
 
 function v6_calculate_flags_expr(opts,rule,rules){return function loop(parent){return function(expr,i){var ret={},subs_anon_consume=[],sub_can_emit_named=false,ref_rule
-   function makeAnonEmit(sub){
-    if(opts.dfa)return
-    sub.emits_anon=true
-    sub.flags.pushpos=true
-    sub.flags.m_emitanon=true
-    sub.flags.m_emitlength=true}
    if(isCset(expr.type)){
     expr.anon_consume=true}
    if(isNamedRef(expr.type)){
@@ -2342,13 +2272,13 @@ function v6_calculate_flags_expr(opts,rule,rules){return function loop(parent){r
     expr.anon_consume = !!subs_anon_consume.length
     expr.can_emit_named = sub_can_emit_named
     if(expr.anon_consume && expr.can_emit_named){
-     subs_anon_consume.forEach(makeAnonEmit)
+     //subs_anon_consume.forEach(makeAnonEmit)
      expr.anon_consume=false}}
    if(isSequence(expr.type)){
     expr.anon_consume = !!subs_anon_consume.length
     expr.can_emit_named = sub_can_emit_named
     if(expr.anon_consume && expr.can_emit_named){
-     subs_anon_consume.forEach(makeAnonEmit)
+     //subs_anon_consume.forEach(makeAnonEmit)
      expr.anon_consume=false}}
    ret.t_bufferout=!!(  isLookahead(expr.type)
                      || expr.toplevel

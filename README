@@ -1,9 +1,15 @@
 # PanPG API # #top
 
-PanPG v0.0.7pre.
+PanPG v0.0.7.
+This documents the most recent stable version.
+The current [bleeding edge documentation][edge_docs] is also available and may include differences in the development code since the last release.
+
+<!--
 This documents the next version, which may differ slightly from the stable version.
 
 The stable version 0.0.6 documentation is [archived][006_docs].
+-->
+
 The [about page][about] always has links to recent versions.
 
 [edge_docs]: /3box/PanPG/README.html
@@ -32,7 +38,7 @@ The arithmetic grammar from the demo makes a good example of the basic features.
     
     S ← [ U+0020 ]+
 
-PEGs are similar to context-free grammars (CFGs), but have a more imperative nature: while a CFG describes a language, which may or may not be easy to parse, and may be ambiguous, a PEG describes a deterministic parser.
+PEGs are similar to context-free grammars (CFGs), but have a more imperative nature: while a CFG describes a language, which may or may not be easy to parse, and may be ambiguous, a PEG describes a deterministic parsing strategy.
 The unambiguous nature of PEGs makes them convenient for parsing programming languages.
 Wikipedia's [article on PEGs][wp] is a good introduction.
 PEGs do not require a separate lexer; the same formalism is used to define the grammar down to the level of individual characters.
@@ -55,7 +61,7 @@ The following API is used to produce a parser from a PEG.
 To use it, include the file [PanPG.js][lib].
 The library is only required to generate a parser; once generated, the parsers do not have any dependencies.
 In most cases, rather than compiling the parser at the point of use, which is slow and requires the parser generator, the parser will instead be compiled once and then included where it will be used.
-The parser generator API is demonstrated in the [arithmetic parser demo][demo].
+The parser generator API is demonstrated in the [arithmetic grammar demo][demo].
 
 [lib]: build/PanPG.js
 [demo]: build/demo.html
@@ -147,7 +153,7 @@ The following three options are all off by default and are primarily used for de
 
 - asserts
 
-  If true, the generated parser will include assertion statements, and will be considerably slower.
+  If true, the generated parser will include assertion statements, and will be slower.
   By design, the assertions should never fail, regardless of the grammar and input, so this is not useful for debugging grammars, only the parser generator itself or for testing JavaScript engine sanity.
 
 ### `PanPG.explain(grammar,opts,input,[verbosity])` ### #explain
@@ -158,12 +164,16 @@ The output is a human readable string describing what the parser did at every st
 ASCII-art is used, so the string should be displayed in a monospace font.
 
 The grammar is required because this function recompiles the parser with tracing enabled, and then runs it over the input and analyzes the trace so generated.
-If `verbosity` is 2, the trace will also be returned; the output will be much larger in this case.
-If `verbosity` is 3, the generated parser code and explanatory source code comments will also be included.
 The compiled grammar is cached by the `explain` function itself, so if called again with only the input text changed, it will not generate the parser code again.
 Nonetheless, this function can be quite slow and generates truly voluminous output, so care is advised and small inputs are recommended.
 As an example, with the JSON grammar and a sample input of 706 bytes, `explain` generates over 6 MB of output including a complete trace of the full parser state at every change, and an analysis of the trace which shows the order and nesting of each rule that was tested at each position in the input.
 The `start` option can be used to specify a particular parse rule to isolate issues to the relevant part of the grammar.
+
+The optional verbosity argument increases the verbosity.
+The default verbosity is 1.
+If `verbosity` is 2, the trace will be shown.
+If `verbosity` is 3, the generated parser code and explanatory source code comments will also be included.
+If `verbosity` is 4, the raw parse tree (an array of numbers) will also be shown.
 
 ## Parsing and Parse Trees ## #parsing
 
@@ -175,9 +185,8 @@ An example with a more complex grammar is provided by the [ECMAScript 5 demo][ES
 [ES5demo]: build/ES5.html
 
 The generated parsers consist of a single function, or if the CommonJS output is used, a module which exports a single function.
-To use the generated parser, make this function available to your other code, and call it with the input to be parsed.
+The function takes a string to be parsed and returns either a parse tree or an error.
 
-A generated parser returns either a parse tree or an error.
 The return value is an array, either of the form [true, &lt;parse tree>], or [false, &lt;pos>, &lt;error>, &lt;input>].
 The format of these arrays may change in future versions, but the first element will always be a Boolean indicating success.
 The format of the parse tree is described below.
@@ -185,9 +194,8 @@ In the case of a parse error, the &lt;pos> is the position in the input at which
 
 Once a parse result is in hand, it may be passed to `showTree` or `treeWalker`.
 These functions are contained in [PanPG_util.js][].
-Once a parser is generated, PanPG\_util alone can be used with it; the much larger full parser generator library is not required.
 The `showTree` function takes the output of a parser, which may be either an error or a parse tree, and displays errors in human-readable form and parse trees as ASCII art.
-The output in either case should be displayed in a monospace font with good Unicode coverage for best results.
+`treeWalker` takes a parse result and a set of callback functions and walks the parse tree.
 
 [PanPG_util.js]: build/PanPG_util.js
 
