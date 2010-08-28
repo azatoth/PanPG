@@ -7,8 +7,6 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
  // rather than mutating the passed-in opts object, we copy its properties onto _x if it was provided or a new object
  // the undocumented third argument _x can be used to examine the state after the call
  function extend(a,b){for(var p in b)a[p]=b[p];return a}
- // soon, the non-dfa code may be removed, otherwise it needs to be fixed
- opts.dfa=opts.dfa!==false
  opts.elide=opts.elide||[]
  opts.drop=opts.drop||[]
  opts.leaf=opts.leaf||[]
@@ -55,7 +53,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
  if(opts.trace) vars.push('S_map=[\''+opts.S_map.join('\',\'')+'\']')
  ft=v6_flag_test(opts) // ft takes varname, flagname → flag test expression
 
- dfa_table=opts.dfa?v6_dfa_table(opts,rules)('D','s','pos','equiv','ds','dp')+'\n':''
+ dfa_table=v6_dfa_table(opts,rules)('D','s','pos','equiv','ds','dp')+'\n'
 
  commonjs_begin=';(function(exports){'
   + 'exports.names='+nameline
@@ -125,15 +123,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +     'buf.push(S>>>'+opts.flagbits+')}\n' // buf is clobbered by cache hit
   + 'if('+ft('S','cache')+'&&(x=tbl[pos-offset][S])!=undefined){'
   +     'if(x){R=true;pos=x[0];buf=x[1];emp=x[2]}else{R=false}'
-  +     dbg('cached')+';'
-  +     'break t_block}\n' // now only needed for pre-DFA code path
-
-
-  + (opts.dfa
-    ?''
-
-  // new DFA tests
-
+  +     dbg('cached')+'}\n'
   + '}\n' // end if not prim test (i.e. t_block)
   + 'if(R==undefined){' // if no cached result
   +  dbg('test')
@@ -153,59 +143,6 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +  'if(S=='+opts.S_ε+'){R=true;S=states.pop()}'
   + '}' // end if R==undefined
 
-  // old primitive tests
-
-    :''
-
-  + 'states.push(S)\n'
-  + (asserts?'assert(T[S>>>'+opts.flagbits+'],\'T\')\n':'')
-  + 'S=T[S>>>'+opts.flagbits+']'
-  + '}\n' // end if not prim test
-  + 'if('+v6_is_prim_test(opts)('S')+'){\n' // prim test state
-  +  v6_ε_ifstmt(opts)('S','R')+'\n'
-  +  'else{\n'
-  +   'c=s.charCodeAt(pos);'
-  +   'if(isNaN(c)){'
-  +    'if(eof)R=false;'
-  +    'else{'
-  +     'emit();'
-  +     'R=undefined;'
-  +     (asserts?'assert(S,\'popped state\');':'')
-  +     dbg('waiting…')+';'
-  +     'out(\'ready\');'
-  +     'return}'
-  +    '}\n'
-  +   'else switch(S){\n'
-  +    v6_prim_test_case_statements_BMP(opts)('c','R')
-  +    '}\n'
-  +   'if(R)pos++\n'
-  +   'else if(c>=0xD800&&c<=0xDFFF){' // surrogate code unit
-  +    'if(c<0xDB80){' // high surrogate case
-  +     'if(pos+1==l){' // no more characters available
-  +      'if(eof)return fail(\'unmatched surrogate at EOF\');'
-  +      'else{'
-  +       'emit();'
-  +       'R=undefined;'
-  +       dbg('waiting (surrogate pair)')+';'
-  +       'out(\'ready\');'
-  +       'return}}'
-  +     'else{' // the next code unit is available
-  +      'c=(c&0x3FF)<<10 | s.charCodeAt(pos+1)&0x3FF | 0x10000\n'
-  +      'switch(S){' 
-  +       v6_prim_test_case_statements_supplementary(opts)('c','R')
-  +       '\ndefault:R=false'
-  +       '}\n'
-  +      'if(R)pos+=2\n' // we matched a supplementary character
-  +      '}' // end else
-  +     '}' // end high surrogate case
-  +    'else return fail(\'UTF-16 decoding error: unmatched low surrogate\')' // if not high surrogate, we saw a leading low surrogate which cannot be valid UTF-16
-  +    '}' // end if surrogate code unit
-  +   '}\n' // end else
-  +  (asserts?'assert(R==true||R==false,\'have result\')\n':'')
-  +  'S=states.pop()'
-  +  '}' // end prim test state
-    ) // end DFA ternary
-
   // has_result loop
 
   + '\nwhile(R!=undefined){'
@@ -213,23 +150,23 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   + 'if(S=='+rules._.expr.S_flags+'){(R?emit:fail)();return}'
   + 'if(R){\n'
   +  'if('+ft('S','cache')+'){tbl[posns[posns.length-1]][S]=[pos,buf,emp];buf=buf.slice()}\n'
-  +  (opts.dfa?
-     'if('+ft('S','t_emitstate')+'){'
+  +  'if('+ft('S','t_emitstate')+'){'
   +    'if(pos!=emp&&emp!=posns[posns.length-1]){'
   +      'buf.push(-1,pos-emp)}'
-  +    'emp=emps.pop()}\n':'') // no-op since emp is set again below?
+  +    'emp=emps.pop();' // no-op since emp is set again below?
+  //+    'if(emp!=posns[posns.length-1]){buf=[-1,posns[posns.length-1]-emp].concat(buf)}'
+  +    '}\n'
   +  'if('+ft('S','m_emitstate')+')buf.push(S>>>'+opts.flagbits+')\n'
   +  'if('+ft('S','m_emitclose')+')buf.push(-2)\n'
-  +  (opts.dfa?'':'if('+ft('S','m_emitanon')+')buf.push(-1)\n')
   +  'if('+ft('S','m_emitlength')+')buf.push(pos-posns[posns.length-1])\n'
-  +  (opts.dfa?
-       'if('+ft('S','t_emitstate')+'){'
+  +  'if('+ft('S','t_emitstate')+'){'
   +    'emp=pos'
-  +    '}\n':'')
+  +    '}\n'
   +  'if('+ft('S','m_resetpos')+')pos=posns[posns.length-1]\n'
   +  'if('+ft('S','pushpos')+')posns.pop()\n'
   +  'if('+ft('S','m_tossbuf')+')buf=bufs.pop()\n'
-  +  'if('+ft('S','m_emitbuf')+')buf=bufs.pop().concat(buf)\n'
+  +  'if('+ft('S','m_emitbuf')+'){buf=bufs.pop().concat(buf);'
+  +    '}\n'
   +  'if(!bufs.length&&buf.length>64)emit()\n'
   +  (asserts?'assert(M[S>>>'+opts.flagbits+'],\'M\')\n':'')
   +  'S=M[S>>>'+opts.flagbits+']'
@@ -238,8 +175,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +  'if('+ft('S','cache')+')tbl[posns[posns.length-1]][S]=false\n'
   +  'if('+ft('S','pushpos')+')pos=posns.pop()\n'
   +  'if('+ft('S','f_tossbuf')+')buf=bufs.pop()\n'
-  +  (opts.dfa?
-     'if('+ft('S','t_emitstate')+'){emp=emps.pop()}\n':'')
+  +  'if('+ft('S','t_emitstate')+'){emp=emps.pop()}\n'
   +  'if(emp>pos){emp=pos}\n'
   +  asrt('F[S>>>'+opts.flagbits+']','F','\n')
   +  'S=F[S>>>'+opts.flagbits+']'

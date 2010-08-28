@@ -5,19 +5,6 @@ function v6_calculate_flags(opts,rules){var p
   if(p != '_')
    v6_calculate_flags_expr(opts,rules[p],rules)({})(rules[p].expr)
  // special cases for the shadow start rule
- if(opts.dfa){
- rules._.expr.flags=   // as below with m_emitanon removed
-  {cache:false
-  ,t_bufferout:false
-  ,pushpos:false
-  ,t_emitstate:false
-  ,m_emitstate:false
-  ,m_emitclose:false
-  ,m_emitlength:false
-  ,m_resetpos:false
-  ,m_tossbuf:false
-  ,f_tossbuf:false}
- }else{
  rules._.expr.flags=
   {cache:false
   ,t_bufferout:false
@@ -25,19 +12,12 @@ function v6_calculate_flags(opts,rules){var p
   ,t_emitstate:false
   ,m_emitstate:false
   ,m_emitclose:false
-  ,m_emitanon:false
   ,m_emitlength:false
   ,m_resetpos:false
   ,m_tossbuf:false
-  ,f_tossbuf:false}}}
+  ,f_tossbuf:false}}
 
 function v6_calculate_flags_expr(opts,rule,rules){return function loop(parent){return function(expr,i){var ret={},subs_anon_consume=[],sub_can_emit_named=false,ref_rule
-   function makeAnonEmit(sub){
-    if(opts.dfa)return
-    sub.emits_anon=true
-    sub.flags.pushpos=true
-    sub.flags.m_emitanon=true
-    sub.flags.m_emitlength=true}
    if(isCset(expr.type)){
     expr.anon_consume=true}
    if(isNamedRef(expr.type)){
@@ -57,13 +37,13 @@ function v6_calculate_flags_expr(opts,rule,rules){return function loop(parent){r
     expr.anon_consume = !!subs_anon_consume.length
     expr.can_emit_named = sub_can_emit_named
     if(expr.anon_consume && expr.can_emit_named){
-     subs_anon_consume.forEach(makeAnonEmit)
+     //subs_anon_consume.forEach(makeAnonEmit)
      expr.anon_consume=false}}
    if(isSequence(expr.type)){
     expr.anon_consume = !!subs_anon_consume.length
     expr.can_emit_named = sub_can_emit_named
     if(expr.anon_consume && expr.can_emit_named){
-     subs_anon_consume.forEach(makeAnonEmit)
+     //subs_anon_consume.forEach(makeAnonEmit)
      expr.anon_consume=false}}
    ret.t_bufferout=!!(  isLookahead(expr.type)
                      || expr.toplevel
