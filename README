@@ -1,11 +1,13 @@
 # PanPG API # #top
 
-PanPG v0.0.6, 2010-08-16.
+PanPG v0.0.7pre.
+This documents the next version, which may differ slightly from the stable version.
 
-For the unstable version see the [README on the current tip][edge_docs].
+The stable version 0.0.6 documentation is [archived][006_docs].
 The [about page][about] always has links to recent versions.
 
 [edge_docs]: /3box/PanPG/README.html
+[006_docs]: /3box-asof/1282013570963/PanPG/README.html
 [about]: /3box/PanPG/about.html
 
 ## Introduction ## #intro
@@ -148,7 +150,7 @@ The following three options are all off by default and are primarily used for de
   If true, the generated parser will include assertion statements, and will be considerably slower.
   By design, the assertions should never fail, regardless of the grammar and input, so this is not useful for debugging grammars, only the parser generator itself or for testing JavaScript engine sanity.
 
-### `PanPG.explain(grammar,opts,input,[verbose])` ### #explain
+### `PanPG.explain(grammar,opts,input,[verbosity])` ### #explain
 
 When a particular grammar and input do not give the parse tree (or error!) that was expected, `explain` can be used to determine what the parser did in excruciating detail.
 The arguments are the original PEG grammar, the options as they would be used with `generateParser`, and the sample input.
@@ -156,8 +158,9 @@ The output is a human readable string describing what the parser did at every st
 ASCII-art is used, so the string should be displayed in a monospace font.
 
 The grammar is required because this function recompiles the parser with tracing enabled, and then runs it over the input and analyzes the trace so generated.
-If `verbose` is true, the trace will also be returned, and the output will be much larger in this case.
-The compiled grammar is cached by the `explain` function itself, so if called again with only the input text changed, it will be considerably faster.
+If `verbosity` is 2, the trace will also be returned; the output will be much larger in this case.
+If `verbosity` is 3, the generated parser code and explanatory source code comments will also be included.
+The compiled grammar is cached by the `explain` function itself, so if called again with only the input text changed, it will not generate the parser code again.
 Nonetheless, this function can be quite slow and generates truly voluminous output, so care is advised and small inputs are recommended.
 As an example, with the JSON grammar and a sample input of 706 bytes, `explain` generates over 6 MB of output including a complete trace of the full parser state at every change, and an analysis of the trace which shows the order and nesting of each rule that was tested at each position in the input.
 The `start` option can be used to specify a particular parse rule to isolate issues to the relevant part of the grammar.
@@ -181,7 +184,7 @@ The format of the parse tree is described below.
 In the case of a parse error, the &lt;pos> is the position in the input at which parsing failed.
 
 Once a parse result is in hand, it may be passed to `showTree` or `treeWalker`.
-These functions are contained in [PanPG\_util.js][].
+These functions are contained in [PanPG_util.js][].
 Once a parser is generated, PanPG\_util alone can be used with it; the much larger full parser generator library is not required.
 The `showTree` function takes the output of a parser, which may be either an error or a parse tree, and displays errors in human-readable form and parse trees as ASCII art.
 The output in either case should be displayed in a monospace font with good Unicode coverage for best results.

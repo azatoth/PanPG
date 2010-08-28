@@ -10,26 +10,6 @@
 ; This depends on ECMAScript_unified.peg, and only overrides a few rules.
 
 
-; replace Block with ExtendedBlock
-Statement
-  ← ExtendedBlock
-  / VariableStatement
-  / EmptyStatement
-  / ExprStatement
-  / IfStatement
-  / IterationStatement
-  / ContinueStatement
-  / BreakStatement
-  / ReturnStatement
-  / WithStatement
-  / LabelledStatement
-  / SwitchStatement
-  / ThrowStatement
-  / TryStatement
-  / DebuggerStatement
+; Allow FunctionDeclaration in Block
 
-ExtendedBlock ← "{" (S? (Statement / FunctionDeclaration))* S? "}"
-
-; Block also appears in TryStatement, Catch, and Finally
-; Perhaps instead of replacing Block with ExtendedBlock, we should just redefine Block
-; Unless browsers disallow FunctionDeclaration in try/catch/finally blocks.
+Block ← "{" (S? (Statement / FunctionDeclaration))* S? "}"

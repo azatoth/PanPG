@@ -2,7 +2,13 @@ function buildES5_commonjs(es5,stream,opts){
  opts.patches=[stream]
  return generateParser(es5,opts)}
 
+function test_PEG(scratch,PEG){
+ //return generateParser(PEG,{start:'RuleSet'}).length
+ return explain(PEG,{start:'RuleSet',elide:['SpaceAtom']}
+ ,scratch,4)}
+
 function buildJSParser(es5,streamable,web_compat,opts){
+ return showTree(parsePEG(es5))
  return generateParser([es5,streamable,web_compat],opts)}
 
 function showTree_scratch(peg,input){var code
