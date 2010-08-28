@@ -1,5 +1,5 @@
 var reference_url='http://boshi.inimino.org/3box/PanPG/about.html'
-  , current_version='0.0.7pre'
+  , current_version='0.0.7'
 
 function build_compiler
  (API_compiling

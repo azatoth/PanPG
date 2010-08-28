@@ -1,7 +1,7 @@
 /* Utility functions on PanPG parse trees.
- * PanPG_util as of PanPG version 0.0.6
- * built on Mon, 16 Aug 2010 21:44:53 GMT
- * http://inimino.org/~inimino/blog/peg_v0.0.6
+ * PanPG_util as of PanPG version 0.0.7
+ * built on Sat, 28 Aug 2010 08:54:36 GMT
+ * http://boshi.inimino.org/3box/PanPG/about.html
  * MIT Licensed
  */
 
@@ -133,10 +133,11 @@ function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb=[],st
    if(i==l)return err('incomplete rule close')
    pos=frame.start+events[i]
    x=frame.index
+   match=m(frame.start,pos)
    try{
-    if(cb[x])     retval=cb[x](m(frame.start,pos),frame.cn)
-    else if(other)retval=cb[x](m(frame.start,pos),frame.cn,names[x])}
-   catch(e){return err('exception in '+names[x]+': '+e)}
+    if(cb[x])     retval=cb[x](match,frame.cn)
+    else if(other)retval=cb[x](match,frame.cn,names[x])}
+   catch(e){return err('exception in '+names[x]+': '+e+' (on node at char '+frame.start+')')}
    frame=stack.pop() // the parent node
    if(cb[x] && retval!==undefined)
     if(frame.cn)frame.cn.push(retval)

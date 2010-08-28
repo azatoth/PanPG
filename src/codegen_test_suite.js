@@ -20,15 +20,16 @@ var codegen_test_grammar_1='True ← "true"'
 var codegen_test_output_g3_i3=[1,2,-1,1,4,-2,1,-2,2,3,-2,1,2,-2,1,-2,4]
 
 function must_match(grammar,input){var code
- code=generateParser(grammar,{fname:'__codegen_test__'})
+ code=generateParser(grammar,{fname:'__codegen_test__',asserts:true})
  eval(code)
  return __codegen_test__(input)[0]}
 
 function must_produce_tree(grammar,opts,input,tree){var code
  opts.fname='__codegen_test__'
+ opts.asserts=true
  code=generateParser(grammar,opts)
  eval(code)
- return JSON.stringify(__codegen_test__(input)[1])
+ return JSON.stringify(__codegen_test__(input)[1].tree)
      == JSON.stringify(tree)}
 
 function codegen_test_1(){
