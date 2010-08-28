@@ -1,5 +1,5 @@
 {"name":        "PanPG"
-,"version":     "0.0.6"
+,"version":     "0.0.7"
 ,"description": "JavaScript PEG parser generator."
 ,"repository":  "http://boshi.inimino.org/3box/PanPG/"
 ,"directories": {"lib":"build"}
