@@ -17,24 +17,29 @@ case 'eof':eof=true;mainloop();break
 default:throw new Error('unhandled message: '+m)}}
 //mainloop
 function mainloop(){for(;;){
-if(dp==undefined&&(S>328||S<301))t_block:{
+if(dp==undefined&&(S>328||S<301))
+t_block:{
 if(S&4/*pushpos*/)posns.push(pos)
 if(S&2/*t_bufferout*/){bufs.push(buf);buf=[]}
-if(S&8/*t_emitstate*/){if(emp<pos)buf.push(-1,pos-emp);emps.push(emp);emp=pos;buf.push(S>>>12)}if(S&1/*cache*/&&(x=tbl[pos-offset][S])!=undefined){if(x){R=true;pos=x[0];buf=x[1];emp=x[2]}else{R=false};break t_block}
-}if(R==undefined){
+if(S&8/*t_emitstate*/){emps.push(emp);emp=pos;buf.push(S>>>12)}
+if(S&1/*cache*/&&(x=tbl[pos-offset][S])!=undefined){if(x){R=true;pos=x[0];buf=x[1];if(emp<x[2])emp=x[2]}else{R=false}}
+}
+if(R==undefined){
 if(D[S>>>12]){R=D[S>>>12](ds||0,dp||pos);if(R==undefined){if(eof){dp=undefined;R=false}else{out('ready');return}}}
 else{states.push(S);S=T[S>>>12]}
 if(S==301){R=true;S=states.pop()}}
 while(R!=undefined){
 if(S==184320){(R?emit:fail)();return}if(R){
 if(S&1/*cache*/){tbl[posns[posns.length-1]][S]=[pos,buf,emp];buf=buf.slice()}
-if(S&8/*t_emitstate*/){if(pos!=emp&&emp!=posns[posns.length-1]){buf.push(-1,pos-emp)}emp=emps.pop()}if(S&16/*m_emitstate*/)buf.push(S>>>12)
+if(S&8/*t_emitstate*/){if(pos!=emp&&emp!=posns[posns.length-1]){buf.push(-1,pos-emp)}emp=emps.pop();if(emp!=posns[posns.length-1]){buf=[-1,posns[posns.length-1]-emp].concat(buf)}}
+if(S&16/*m_emitstate*/)buf.push(S>>>12)
 if(S&32/*m_emitclose*/)buf.push(-2)
 if(S&128/*m_emitlength*/)buf.push(pos-posns[posns.length-1])
-if(S&8/*t_emitstate*/){emp=pos}if(S&256/*m_resetpos*/)pos=posns[posns.length-1]
+if(S&8/*t_emitstate*/){emp=pos}
+if(S&256/*m_resetpos*/)pos=posns[posns.length-1]
 if(S&4/*pushpos*/)posns.pop()
 if(S&512/*m_tossbuf*/)buf=bufs.pop()
-if(S&1024/*m_emitbuf*/)buf=bufs.pop().concat(buf)
+if(S&1024/*m_emitbuf*/){buf=bufs.pop().concat(buf);}
 if(!bufs.length&&buf.length>64)emit()
 S=M[S>>>12]}
 else{
@@ -42,6 +47,7 @@ if(S&1/*cache*/)tbl[posns[posns.length-1]][S]=false
 if(S&4/*pushpos*/)pos=posns.pop()
 if(S&2048/*f_tossbuf*/)buf=bufs.pop()
 if(S&8/*t_emitstate*/){emp=emps.pop()}
+if(emp>pos){emp=pos}
 S=F[S>>>12]}
 if(S==299){R=true;S=states.pop()}else if(S==300){R=false;S=states.pop()}else R=undefined;}}}
 function emit(){var x=bufs.length?bufs[0]:buf;if(x.length){out('tree segment',x);if(bufs.length)bufs[0]=[];else buf=[]}}
