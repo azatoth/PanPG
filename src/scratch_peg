@@ -1,5 +1,5 @@
-RuleSet           ← Rule LB Rule
-Rule              ← [ a-z A-Z ]+ S?
-LB                ← [U+000A]
-S                 ← SpaceAtom+
-SpaceAtom         ← " " / LB " "
+X ← Y LB+ Y
+Y ← [A-Z] S?
+S ← SpaceAtom+
+SpaceAtom ← " " / LB " "
+LB ← [U+000A]

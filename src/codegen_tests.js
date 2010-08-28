@@ -4,7 +4,8 @@ function buildES5_commonjs(es5,stream,opts){
 
 function test_PEG(scratch,PEG){
  //return generateParser(PEG,{start:'RuleSet'}).length
- return explain(PEG,{start:'RuleSet',elide:['SpaceAtom']}
+ //return showTree(parsePEG(scratch))
+ return explain(PEG,{elide:['SpaceAtom','S','LB']}
  ,scratch,4)}
 
 function buildJSParser(es5,streamable,web_compat,opts){

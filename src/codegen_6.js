@@ -122,7 +122,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +     'emp=pos;' // will be clobbered by cache hit
   +     'buf.push(S>>>'+opts.flagbits+')}\n' // buf is clobbered by cache hit
   + 'if('+ft('S','cache')+'&&(x=tbl[pos-offset][S])!=undefined){'
-  +     'if(x){R=true;pos=x[0];buf=x[1];emp=x[2]}else{R=false}'
+  +     'if(x){R=true;pos=x[0];buf=x[1];if(emp<x[2])emp=x[2]}else{R=false}'
   +     dbg('cached')+'}\n'
   + '}\n' // end if not prim test (i.e. t_block)
   + 'if(R==undefined){' // if no cached result
@@ -153,7 +153,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +  'if('+ft('S','t_emitstate')+'){'
   +    'if(pos!=emp&&emp!=posns[posns.length-1]){'
   +      'buf.push(-1,pos-emp)}'
-  +    'emp=emps.pop();' // no-op since emp is set again below?
+  +    'emp=emps.pop();'
   +    'if(emp!=posns[posns.length-1]){buf=[-1,posns[posns.length-1]-emp].concat(buf)}'
   +    '}\n'
   +  'if('+ft('S','m_emitstate')+')buf.push(S>>>'+opts.flagbits+')\n'
