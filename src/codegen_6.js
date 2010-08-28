@@ -109,7 +109,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
 
  mainloop='//mainloop\nfunction mainloop(){for(;;){'
   + dbg('main')+'\n'
-  + 'if(dp==undefined&&('+v6_is_not_prim_test(opts)('S')+'))t_block:{\n'
+  + 'if(dp==undefined&&('+v6_is_not_prim_test(opts)('S')+'))\nt_block:{\n'
   + (asserts?'assert(typeof S=="number","S")\n'
      + 'assert((S>>>'+opts.flagbits
      +   ')<='+opts.highest_used_S+',"S in range: "+S)\n'
@@ -122,7 +122,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +     'if(emp<pos)buf.push(-1,pos-emp);'
   +     'emps.push(emp);' // store emit position
   +     'emp=pos;' // will be clobbered by cache hit
-  +     'buf.push(S>>>'+opts.flagbits+')}' // buf is clobbered by cache hit
+  +     'buf.push(S>>>'+opts.flagbits+')}\n' // buf is clobbered by cache hit
   + 'if('+ft('S','cache')+'&&(x=tbl[pos-offset][S])!=undefined){'
   +     'if(x){R=true;pos=x[0];buf=x[1];emp=x[2]}else{R=false}'
   +     dbg('cached')+';'
@@ -134,7 +134,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
 
   // new DFA tests
 
-  + '}' // end if not prim test (i.e. t_block)
+  + '}\n' // end if not prim test (i.e. t_block)
   + 'if(R==undefined){' // if no cached result
   +  dbg('test')
   +  '\n'// call DFA\n'
@@ -217,7 +217,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
      'if('+ft('S','t_emitstate')+'){'
   +    'if(pos!=emp&&emp!=posns[posns.length-1]){'
   +      'buf.push(-1,pos-emp)}'
-  +    'emp=emps.pop()}':'') // no-op since emp is set again below?
+  +    'emp=emps.pop()}\n':'') // no-op since emp is set again below?
   +  'if('+ft('S','m_emitstate')+')buf.push(S>>>'+opts.flagbits+')\n'
   +  'if('+ft('S','m_emitclose')+')buf.push(-2)\n'
   +  (opts.dfa?'':'if('+ft('S','m_emitanon')+')buf.push(-1)\n')
@@ -225,7 +225,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +  (opts.dfa?
        'if('+ft('S','t_emitstate')+'){'
   +    'emp=pos'
-  +    '}':'')
+  +    '}\n':'')
   +  'if('+ft('S','m_resetpos')+')pos=posns[posns.length-1]\n'
   +  'if('+ft('S','pushpos')+')posns.pop()\n'
   +  'if('+ft('S','m_tossbuf')+')buf=bufs.pop()\n'
@@ -240,7 +240,8 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +  'if('+ft('S','f_tossbuf')+')buf=bufs.pop()\n'
   +  (opts.dfa?
      'if('+ft('S','t_emitstate')+'){emp=emps.pop()}\n':'')
-  +  (asserts?'assert(F[S>>>'+opts.flagbits+'],\'F\')\n':'')
+  +  'if(emp>pos){emp=pos}\n'
+  +  asrt('F[S>>>'+opts.flagbits+']','F','\n')
   +  'S=F[S>>>'+opts.flagbits+']'
   + '}\n'
   + 'if(S=='+opts.S_succeed+'){R=true;S=states.pop()}'

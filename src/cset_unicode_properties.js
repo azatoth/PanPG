@@ -2,7 +2,9 @@
 
 ECMA-262 specifies Unicode 3.0 or later versions at implementation discretion.
 
-I guess strings can be used as lists of 16-bit words with arbitrary values.  Given that csets are write-once anyway, an alternative representation as strings rather than arrays might be interesting.  Certainly slower, since strings are not optimized for random access, but as a representation in source code (as in Unicode property tables) it might save some bytes.  Probably not worth the cost of decoding into a list, though.
+Given that the Unicode property csets are treated as immutable, an alternative representation as strings rather than arrays might be interesting.
+Slower to use, but as a representation in source code (maybe expanded before use) it might save some bytes.
+Basically the cset array of ranges would be serialized without commas as a string where codepoints represent themselves.
 
 */
 

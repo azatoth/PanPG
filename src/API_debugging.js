@@ -2,7 +2,7 @@ function checkTrace(msgs){var i,l,m
  ,msg,S,pos,R,stack,posns,bufs,buf // regex captures
  ,calls=[],callstack=[],call,notes=[],prev_state,parser_is_resuming
  for(i=0,l=msgs.length;i<l;i++){
-  if(m=/^(\w+)\sS:(\S+) pos:(\d+) R:(\S+) stack:((?:,?\d+)*) posns:(\S*) bufs:(\S*) buf:(.*)/.exec(msgs[i])){
+  if(m=/^(\w+)\s+S:(\S+) pos:(\d+) R:(\S+) stack:((?:,?\d+)*) posns:(\S*) bufs:(\S*) buf:(.*)/.exec(msgs[i])){
    msg=m[1],S=m[2],pos=m[3],R=m[4],stack=m[5],posns=m[6],bufs=m[7],buf=m[8]
 
 
@@ -71,15 +71,15 @@ function checkTrace(msgs){var i,l,m
           :'')
        + (call.result=='false'?' [x]':'')}}
 
-// TODO: this could be in a third file API_debugging since it is not necessary for compiling and is not exactly part of the support API (which should not depend on the compiler).
-
-function explain(grammar,opts,input,verbose){var either_error_parser,parser,trace,streaming_parser,tree,e,result,fail,fail_msg
+function explain(grammar,opts,input,verbosity){var either_error_parser,parser,trace,streaming_parser,tree,e,result,fail,fail_msg
  // generate a parser
  opts=extend({},opts)
  opts.fname='trace_test'
  opts.trace=true
- //opts.debug=true
+ if(verbosity>2) opts.debug=true // if code will be shown, generate the big top comment
  //opts.asserts=true
+ //if(verbosity>1) opts.show_trace=true
+ //if(verbosity>2) opts.show_code=true
  either_error_parser=memoized(grammar)
  if(!either_error_parser[0])return'Cannot generate parser: '+either_error_parser[1]
  parser=eval(either_error_parser[1]+'\n;'+opts.fname)
@@ -88,7 +88,8 @@ function explain(grammar,opts,input,verbose){var either_error_parser,parser,trac
  trace=[],tree=[]
  streaming_parser=parser(message_handler)
  function message_handler(m,x,y,z){
-  trace.push(m+'\t'+x+(y?' '+y:''))
+  spaces='                '.slice(m.length)
+  trace.push(m+spaces+x+(y?' '+y:''))
   if(m=='tree segment')tree=tree.concat(x)
   if(m=='fail')fail=[m,x,y,z]}
  try{
@@ -106,7 +107,9 @@ function explain(grammar,opts,input,verbose){var either_error_parser,parser,trac
         ,'tree:\n'+showTree([true,{tree:tree,input:input,names:parser.names}])
         ,'trace analysis:\n'+checkTrace(trace)
         ,'legend:\n'+parser.legend
-        ,verbose?'trace:\n'+trace.join('\n'):''
+        ,verbosity>1?'trace:\n'+trace.join('\n'):''
+        ,verbosity>2?'parser code:\n'+either_error_parser[1]:''
+        ,verbosity>3?'raw tree:\n'+tree.join():''
         ].filter(function(x){return x!=''})
          .join('\n\n')
 
@@ -115,7 +118,7 @@ function explain(grammar,opts,input,verbose){var either_error_parser,parser,trac
   cache = explain.cache = explain.cache || {}
   cached = cache[grammar]
   if(!cached || !deepEq(cached[0],opts)) cached = cache[grammar] = [opts,generateParserAlt(grammar,opts)]
-  return cached}
+  return cached[1]}
  function extend(a,b){for(var p in b)a[p]=b[p];return a}
  function deepEq(x,y){var p
   if(x===y)return true
