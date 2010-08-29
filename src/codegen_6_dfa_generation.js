@@ -1,5 +1,6 @@
 function v6_leaf_dfas(opts,rules){var p
  for(p in rules){
+  log('v6_leaf_dfas rule: '+p)
   go(rules[p].expr)}
  return rules
  function go(expr){var dfa
@@ -110,13 +111,16 @@ function v6_dfa_ordC_(x){var i,l,cset,t1,t2,ret,res,res2,cache,j
  cache=[[],[]]
  for(i=0,l=x.length;i<l;i++){
   cset=x[i][0];t1=x[i][1];t2=x[i][2]
+  log([t1&&t1.type,t2&&t2.type])
   if(t1.type=='fail')res=t2; else
   if(t2.type=='fail')res=t1; else
   if(t1.type=='match')res=t1; else
-  if(t2.type=='match') return; // decline
+  if(t2.type=='match'){log('118 return');return} // decline
   else{ // both are transition states
    res=v6_dfa_ordC_(v6_dfa_merge_transitions(t1,t2))}
   log({i:i,res:res})
+  if(!res)return
+  assert(res,'v6_dfa_ordC_ has a value')
   if(res.type=='fail')continue
   res2=[cset,res]
   if((j=cache[0].indexOf(res))>-1){
@@ -149,7 +153,7 @@ function v6_dfa_merge_transitions(d1,d2){var i,l1,l2,j1s,j2s,t1,t2,fail,low1,low
    ret.push([cset,t1_next,t2_next])}
   prev=low
   if(low1==Infinity && low2==Infinity)break}
- return log(ret)
+ return log('returning '+ret),ret
  // find the lowest unseen values in all csets in a transition
  // these represent flips between on and off, initially off
  // there may be more than one cset that flips on the same code point, so we use an array to store the i indices of the low values

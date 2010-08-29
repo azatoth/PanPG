@@ -5,4 +5,4 @@
 
 ; This file depends on ECMAScript_5.peg.
 
-LeftHandSideExpr ← (NewTok S?)* ( PrimaryExpr / FunctionExpr ) ( S? Arguments / S? BracketAccessor / S? DotAccessor )*
+LeftHandSideExpression ← (NewTok S?)* ( PrimaryExpression / FunctionExpression ) ( S? Arguments / S? BracketAccessor / S? DotAccessor )*

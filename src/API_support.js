@@ -128,7 +128,7 @@ function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb=[],st
    try{
     if(cb[x])     retval=cb[x](match,frame.cn)
     else if(other)retval=cb[x](match,frame.cn,names[x])}
-   catch(e){return err('exception in '+names[x]+': '+e+' (on node at char '+frame.start+')')}
+   catch(e){return err('exception in '+names[x]+': '+e+' (on node at char '+match.start+'-'+match.end+')')}
    frame=stack.pop() // the parent node
    if(cb[x] && retval!==undefined)
     if(frame.cn)frame.cn.push(retval)
