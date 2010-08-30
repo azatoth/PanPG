@@ -7,7 +7,6 @@ node> var p=require('sys').print
 node> var grammar='Simple ← String / Integer\nString ← [a-z]+\nInteger ← [0-9]+'
 node> var code=PanPG.generateParser(grammar)
 node> eval(code)
-[ '', 'Simple', 'String', 'Integer', '_' ]
 node> var result=Simple('42')
 node> p(PanPG_util.showTree(result))
 Simple 0-2 "42"                     
