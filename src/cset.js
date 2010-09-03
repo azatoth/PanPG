@@ -174,7 +174,7 @@ function esc(n){var
 
 function reCC_bmp(cset){var res=[],state=0,i,l,c
  if(one(cset)) return esc(cset[0])
- for(i=0,l=cset.length;i<l,cset[i]<0x10000;i++){
+ for(i=0,l=cset.length;i<l&&cset[i]<0x10000;i++){
   if(state && cset[i] == c+1){state=0;continue}
   c=cset[i]
   if(state){res.push('-');c--}
@@ -225,7 +225,7 @@ function surrogatePair(n){
 function surrogateSet(cset){var i=0,l=cset.length,state,c,prev,hi,lo,ret=[],prev_hi,prev_lo,full=[],cur,all_hi=[],a
  if(l&1){cset[l++]=0x110000} //normalize
  cset.push(0x110001) //causes the last 'cur' to be pushed
- for(;i<l,c=cset[i];i++){
+ for(;c=cset[i];i++){
   if(c<0x10000)continue
   state=i&1
   if(state){
@@ -292,7 +292,7 @@ function show(cset){var i,l,ret=[],c
   else ret.push(c.toString(16)+'-'+(cset[i+1]-1).toString(16))}
  return ret.join('\n')}
 
-var i,l,e,es=
+var i,e,es=
 [['fromChar',fC] //exports
 ,['fromInt',fI]
 ,['universe',U]
@@ -315,6 +315,6 @@ var i,l,e,es=
 ,['toSurrogateRepresentation',tSR]
 ,['show',show]
 ]
-for(i=0,l=es.length;i<l,e=es[i];i++)exports[e[0]]=e[1]
+for(i=0;e=es[i];i++)exports[e[0]]=e[1]
 
 })
