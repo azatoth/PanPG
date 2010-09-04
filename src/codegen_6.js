@@ -193,7 +193,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
               //+ pp(opts.S_map)+'\n\n'
               //+ pp(opts.prim_test_assignments)+'\n\n'
               + dbg_tree+'\n\n\n\n'
-              + log.get()+'\n\n'
+              //+ log.get()+'\n\n'
               + pp(rules,{string_limit:0})+'\n'
               + 'opts.equiv_classes\n' + pp(opts.equiv_classes)+'\n\n'
               //+ 'opts.all_csets\n' + pp(opts.all_csets)+'\n\n'

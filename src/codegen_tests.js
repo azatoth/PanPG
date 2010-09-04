@@ -2,11 +2,13 @@ function buildES5_commonjs(es5,stream,opts){
  opts.patches=[stream]
  return generateParser(es5,opts)}
 
-function test_PEG(scratch,PEG){
+function test_PEG(scratch,ES5,stream,compat){
  //return generateParser(PEG,{start:'RuleSet'}).length
  //return showTree(parsePEG(scratch))
- return explain(PEG,{elide:['SpaceAtom','S','LB']}
- ,scratch,4)}
+ //return [ES5,stream,compat]//.map(function(x){return x.length})
+ //return showTree(JSParser.parse(scratch))
+ return explain([ES5],{},scratch,0)
+ return explain([ES5,stream,compat],{},scratch,4)}
 
 function buildJSParser(es5,streamable,web_compat,opts){
  return showTree(parsePEG(es5))
