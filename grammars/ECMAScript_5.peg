@@ -77,16 +77,16 @@ WhileStatement ←
 ForInStatement ←
   ForTok S? "(" (ForInLeft/ForInVarLeft) InTok S? Expression S? ")" S? Statement
 
-ForInLeft    ← S? LeftHandSideExpression S? 
-ForInVarLeft ← S? VarTok S? VariableDeclarationNoIn S? 
+ForInLeft      ← S? LeftHandSideExpression S? 
+ForInVarLeft   ← S? VarTok S? VariableDeclarationNoIn S? 
 
 ForStatement ←
-  ForTok S? "(" (ForInit/ForVarInit) ";" ForTest ";" ForUpdate ")" S? Statement
+  ForTok S? "(" S? (ForInit/ForVarInit)? S? ";" S? ForTest? S? ";" S? ForUpdate? S? ")" S? Statement
 
-ForInit    ← S? ExpressionNoIn? S?
-ForVarInit ← S? VarTok S? VariableDeclarationListNoIn S?
-ForTest    ← S? Expression? S?
-ForUpdate  ← S? Expression? S?
+ForInit      ← ExpressionNoIn
+ForVarInit   ← VarTok S? VariableDeclarationListNoIn
+ForTest      ← Expression
+ForUpdate    ← Expression
 
 ContinueStatement ←
   ContinueTok SnoLB? (Identifier EOS / EOSnoLB)

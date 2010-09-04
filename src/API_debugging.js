@@ -82,7 +82,8 @@ function explain(grammar,opts,input,verbosity){var either_error_parser,parser,tr
  //if(verbosity>2) opts.show_code=true
  either_error_parser=memoized(grammar)
  if(!either_error_parser[0])return'Cannot generate parser: '+either_error_parser[1]
- parser=eval(either_error_parser[1]+'\n;'+opts.fname)
+ try{parser=eval(either_error_parser[1]+'\n;'+opts.fname)}
+ catch(e){return 'The parser did not eval() cleanly (shouldn\'t happen): '+e.toString()}
 
  // parse the input
  trace=[],tree=[]
