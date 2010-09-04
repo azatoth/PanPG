@@ -8,10 +8,10 @@
 // - no "for each ... in" support (moz-specific)
 // - formal parameters must be identifiers, not destructuring patterns (which again is moz-specific)
 // - wherever Pattern would appear, Identifier is used instead
-// - VariableDeclaration is different (only one variable)
-// - VariableDeclaration lacks "kind" (let, var, or const)
+// - VariableStatement is used instead of VariableDeclaration (since VariableStatement is the name of the production used in the spec)
+// - There is no VariableDeclaration nodes in the output (though they are generated as an intermediate form)
+// - VariableStatement (nee VariableDeclaration) lacks "kind" (let, var, or const)
 // - the name VariableDaclaration is used for something else in the spec, perhaps it should be changed here.
-// - VariableStatement is used instead of VariableDeclaration (since that is the name of the production used in the spec), and VariableDeclaration nodes are the individual variable-declaring children (also as in the spec)
 // - There is no separate object for UnaryOperator or BinaryOperator, with a "token" property carrying the actual payload, instead, the operator appears directly as a string where a UnaryOperator or BinaryOperator object would appear in the spidermonkey AST.
 // - I think it is odd that there is a separate UpdateExpression type given that there is already a UnaryExpression (and it has a prefix Boolean property)
 // - There is no 'prefix' property on the UnaryExpression, since in every case it is true.
@@ -156,6 +156,10 @@ function js_ast(s){var dict,pending_comment
     return {type:"ForVarInit"
            ,declaration:cn[0]}}
 
+ ,VariableDeclarationListNoIn:function(m,cn){
+    return {type:"VariableDeclaration"
+           ,declarations:cn.map(cleanup_vardecl)}}
+
  ,ForTest:function(m,cn){
     assert(!cn[0] || isExpression(cn[0]))
     return {type:"ForTest"
@@ -208,7 +212,7 @@ function js_ast(s){var dict,pending_comment
 
  ,VariableStatement:function(m,cn){
     return {type:"VariableStatement"
-           ,declarations:cn}}
+           ,declarations:cn.map(cleanup_vardecl)}}
  
  ,ThisTok:function(m,cn){
     return {type:"ThisExpression"}}
@@ -699,6 +703,8 @@ function js_ast(s){var dict,pending_comment
        || x.type=="Identifier" )}
 
  function isStatement(x){return x&&x.type&&x.type.slice(-9)=="Statement"}
+
+ function cleanup_vardecl(decl){return {id:decl.id,init:decl.init}}
 
  var warnings=[]
  dict.warn=function(x){warnings.push(x)}
