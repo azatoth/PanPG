@@ -46,14 +46,14 @@ Block ← "{" (S? Statement)* S? "}"
 VariableStatement ←
   VarTok S? VariableDeclaration (S? "," S? VariableDeclaration)* EOS
 
-VariableDeclarationListNoIn ←
-  VariableDeclarationNoIn (S? "," S? VariableDeclarationNoIn)*
-
 VariableDeclaration ←
   Identifier (S? "=" !("=") S? AssignmentExpression)?
 
 VariableDeclarationNoIn ←
   Identifier (S? "=" !("=") S? AssignmentExpressionNoIn)?
+
+VariableDeclarationListNoIn ←
+  VariableDeclarationNoIn (S? "," S? VariableDeclarationNoIn)*
 
 ; an empty statement is marked by an explicit semicolon, ASI does not apply
 EmptyStatement ← ";"
