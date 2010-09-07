@@ -16,21 +16,21 @@ var nil=[]
 var U=[0]
 
 /* fromChar, fromInt */
-function fC(c){return fI(cpFC(c))}
-function fI(cp){return [cp,cp+1]}
+function fromChar(c){return fromInt(codepointFromChar(c))}
+function fromInt(cp){return [cp,cp+1]}
 
 /* from(Int|Char)Range */
-function fIR(from,to){return [from,to+1]}
-function fCR(from,to){
- from=cpFC(from);to=cpFC(to)
+function fromIntRange(from,to){return [from,to+1]}
+function fromCharRange(from,to){
+ from=codepointFromChar(from);to=codepointFromChar(to)
  return to>from ?[from,to+1] :[to,from+1]}
 
 /* tests */
 function empty(cset){return !cset.length}
-function one(cset){return cset.length==2 && cset[0]+1 == cset[1]}
+function singleton(cset){return cset.length==2 && cset[0]+1 == cset[1]}
 
 /* a single Unicode code point, from a character which may be represented by one or two UTF-16 code units. */
-function cpFC(s){var hi,lo
+function codepointFromChar(s){var hi,lo
  if(/[\uD800-\uDBFF][\uDC00-\uDFFF]/.test(s)){
   hi=s.charCodeAt(0)
   lo=s.charCodeAt(1)
@@ -38,14 +38,14 @@ function cpFC(s){var hi,lo
  return s.charCodeAt(0)}
 
 /* Set complement, equivalent to difference(universe,cset) but in constant time. */
-function comp(cset){
+function complement(cset){
  return (cset[0]==0) ? cset.slice(1)
                      : [0].concat(cset.slice())}
 
 /* O(n) */
 
 /* From an ascending list of distinct integers, each of which is a code point to include in the set. */
-function fL(a){var i,l,ret=[]
+function fromList(a){var i,l,ret=[]
  for(i=0,l=a.length;i<l;){
   ret.push(a[i])
   while(a[i]+1 == a[++i] && i<l);
@@ -53,7 +53,7 @@ function fL(a){var i,l,ret=[]
  return ret}
 
 /* To a list of ascending integers, each of which is a code point included in the set. */
-function tL(cset){var i,l,state=false,ret=[]
+function toList(cset){var i,l,state=false,ret=[]
  for(i=0,l=cset.length;i<l;i++){
   if(state)fill(cset[i-1],cset[i])
   state=!state}
@@ -63,13 +63,13 @@ function tL(cset){var i,l,state=false,ret=[]
   for(;a<b;a++)ret.push(a)}}
 
 /* from a string which may contain any Unicode characters in any order and may contain duplicates to the set of distinct characters appearing in the string. */
-function fS(s){var res=[]
+function fromString(s){var res=[]
  // here using replace as an iterator over Unicode characters
  s.replace(/[\u0000-\uD7FF\uDC00-\uFFFF]|([\uD800-\uDBFF][\uDC00-\uDFFF])|[\uD800-\uDBFF]/g,
   function(m,u){
-   if(u)res.push(cpFC(u))
+   if(u)res.push(codepointFromChar(u))
    else res.push(m[0].charCodeAt(0))})
- return fL(res.sort(function(a,b){return a-b}).filter(function(c,i,a){return !i||a[i-1]!=a[i]}))}
+ return fromList(res.sort(function(a,b){return a-b}).filter(function(c,i,a){return !i||a[i-1]!=a[i]}))}
 
 /* test membership of a codepoint c */
 function member(cset,c){var state=false,i,l
@@ -82,14 +82,14 @@ function member(cset,c){var state=false,i,l
 /* O(n+m), where n and m are the number of transitions, i.e. the length of the cset array representation rather than the cardinality of the represented set. */
 
 /* equality */
-function eq(as,bs){var i,l
+function equal(as,bs){var i,l
  l=as.length
  if(l!=bs.length)return false
  for(i=0;i<l;i++)if(as[i]!=bs[i])return false
  return true}
 
 /* set difference */
-function diff(as,bs){var
+function difference(as,bs){var
  ret=[],i=0,j=0,a,b,al=as.length,bl=bs.length,last,state=0
  if(!al)return []
  if(!bl)return as
@@ -134,7 +134,7 @@ function union(as,bs){var
    b=(++j<bl)?bs[j]:0x110000}}}
 
 /* set intersection implemented as the complement of the union of the complements. */
-function inter(as,bs){return comp(union(comp(as),comp(bs)))}
+function intersection(as,bs){return complement(union(complement(as),complement(bs)))}
 
 /* Any character which matches the SourceCharacter production of ECMA-262, except line terminators, ']', '-', '\', horizontal and vertical tab (0x09 and 0x0B), and form feed 0x0C, and most whitespace, may appear as itself in a regular expression character class. */
 
@@ -159,7 +159,7 @@ esc.safe=[32,33]; //ASCII space is special-cased in even if we exclude the rest 
  ,'So'
  //,'Zs' // XXX some of these are fine, but may be confusing
  ].forEach(function(s){esc.safe=union(esc.safe,cset_unicode_categories[s])})
- esc.safe=inter(esc.safe,fIR(0,0xFFFF))
+ esc.safe=intersection(esc.safe,fromIntRange(0,0xFFFF))
 
 function esc(n){var
  x={9:'\\t',10:'\\n',11:'\\v',12:'\\f',13:'\\r',45:'\\-',92:'\\\\',93:'\\]'}[n] //single backslash escapes
@@ -173,7 +173,7 @@ function esc(n){var
 /* Convert a set of BMP code points to an ECMAScript-compatible regex character class of the form [ranges], where ranges use literal Unicode characters where they are safe, single-character backslash escapes like "\n" where they exist, and \uHHHH escapes otherwise. */
 
 function reCC_bmp(cset){var res=[],state=0,i,l,c
- if(one(cset)) return esc(cset[0])
+ if(singleton(cset)) return esc(cset[0])
  for(i=0,l=cset.length;i<l&&cset[i]<0x10000;i++){
   if(state && cset[i] == c+1){state=0;continue}
   c=cset[i]
@@ -193,7 +193,7 @@ function reCC_bmp(cset){var res=[],state=0,i,l,c
 
 /* First we split the cset into a set of BMP code points and a set of supplementary code points.  We then calculate a set of high surrogates which covers the supplementary code points, and, for each high surrogate in this set, a set of low surrogates which may follow it.  We then take the difference of the set of BMP code points minus the high surrogate set.  If this result set is not empty, we output a character class which covers this range.  We then output the alternatives for surrogate pairs.  If the the full range of two or more high surrogates may be matched (that is, if any low surrogate may follow any of them), then we combine those high surrogates into a character class.  We output each high surrogate or high surrogate character class, followed by a character class of the low surrogates which may follow it.  Finally we output an alternative for the code points in the high surrogate range which may appear alone and which did not already appear in the first part of our output, viz the initial character class covering the BMP range. */
 
-/* This algorithm described above can be followed in the reCC function, which is preceded below by other helper functions. */
+/* This algorithm described above can be followed in the toRegex function, which is preceded below by other helper functions. */
 
 /* This simply splits a cset into two, the subset within the BMP and one for the supplementary subset. */
 function splitAtBMP(cset){var bmp=[],i=0,l=cset.length,c,state
@@ -247,8 +247,8 @@ function surrogateSet(cset){var i=0,l=cset.length,state,c,prev,hi,lo,ret=[],prev
     prev_hi=hi
     cur=[[hi,hi+1],[lo]]}
    prev_lo=lo}}
- return [fL(all_hi)
-        ,(full.length?[[fL(full),[0xDC00,0xE000]]]
+ return [fromList(all_hi)
+        ,(full.length?[[fromList(full),[0xDC00,0xE000]]]
                      :[]).concat(ret)
         ]}
 
@@ -260,25 +260,25 @@ function surrogateSetToRE(surr){var ret=[]
  function f(cset){
   return reCC_bmp(cset)}}
 
-/* reCC is the main driver for the regex output process. */
-function reCC(cset){var a,bmp,sup,all_hi,surr,d,i,ret=[]
+/* toRegex is the main driver for the regex output process. */
+function toRegex(cset){var a,bmp,sup,all_hi,surr,d,i,ret=[]
  a=splitAtBMP(cset);bmp=a[0];sup=a[1] // poor man's destructuring assignment
  a=surrogateSet(sup);all_hi=a[0];surr=a[1]
- d=diff(bmp,all_hi)
- i=inter(bmp,all_hi)
+ d=difference(bmp,all_hi)
+ i=intersection(bmp,all_hi)
  if(!empty(d)) ret.push(reCC_bmp(d))
  if(surr.length) ret.push(surrogateSetToRE(surr))
  if(!empty(i)) ret.push(reCC_bmp(i))
  return ret.join('|')}
 
-/* toSurrogateRepresentation is similar to reCC but returns an intermediate form (e.g. for constructing a DFA).  reCC above could be implemented externally in terms of this.  This is for UTF-16 but a UTF-8 version should be added too.  Possibly all of this should be moved into a separate module. */
-function tSR(cset){var a,bmp,sup,all_hi,surr,d,i
+/* toSurrogateRepresentation is similar to toRegex but returns an intermediate form (e.g. for constructing a DFA).  toRegex above could be implemented externally in terms of this.  This is for UTF-16 but a UTF-8 version should be added too.  Possibly all of this should be moved into a separate module. */
+function toSurrogateRepresentation(cset){var a,bmp,sup,all_hi,surr,d,i
  a=splitAtBMP(cset);bmp=a[0];sup=a[1]
  a=surrogateSet(sup);all_hi=a[0];surr=a[1]
  return {bmp:bmp,surrogate_range_pairs:surr,high_surrogates:all_hi}}
 
 /* return a cset from a Unicode General Category. */
-function fGC(x){
+function fromUnicodeGeneralCategory(x){
  var ret=cset_unicode_categories[x]
  if(!ret) throw Error('unknown Unicode General Category '+x)
  return ret}
@@ -293,26 +293,26 @@ function show(cset){var i,l,ret=[],c
  return ret.join('\n')}
 
 var i,e,es=
-[['fromChar',fC] //exports
-,['fromInt',fI]
+[['fromChar',fromChar] //exports
+,['fromInt',fromInt]
 ,['universe',U]
 ,['nil',nil]
 ,['empty',empty]
-,['singleton',one]
-,['fromIntRange',fIR]
-,['fromCharRange',fCR]
-,['fromUnicodeGeneralCategory',fGC]
-,['complement',comp]
-,['fromList',fL]
-,['toList',tL]
-,['fromString',fS]
+,['singleton',singleton]
+,['fromIntRange',fromIntRange]
+,['fromCharRange',fromCharRange]
+,['fromUnicodeGeneralCategory',fromUnicodeGeneralCategory]
+,['complement',complement]
+,['fromList',fromList]
+,['toList',toList]
+,['fromString',fromString]
 ,['member',member]
-,['equal',eq]
-,['difference',diff]
+,['equal',equal]
+,['difference',difference]
 ,['union',union]
-,['intersection',inter]
-,['toRegex',reCC]
-,['toSurrogateRepresentation',tSR]
+,['intersection',intersection]
+,['toRegex',toRegex]
+,['toSurrogateRepresentation',toSurrogateRepresentation]
 ,['show',show]
 ]
 for(i=0;e=es[i];i++)exports[e[0]]=e[1]
