@@ -1,6 +1,6 @@
 /* Utility functions on PanPG parse trees.
  * PanPG_util as of PanPG version 0.0.7
- * built on Sat, 28 Aug 2010 08:54:36 GMT
+ * built on Thu, 09 Sep 2010 22:20:23 GMT
  * http://boshi.inimino.org/3box/PanPG/about.html
  * MIT Licensed
  */
@@ -137,7 +137,7 @@ function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb=[],st
    try{
     if(cb[x])     retval=cb[x](match,frame.cn)
     else if(other)retval=cb[x](match,frame.cn,names[x])}
-   catch(e){return err('exception in '+names[x]+': '+e+' (on node at char '+frame.start+')')}
+   catch(e){return err('exception in '+names[x]+': '+e+' (on node at char '+match.start+'-'+match.end+')')}
    frame=stack.pop() // the parent node
    if(cb[x] && retval!==undefined)
     if(frame.cn)frame.cn.push(retval)

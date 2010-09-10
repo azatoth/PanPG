@@ -1,6 +1,6 @@
 /* PanPG 0.0.7
  * PEG → JavaScript parser generator, with its dependencies.
- * built on Sat, 28 Aug 2010 09:11:47 GMT
+ * built on Thu, 09 Sep 2010 22:20:42 GMT
  * See http://boshi.inimino.org/3box/PanPG/about.html
  * MIT Licensed
  */
@@ -125,7 +125,8 @@ function explain(grammar,opts,input,verbosity){var either_error_parser,parser,tr
  //if(verbosity>2) opts.show_code=true
  either_error_parser=memoized(grammar)
  if(!either_error_parser[0])return'Cannot generate parser: '+either_error_parser[1]
- parser=eval(either_error_parser[1]+'\n;'+opts.fname)
+ try{parser=eval(either_error_parser[1]+'\n;'+opts.fname)}
+ catch(e){return 'The parser did not eval() cleanly (shouldn\'t happen): '+e.toString()}
 
  // parse the input
  trace=[],tree=[]
@@ -300,7 +301,7 @@ function treeWalker(dict,result){var p,any,anon,other,fail,except,index,cb=[],st
    try{
     if(cb[x])     retval=cb[x](match,frame.cn)
     else if(other)retval=cb[x](match,frame.cn,names[x])}
-   catch(e){return err('exception in '+names[x]+': '+e+' (on node at char '+frame.start+')')}
+   catch(e){return err('exception in '+names[x]+': '+e+' (on node at char '+match.start+'-'+match.end+')')}
    frame=stack.pop() // the parent node
    if(cb[x] && retval!==undefined)
     if(frame.cn)frame.cn.push(retval)
@@ -339,24 +340,29 @@ case 'eof':eof=true;mainloop();break
 default:throw new Error('unhandled message: '+m)}}
 //mainloop
 function mainloop(){for(;;){
-if(dp==undefined&&(S>328||S<301))t_block:{
+if(dp==undefined&&(S>328||S<301))
+t_block:{
 if(S&4/*pushpos*/)posns.push(pos)
 if(S&2/*t_bufferout*/){bufs.push(buf);buf=[]}
-if(S&8/*t_emitstate*/){if(emp<pos)buf.push(-1,pos-emp);emps.push(emp);emp=pos;buf.push(S>>>12)}if(S&1/*cache*/&&(x=tbl[pos-offset][S])!=undefined){if(x){R=true;pos=x[0];buf=x[1];emp=x[2]}else{R=false};break t_block}
-}if(R==undefined){
+if(S&8/*t_emitstate*/){emps.push(emp);emp=pos;buf.push(S>>>12)}
+if(S&1/*cache*/&&(x=tbl[pos-offset][S])!=undefined){if(x){R=true;pos=x[0];buf=x[1];if(emp<x[2])emp=x[2]}else{R=false}}
+}
+if(R==undefined){
 if(D[S>>>12]){R=D[S>>>12](ds||0,dp||pos);if(R==undefined){if(eof){dp=undefined;R=false}else{out('ready');return}}}
 else{states.push(S);S=T[S>>>12]}
 if(S==301){R=true;S=states.pop()}}
 while(R!=undefined){
 if(S==184320){(R?emit:fail)();return}if(R){
 if(S&1/*cache*/){tbl[posns[posns.length-1]][S]=[pos,buf,emp];buf=buf.slice()}
-if(S&8/*t_emitstate*/){if(pos!=emp&&emp!=posns[posns.length-1]){buf.push(-1,pos-emp)}emp=emps.pop()}if(S&16/*m_emitstate*/)buf.push(S>>>12)
+if(S&8/*t_emitstate*/){if(pos!=emp&&emp!=posns[posns.length-1]){buf.push(-1,pos-emp)}emp=emps.pop();if(emp!=posns[posns.length-1]){buf=[-1,posns[posns.length-1]-emp].concat(buf)}}
+if(S&16/*m_emitstate*/)buf.push(S>>>12)
 if(S&32/*m_emitclose*/)buf.push(-2)
 if(S&128/*m_emitlength*/)buf.push(pos-posns[posns.length-1])
-if(S&8/*t_emitstate*/){emp=pos}if(S&256/*m_resetpos*/)pos=posns[posns.length-1]
+if(S&8/*t_emitstate*/){emp=pos}
+if(S&256/*m_resetpos*/)pos=posns[posns.length-1]
 if(S&4/*pushpos*/)posns.pop()
 if(S&512/*m_tossbuf*/)buf=bufs.pop()
-if(S&1024/*m_emitbuf*/)buf=bufs.pop().concat(buf)
+if(S&1024/*m_emitbuf*/){buf=bufs.pop().concat(buf);}
 if(!bufs.length&&buf.length>64)emit()
 S=M[S>>>12]}
 else{
@@ -364,6 +370,7 @@ if(S&1/*cache*/)tbl[posns[posns.length-1]][S]=false
 if(S&4/*pushpos*/)pos=posns.pop()
 if(S&2048/*f_tossbuf*/)buf=bufs.pop()
 if(S&8/*t_emitstate*/){emp=emps.pop()}
+if(emp>pos){emp=pos}
 S=F[S>>>12]}
 if(S==299){R=true;S=states.pop()}else if(S==300){R=false;S=states.pop()}else R=undefined;}}}
 function emit(){var x=bufs.length?bufs[0]:buf;if(x.length){out('tree segment',x);if(bufs.length)bufs[0]=[];else buf=[]}}
@@ -1180,7 +1187,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +     'emp=pos;' // will be clobbered by cache hit
   +     'buf.push(S>>>'+opts.flagbits+')}\n' // buf is clobbered by cache hit
   + 'if('+ft('S','cache')+'&&(x=tbl[pos-offset][S])!=undefined){'
-  +     'if(x){R=true;pos=x[0];buf=x[1];emp=x[2]}else{R=false}'
+  +     'if(x){R=true;pos=x[0];buf=x[1];if(emp<x[2])emp=x[2]}else{R=false}'
   +     dbg('cached')+'}\n'
   + '}\n' // end if not prim test (i.e. t_block)
   + 'if(R==undefined){' // if no cached result
@@ -1211,7 +1218,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +  'if('+ft('S','t_emitstate')+'){'
   +    'if(pos!=emp&&emp!=posns[posns.length-1]){'
   +      'buf.push(-1,pos-emp)}'
-  +    'emp=emps.pop();' // no-op since emp is set again below?
+  +    'emp=emps.pop();'
   +    'if(emp!=posns[posns.length-1]){buf=[-1,posns[posns.length-1]-emp].concat(buf)}'
   +    '}\n'
   +  'if('+ft('S','m_emitstate')+')buf.push(S>>>'+opts.flagbits+')\n'
@@ -1251,7 +1258,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
               //+ pp(opts.S_map)+'\n\n'
               //+ pp(opts.prim_test_assignments)+'\n\n'
               + dbg_tree+'\n\n\n\n'
-              + log.get()+'\n\n'
+              //+ log.get()+'\n\n'
               + pp(rules,{string_limit:0})+'\n'
               + 'opts.equiv_classes\n' + pp(opts.equiv_classes)+'\n\n'
               //+ 'opts.all_csets\n' + pp(opts.all_csets)+'\n\n'
@@ -1812,6 +1819,7 @@ function v6_tree_force_attr(n,stack){return function _v6_tree_force_attr(x){
 
 function v6_leaf_dfas(opts,rules){var p
  for(p in rules){
+  log('v6_leaf_dfas rule: '+p)
   go(rules[p].expr)}
  return rules
  function go(expr){var dfa
@@ -1922,13 +1930,16 @@ function v6_dfa_ordC_(x){var i,l,cset,t1,t2,ret,res,res2,cache,j
  cache=[[],[]]
  for(i=0,l=x.length;i<l;i++){
   cset=x[i][0];t1=x[i][1];t2=x[i][2]
+  log([t1&&t1.type,t2&&t2.type])
   if(t1.type=='fail')res=t2; else
   if(t2.type=='fail')res=t1; else
   if(t1.type=='match')res=t1; else
-  if(t2.type=='match') return; // decline
+  if(t2.type=='match'){log('118 return');return} // decline
   else{ // both are transition states
    res=v6_dfa_ordC_(v6_dfa_merge_transitions(t1,t2))}
   log({i:i,res:res})
+  if(!res)return
+  assert(res,'v6_dfa_ordC_ has a value')
   if(res.type=='fail')continue
   res2=[cset,res]
   if((j=cache[0].indexOf(res))>-1){
@@ -1961,7 +1972,7 @@ function v6_dfa_merge_transitions(d1,d2){var i,l1,l2,j1s,j2s,t1,t2,fail,low1,low
    ret.push([cset,t1_next,t2_next])}
   prev=low
   if(low1==Infinity && low2==Infinity)break}
- return log(ret)
+ return log('returning '+ret),ret
  // find the lowest unseen values in all csets in a transition
  // these represent flips between on and off, initially off
  // there may be more than one cset that flips on the same code point, so we use an array to store the i indices of the low values
