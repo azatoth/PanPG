@@ -2,14 +2,6 @@ function buildES5_commonjs(es5,stream,opts){
  opts.patches=[stream]
  return generateParser(es5,opts)}
 
-function test_PEG(scratch,ES5,stream,compat){
- //return generateParser(PEG,{start:'RuleSet'}).length
- //return showTree(parsePEG(scratch))
- //return [ES5,stream,compat]//.map(function(x){return x.length})
- //return showTree(JSParser.parse(scratch))
- return explain([ES5],{},scratch,0)
- return explain([ES5,stream,compat],{},scratch,4)}
-
 function buildJSParser(es5,streamable,web_compat,opts){
  return showTree(parsePEG(es5))
  return generateParser([es5,streamable,web_compat],opts)}
@@ -19,7 +11,8 @@ function showTree_scratch(peg,input){var code
  eval(code)
  return showTree(showTree_scratch_code(input))}
 
-function explain_scratch(){}
+function explain_scratch(peg,input){
+ return explain(peg,{},input)}
 
 function test_drop(peg,input){var opts
  opts={drop:['JSON'],debug:true}
