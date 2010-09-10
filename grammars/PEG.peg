@@ -1,3 +1,10 @@
+RuleSet           ← LB* (Comment / Rule) (LB+ (Comment / Rule))* LB*
+                  / ϵ
+
+Comment           ← ";" [^ U+000A U+000D ]*
+
+Rule              ← NonTerminal S ("←"/"<-") S OrdChoice
+
 PropSpec          ← [a-z A-Z _ - U+0020 ]+
 
 UPlusCodePoint    ← "U+" HEXDIG{4,6}
@@ -75,13 +82,6 @@ SpaceAtom         ← " " / LB " "
 LB                ← [U+000D][U+000A] / [U+000D U+000A]
 
 NonTerminal       ← IdentStartChar IdentChar*
-
-Comment           ← ";" [^ U+000A U+000D ]*
-
-Rule              ← NonTerminal S ("←"/"<-") S OrdChoice
-
-RuleSet           ← LB* (Comment / Rule) (LB+ (Comment / Rule))* LB*
-                  / ϵ
 
 PosLookahead      ← "&" SeqUnit
 
