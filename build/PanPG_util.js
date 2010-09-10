@@ -1,6 +1,6 @@
 /* Utility functions on PanPG parse trees.
- * PanPG_util as of PanPG version 0.0.7
- * built on Thu, 09 Sep 2010 22:20:23 GMT
+ * PanPG_util as of PanPG version 0.0.8
+ * built on Fri, 10 Sep 2010 03:29:59 GMT
  * http://boshi.inimino.org/3box/PanPG/about.html
  * MIT Licensed
  */
