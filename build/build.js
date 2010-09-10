@@ -62,5 +62,5 @@ function build_compiler
 
 function ugly_hack(cset){var test=0,ret
  ret = cset.replace(/typeof exports=='object'\?exports:CSET={}/,function(){test=1;return 'CSET={}'})
- if(!test) throw new Error('the ugly hack broke')
+ if(!test)throw new Error('the ugly hack broke')
  return ret}
