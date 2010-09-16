@@ -34,8 +34,11 @@
 // (N.B. there are other node types created below but which do not end up in the final tree)
 // Program, EmptyStatement, BlockStatement, ExpressionStatement, IfStatement, LabelledStatement, BreakStatement, ContinueStatement, WithStatement, SwitchStatement, ReturnStatement, ThrowStatement, TryStatement, DoWhileStatement, WhileStatement, ForStatement, ForInStatement, DebuggerStatement
 
-function js_ast(s){var dict,pending_comment
- //return PanPG_util.showTree(JSParser.parse(s),{drop:['WhiteSpace','anonymous','IdentifierStart','IdentifierPart','FunctionTok','LineTerminatorSequence','SourceCharacter']})
+;(function(exports){exports.generate_ast = function js_ast(s){var dict,pending_comment
+ var PanPG_util = require('../build/PanPG_util');
+ var JSParser = require('../build/parseJS');
+
+ //return require('sys').print(PanPG_util.showTree(JSParser.parse(s),{drop:['WhiteSpace','anonymous','IdentifierStart','IdentifierPart','FunctionTok','LineTerminatorSequence','SourceCharacter']}))
 
  function assert(x,m){if(!x)throw new Error('assertion failed: '+m)}
 
@@ -718,3 +721,4 @@ function js_ast(s){var dict,pending_comment
  if(pending_comment) result.commentAfter=pending_comment // XXX won't ever happen (Program node will always be visited after any Comment it contains)
  if(warnings.length)return warnings.join('\n')
  return result}
+ })(typeof exports=='object'?exports:js_ast={});
