@@ -1,4 +1,4 @@
-# PanPG API # #top
+# PanPG API 
 
 PanPG v0.0.9.
 This documents the most recent stable version.
@@ -16,13 +16,13 @@ The [about page][about] always has links to recent versions.
 [006_docs]: /3box-asof/1282013570963/PanPG/README.html
 [about]: /3box/PanPG/about.html
 
-## Introduction ## #intro
+## Introduction 
 
 PanPG is a parser generator which reads a PEG description of a grammar and writes a packrat parser in pure JavaScript.
 
 There is an API for compiling a parser from a grammar, and a smaller API of helpful convenience functions for dealing with the parse trees that a parser produces.
 
-## The PEG Language ## #lang
+## The PEG Language 
 
 Grammars are given as a parser expression grammar (PEG).
 
@@ -55,7 +55,7 @@ The [ECMAScript grammar][ES5] is a practical example of a full programming langu
 [PEG.peg]: grammars/PEG.peg
 [ES5]: grammars/ECMAScript_5.peg
 
-## Compiling ## #compiling
+## Compiling 
 
 The following API is used to produce a parser from a PEG.
 To use it, include the file [PanPG.js][lib].
@@ -66,7 +66,7 @@ The parser generator API is demonstrated in the [arithmetic grammar demo][demo].
 [lib]: build/PanPG.js
 [demo]: build/demo.html
 
-### `PanPG.generateParser(peg,opts)` ### #generateParser
+### `PanPG.generateParser(peg,opts)` 
 
 - `peg` is a string, containing the grammar (or an array of grammars to be merged)
 - `opts`, documented below, optional, controls various details of code generation.
@@ -79,7 +79,7 @@ Common reasons for failure are syntax errors in the provided PEG, and rules that
 If an array is passed as the first argument, each element is parsed as a PEG and the rules are combined, with those occurring in later grammars taking precedence.
 This is equivalent to using the `patches` option, described below.
 
-### `opts` ### #opts
+### `opts` 
 
 The `opts` argument is optional and if provided, all the properties are optional.
 The defined properties and default behaviors are as follows, with the most common and most useful listed first:
@@ -156,7 +156,7 @@ The following three options are all off by default and are primarily used for de
   If true, the generated parser will include assertion statements, and will be slower.
   By design, the assertions should never fail, regardless of the grammar and input, so this is not useful for debugging grammars, only the parser generator itself or for testing JavaScript engine sanity.
 
-### `PanPG.explain(grammar,opts,input,[verbosity])` ### #explain
+### `PanPG.explain(grammar,opts,input,[verbosity])` 
 
 When a particular grammar and input do not give the parse tree (or error!) that was expected, `explain` can be used to determine what the parser did in excruciating detail.
 The arguments are the original PEG grammar, the options as they would be used with `generateParser`, and the sample input.
@@ -175,7 +175,7 @@ If `verbosity` is 2, the trace will be shown.
 If `verbosity` is 3, the generated parser code and explanatory source code comments will also be included.
 If `verbosity` is 4, the raw parse tree (an array of numbers) will also be shown.
 
-## Parsing and Parse Trees ## #parsing
+## Parsing and Parse Trees 
 
 Once a parser is generated using the API above, it can be used to parse input, returning a parse tree.
 
@@ -199,7 +199,7 @@ The `showTree` function takes the output of a parser, which may be either an err
 
 [PanPG_util.js]: build/PanPG_util.js
 
-### Parse Tree Format ### #parse_tree_format
+### Parse Tree Format 
 
 Rather than embedded code which is executed on parser rules, the generated parser returns a parse tree which can be processed further as desired.
 Most users will not deal with the parse trees directly but will prefer the `treeWalker` function, documented below, or some other API.
@@ -213,7 +213,7 @@ For complete details on the parse tree format see its [documentation][].
 
 [documentation]: doc/parse_tree_representation
 
-### `PanPG_util.showTree(result, opts)` ### #showTree
+### `PanPG_util.showTree(result, opts)` 
 
 - `result` is the return value of a parser.
 
@@ -294,7 +294,7 @@ Once a grammar is complete and correct, rather than just hiding the uninterestin
          EOS 24-24 ""
       anonymous 24-25 "}"
 
-### `PanPG_util.treeWalker(callbacks, result)` ### #treeWalker
+### `PanPG_util.treeWalker(callbacks, result)` 
 
 `treeWalker` takes a set of callback functions and a parse result, and walks the result parse tree, calling the callbacks provided for each node in the parse tree.
 
@@ -334,7 +334,7 @@ If a callback for the top-level node returns a value, it will be used as the ret
 
 There is an example use of the tree walker API in the [arithmetic demo][demo].
 
-## Source Tree Layout ## #layout
+## Source Tree Layout 
 
 `doc/` contains plain text documentation which may or may not be useful or current.
 The most current documentation is the source code itself, and the files under `doc/` that are pointed to in source code comments.
