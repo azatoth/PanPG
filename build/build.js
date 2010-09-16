@@ -1,66 +1,45 @@
-var reference_url='http://boshi.inimino.org/3box/PanPG/about.html'
-  , current_version='0.0.9'
+build = require("./build_module")
+fs = require('fs');
+path = require('path');
 
-function build_compiler
- (API_compiling
- ,API_debugging
- ,API_support
- ,PEG_codegen_6_attr_js
- ,PEG_codegen_6_js
- ,             _tree_attribution
- ,             _dfa_generation
- ,             _dfa_output
- ,             _character_equivalence_classes
- ,             _rle
- ,             _expression_flags
- ,parsePEG_js
- ,re_js
- ,lists_js
- ,cset_prod_js
- ,assert_js
- )
- {var comment,requires,exports,body
+var output = process.argv[2];
 
- comment= '/* PanPG '+current_version+'\n'
-        + ' * PEG → JavaScript parser generator, with its dependencies.\n'
-        + ' * built on '+(new Date).toUTCString()+'\n'
-        + ' * See '+reference_url+'\n'
-        + ' * MIT Licensed\n */\n\n'
+var reference_url = 'http://boshi.inimino.org/3box/PanPG/about.html', current_version = '0.0.7x';
 
- exports=
-  ['generateParser','explain']
+var exports = ['generateParser','explain'];
 
- requires=[]
+var requires = [];
 
- body = API_compiling +'\n'
-      + API_debugging +'\n'
-      + API_support
-      + '\n\n /* parsePEG.js */ \n\n'
-      + parsePEG_js
-      + '\n\n/* re.js */\n\n'
-      + re_js
-      + '\n\n/* lists.js */\n\n'
-      + lists_js
-      + '\n\n/* assert.js */\n\n'
-      + assert_js
-      + '\n\n/* CSET */\n\n'
-      + ugly_hack(cset_prod_js)
-      + '\n\n/* PEG_codegen_6_attr.js */ \n\n'
-      + PEG_codegen_6_attr_js
-      + '\n\n/* PEG_codegen_6.js */ \n\n'
-      + PEG_codegen_6_js +'\n\n'
-      + _tree_attribution+'\n\n'
-      + _dfa_generation+'\n\n'
-      + _dfa_output+'\n\n'
-      + _character_equivalence_classes+'\n\n'
-      + _rle+'\n\n'
-      + _expression_flags+'\n\n'
+var comment= '\/\* PanPG '+current_version+'\n' +
+	' * PEG → JavaScript parser generator, with its dependencies.\n' +
+	' * built on '+(new Date).toUTCString()+'\n' +
+	' * See '+reference_url+'\n' +
+	' * MIT Licensed\n */\n\n';
 
- return comment + build_module('PanPG',requires,exports,body)}
+var includes = [
+	'src/contrib/util.js',
+	'src/API_compiling.js',
+	'src/API_debugging.js',
+	'src/API_support.js',
+	'build/parsePEG.js',
+	'src/re.js',
+	'src/contrib/lists.js',
+	'src/contrib/assert.js',
+	'build/cset.js',
+	'src/codegen_6_attr.js',
+	'src/codegen_6.js',
+	'src/codegen_6_tree_attribution.js',
+	'src/codegen_6_dfa_generation.js',
+	'src/codegen_6_dfa_output.js',
+	'src/codegen_6_character_equivalence_classes.js',
+	'src/codegen_6_run_length_encoding.js',
+	'src/codegen_6_expression_flags.js'
+];
 
-// one module is included directly in another here, with the 'typeof exports' test this doesn't work well, so we use an ugly hack.  A better solution will be to have some dependency system fold the required module in.
+var body = includes.map(function( name ) {
+		return "/* " + path.basename(name) + " */\n\n" + fs.readFileSync(name, 'utf-8') + "\n\n";
+	}).join("\n");
 
-function ugly_hack(cset){var test=0,ret
- ret = cset.replace(/typeof exports=='object'\?exports:CSET={}/,function(){test=1;return 'CSET={}'})
- if(!test)throw new Error('the ugly hack broke')
- return ret}
+var result = comment + build.build_module('PanPG',requires,exports,body);
+
+fs.writeFileSync( output, result, 'utf-8' );
