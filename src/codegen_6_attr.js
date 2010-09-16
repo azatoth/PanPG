@@ -96,7 +96,6 @@ warn:function(s){warnings.push(s)}
  treeWalker(dict,result)
  if(warnings.length)throw warnings
  return ret
- return pp(ret)+'\n\n'+pp(warnings.slice(0,8))+'\n\n'+st
  function transparent(_,cn){return cn[0]}
 
  // from CSET

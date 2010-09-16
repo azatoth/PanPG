@@ -10,10 +10,12 @@
 
 ;(function(exports){
 
+var cset_unicode_categories={};
+
 /* O(1) */
 
 var nil=[]
-var U=[0]
+var universe=[0]
 
 /* fromChar, fromInt */
 function fromChar(c){return fromInt(codepointFromChar(c))}
@@ -48,7 +50,7 @@ function complement(cset){
 function fromList(a){var i,l,ret=[]
  for(i=0,l=a.length;i<l;){
   ret.push(a[i])
-  while(a[i]+1 == a[++i] && i<l);
+  while(a[i]+1 == a[++i] && i<l){};
   if(a[i-1]!==0x10ffff)ret.push(a[i-1]+1)}
  return ret}
 
@@ -295,7 +297,7 @@ function show(cset){var i,l,ret=[],c
 var i,e,es=
 [['fromChar',fromChar] //exports
 ,['fromInt',fromInt]
-,['universe',U]
+,['universe',universe]
 ,['nil',nil]
 ,['empty',empty]
 ,['singleton',singleton]

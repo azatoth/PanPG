@@ -36,7 +36,7 @@ pp=pp_smart
 // pp_smart outputs sharp variables (like Mozilla), (optionally) re-orders object properties so that the largest ones come at the end (which makes reading deeply nested objects much easier), and tries to produce much more compact output by compressing properties and array members onto the same line when possible up to some specified line length (by default 80 chars)
 
 // x, n_rows, n_cols
-function pp_smart(x,opts){var parents=[],refs=[,]
+function pp_smart(x,opts){var parents=[],refs=[]
  opts=opts||{}
  default_('rows',Infinity)
  default_('cols',72)

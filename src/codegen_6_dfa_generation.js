@@ -22,8 +22,7 @@ function v6_dfa(opts,rules,rule){var next_dep,re
  re=rule.re
  while(next_dep=re_dependency(re))
   re=v6_substitute(next_dep,rules[next_dep].re)(re)
- return v6_dfa_2(re,{})
- return pp(re)+'\n'+v6_dfa_2(re,{})+log.get()}
+ return v6_dfa_2(re,{})}
 
 function v6_dfa_2(expr,state){
  switch(expr.type){
