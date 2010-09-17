@@ -136,6 +136,16 @@ function pp_r(o,d){var a=[],p
 /*
 */
 
+function quote_string_single(s){
+ return "'"
+      + s.replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/'/g,"\\'")
+      + "'"}
+
+function quote_string_double(s){
+ return '"'
+      + s.replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/"/g,'\\"')
+      + '"'}
+
 (function(){
  function create(){
   function log(o){var x,s=''

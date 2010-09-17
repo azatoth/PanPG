@@ -1,6 +1,6 @@
-; The entire ECMAScript grammar expressed as a single PEG
+; The entire ECMAScript language as a Parser Expression Grammar
 
-; Parser rules which share a name with ECMA-262 productions are intended to match the same language.
+; Parser rules which share a name with ECMA-262 productions are intended to match the same language (though not necessarily with the same derivation).
 
 Program ←
   (S? (Statement / FunctionDeclaration))* S?
@@ -253,6 +253,9 @@ PostfixExpression ←
 
 PostIncrementOp ← "++"
 PostDecrementOp ← "--"
+
+; This LHSExpression adheres to the spec, which gives semantics for CallExpression and NewExpression
+; See ECMAScript_5_streamable.peg for an alternative approach.
 
 LeftHandSideExpression ←
    CallExpression

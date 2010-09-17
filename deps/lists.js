@@ -32,6 +32,9 @@ function product(a){
  return foldl(f,a,1)
  function f(a,b){return a*b}}
 
+// String → Object → a
+function access(prop){return function(o){return o[prop]}}
+
 /* [[name,value]] → Object */
 function objectFromList(a){var o={}
  a.forEach(function(e){

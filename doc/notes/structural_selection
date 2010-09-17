@@ -1,6 +1,8 @@
 Date: 20090714
 Status: notes
 
+2010-09-10: these were notes on an early TAL design, no longer relevant.
+
 With *, it is no longer true that () and B are equivalent.
 If both are introduced, then the language has more than one way to express the same structure which I would prefer to avoid.
 
