@@ -33,10 +33,10 @@
 // The full [incomplete] list of node types returned in parse trees:
 // (N.B. there are other node types created below but which do not end up in the final tree)
 // Program, EmptyStatement, BlockStatement, ExpressionStatement, IfStatement, LabelledStatement, BreakStatement, ContinueStatement, WithStatement, SwitchStatement, ReturnStatement, ThrowStatement, TryStatement, DoWhileStatement, WhileStatement, ForStatement, ForInStatement, DebuggerStatement
-
 ;(function(exports){exports.generate_ast = function js_ast(s){var dict,pending_comment
- var PanPG_util = require('../build/PanPG_util');
- var JSParser = require('../build/parseJS');
+require.paths.unshift('../build');
+ var PanPG_util = require('PanPG_util');
+ var JSParser = require('parseJS');
 
  //return require('sys').print(PanPG_util.showTree(JSParser.parse(s),{drop:['WhiteSpace','anonymous','IdentifierStart','IdentifierPart','FunctionTok','LineTerminatorSequence','SourceCharacter']}))
 
@@ -528,7 +528,7 @@
  ,LeftHandSideExpression:function(m,cn){var news,core,tail,property,args
     news=[]
     while(cn[0].type=='NewTok') news.push(cn.shift())
-    assert(isExpression(cn[0]),'LHSExpr: found core expression (saw '+pp(cn[0])+')')
+    assert(isExpression(cn[0]),'LHSExpr: found core expression (saw '+JSON.stringify(cn[0])+')')
     core=cn.shift()
     tail=cn
     // now we have the innermost expression, the prefix string of zero or more 'new', and the suffix string of arguments and accessors, in core, news, and tail respectively.

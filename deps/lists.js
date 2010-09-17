@@ -1,4 +1,5 @@
-function foldl1(f,a){var x,i,l
+;(function(exports){
+	function foldl1(f,a){var x,i,l
  x=a[0]
  for(i=1,l=a.length;i<l;i++)x=f(x,a[i])
  return x}
@@ -52,3 +53,4 @@ function last(a){return a[a.length-1]}
 
 function fst(a){return a[0]}
 function snd(a){return a[1]}
+})(typeof exports == 'object' ? exports : lists);

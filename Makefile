@@ -30,7 +30,7 @@ SOURCES = \
 		  src/codegen_6_expression_flags.js
 
 SOURCES_UTIL = \
-			  src/API_support.js \
+			   src/API_support.js \
 
 CLOSURE_COMPILER = closure-compiler
 
