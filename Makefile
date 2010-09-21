@@ -30,7 +30,14 @@ SOURCES = \
 		  src/codegen_6_expression_flags.js
 
 SOURCES_UTIL = \
-			   src/API_support.js \
+			   src/API_support.js
+
+JS_AST_SOURCES = deps/util.js \
+				 js_pp/js_ast.js
+
+JS_PP_SOURCES = deps/util.js \
+				deps/lists.js \
+				js_pp/js_pp.js
 
 CLOSURE_COMPILER = closure-compiler
 
@@ -81,8 +88,12 @@ min: $(PANPG_MIN) $(PANPG_UTIL_MIN)
 
 support: $(PANPG_UTIL)
 
-ast: build/parseJS.js support
+ast: build/parseJS.js support build/js_ast.js
 
+js_pp: ast build/js_pp.js
+
+test: js_pp
+	NODE_PATH=build nodeunit test
 
 build/cset.js: src/cset.js \
 	src/UNIDATA/UnicodeData.txt \
@@ -111,7 +122,14 @@ build/parseES5.js: $(PANPG) grammars/ECMAScript_5.peg
 build/parseJS.js: $(PANPG) grammars/ECMAScript_5.peg grammars/ECMAScript_web_compat.peg grammars/ECMAScript_5_streamable.peg
 	$(call build_parser, "Generating parser ($@)", grammars/ECMAScript_5.peg, $@,grammars/ECMAScript_web_compat.peg grammars/ECMAScript_5_streamable.peg, true, parseJS, Program)
 
-clean:
-	rm -f $(BUILT_SOURCES) $(PANPG) $(PANPG_MIN) $(PANPG_UTIL_MIN) $(PANPG_UTIL) build/parseES5.js build/parseJS.js
+build/js_ast.js: $(JS_AST_SOURCES)
+	$(call build_generic,"Building $@",$@,js_ast,"Javascript AST",parseJS:JSParser PanPG_util,js_ast:create_ast,$(JS_AST_SOURCES))
 
-.PHONY: panpg all clean min install support
+build/js_pp.js: $(JS_PP_SOURCES)
+	$(call build_generic,"Building $@",$@,js_pp,"Javascript PP",,format,$(JS_PP_SOURCES))
+	sed -i "s/js_ast(s)/require('js_ast').create_ast(s)/" $@
+
+clean:
+	rm -f $(BUILT_SOURCES) $(PANPG) $(PANPG_MIN) $(PANPG_UTIL_MIN) $(PANPG_UTIL) build/js_ast.js build/js_pp.js build/parseES5.js build/parseJS.js
+
+.PHONY: panpg all clean min install support ast js_pp test

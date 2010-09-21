@@ -1,8 +1,3 @@
-exports.format = format;
-var lists = require('../deps/lists_commonjs');
-function extend(a,b){
- for(var p in b)if(Object.prototype.hasOwnProperty.call(b,p))a[p]=b[p]
- return arguments.length==2?a:extend.apply(null,[a].concat(Array.prototype.slice.call(arguments,2)))}
 // TODO:
 // 
 // Handle the other 90% of AST node types.
@@ -93,8 +88,8 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
   cn=ast.elements.map(self)
   f={cn:cn
     ,compose:compose_program_elements
-    ,min_chars:lists.sum(cn.map(lists.access('min_chars')))
-    ,n_statements:lists.sum(cn.map(lists.access('n_statements')))
+    ,min_chars:sum(cn.map(access('min_chars')))
+    ,n_statements:sum(cn.map(access('n_statements')))
     };break
 
 
@@ -111,9 +106,9 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
  case 'IfStatement':
   cn=[self(ast.test),self(ast.consequent),self(ast.alternate)]
   f={cn:cn
-    ,min_chars:lists.sum(cn.map(lists.access('min_chars')))
-    ,min_width:lists.max(cn.map(lists.access('min_width')))
-    ,n_statements:1+lists.sum(cn.slice(1).map(lists.access('n_statements')))
+    ,min_chars:sum(cn.map(access('min_chars')))
+    ,min_width:max(cn.map(access('min_width')))
+    ,n_statements:1+sum(cn.slice(1).map(access('n_statements')))
     ,compose:compose_if_statement
     };break
 
@@ -121,8 +116,8 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
  case 'BinaryExpression':
   cn=[self(ast.left),self(ast.right)]
   f={cn:cn
-    ,min_chars:lists.sum(cn.map(lists.access('min_chars')))
-    ,min_width:lists.max(cn.map(lists.access('min_width')))
+    ,min_chars:sum(cn.map(access('min_chars')))
+    ,min_width:max(cn.map(access('min_width')))
     ,compose:compose_binary_expression(ast.operator)
     };break
 
@@ -130,8 +125,8 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
  case 'CallExpression':
   cn=[self(ast.callee),self(ast.arguments)]
   f={cn:cn
-    ,min_chars:lists.sum(cn.map(lists.access('min_chars')))
-    ,min_width:lists.max(cn.map(lists.access('min_width')))
+    ,min_chars:sum(cn.map(access('min_chars')))
+    ,min_width:max(cn.map(access('min_width')))
     ,compose:compose_call_expression
     };break
 
@@ -139,8 +134,8 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
  case 'Arguments':
   cn=(ast.elements||[]).map(self)
   f={cn:cn
-    ,min_chars:lists.sum(cn.map(lists.access('min_chars')))
-    ,min_width:lists.max(cn.map(lists.access('min_width')))
+    ,min_chars:sum(cn.map(access('min_chars')))
+    ,min_width:max(cn.map(access('min_width')))
     ,compose:compose_arguments
     };break
 
@@ -166,7 +161,7 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
   case 'string':
    str1=quote_string_single(ast.value)
    str2=quote_string_double(ast.value)
-   f={min_chars:lists.min([str1.length,str2.length])
+   f={min_chars:min([str1.length,str2.length])
      ,min_width:ast.value.length?3:2 // strings can be broken across lines, but will need at least an opening quote, one character and a line continuation = 3 chars per line
      ,quote_char_preference:str1.length<str2.length ?"'" :str2.length<str1.length ?'"' :undefined
      ,quote_char_penalty:Math.abs(str1.length-str2.length)
