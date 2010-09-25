@@ -1,5 +1,5 @@
 function codegen_test_all(){var n,i,results=[]
- n=4
+ n=5
  for(i=1;i<=n;i++){
   results.push(i+' '+(eval('codegen_test_'+i)()?'PASS':'FAIL'))}
  return results.join('\n')}
@@ -8,6 +8,7 @@ var codegen_test_input_1=
 '["","a",null,true,false,0,-1,1,1.7,-1.7,1e3,-1e3,5.2e8,-5.2e8,{"a":"a","":"","true":true,"false":false,"null":null,"0":0},{},{"":{"":{}}},[],[[[]]]]'
   , codegen_test_input_2='WhiteSpace ← [ U+0009 U+FEFF [:Zs:] ]'
   , codegen_test_input_3='S \nS'
+  , codegen_test_input_4='f'
 
 var codegen_test_grammar_1='True ← "true"'
   , codegen_test_grammar_2='S ← "a"'
@@ -21,9 +22,12 @@ var codegen_test_grammar_1='True ← "true"'
                            'S ← SpaceAtom+\n'+
                            'SpaceAtom ← " " / LB " "\n'+
                            'LB ← [U+000A]'
+  , codegen_test_grammar_5='S ← !(Keyword) "f"\n'+
+                           'Keyword ← "fi" / "fo" / "fu" / "if" / "ins" / "in"'
 
 var codegen_test_output_g3_i3=[1,2,-1,1,4,-2,1,-2,2,3,-2,1,2,-2,1,-2,4]
   , codegen_test_output_g4_i3=[1,2,-2,2,-1,1,2,-2,1,-2,4]
+  , codegen_test_output_g5_i4=[1,-2,1]
 
 function must_match(grammar,input){var code
  code=generateParser(grammar,{fname:'__codegen_test__',asserts:true})
@@ -51,7 +55,14 @@ function codegen_test_3(){
                          ,codegen_test_output_g3_i3)}
 
 function codegen_test_4(){
+ //return false // test hangs current firefox nightly
  return must_produce_tree(codegen_test_grammar_4
                          ,{elide:['S','SpaceAtom','LB']}
                          ,codegen_test_input_3
                          ,codegen_test_output_g4_i3)}
+
+function codegen_test_5(){
+ return must_produce_tree(codegen_test_grammar_5
+                         ,{}
+                         ,codegen_test_input_4
+                         ,codegen_test_output_g5_i4)}

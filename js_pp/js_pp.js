@@ -9,7 +9,7 @@
 function format(opts,s){var ast
  opts=opts||{}
 
- // semicolons, indentation, newline_before_closing_brace, space_after_comma, space_around_operators, space_inside_parens, number_radix, object_literal_comma_first, blank_before_function, space_around_if_condition, string_linebreak_style, string_charset
+ // semicolons, indentation, newline_before_closing_brace, space_after_comma, space_around_operators, space_inside_parens, number_radix, object_literal_comma_first, blank_before_function, space_inside_if_test_parens, space_before_if_test, space_after_single_line_if_test, control_statement_braces, control_statement_empty, string_linebreak_style, string_charset
  default_('semicolons','all') // 'after-all', 'separators', 'only-required', 'before-dangerous'
  default_('indentation',2) // TODO: support tabs
  default_('newline_before_closing_brace',true)
@@ -50,17 +50,6 @@ function print(opts,ast){var formattable,context
  return formattable.compose(opts,formattable,context)}
 
 
-/*
-{type:'Program'
-,elements:[{type:'IfStatement',test:{type:'Identifier',name:'x'}
-           ,alternate:null
-           ,consequent:{type:'ExpressionStatement'
-                       ,expression:{type:'CallExpression'
-                                   ,callee:{type:'Identifier',name:'foo'}
-                                   ,arguments:{type:'Arguments'
-                                              ,elements:null}}}}]}
-*/
-
 // generate_formattable :: Options → AST → Formattable
 function generate_formattable(opts){return function self(ast){var f,cn,str1,str2,str3
  //throw x // line "806" = 41
@@ -77,6 +66,17 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
          ,n_statements:0
          }}
 
+/*
+{type:'Program'
+,elements:[{type:'ExpressionStatement'
+           ,expression:{type:'ArrayExpression'
+                       ,elements:[{type:'Literal',kind:'string'
+                                  ,value:'abc'}
+                                 ,{type:'Literal',kind:'string'
+                                  ,value:"d\'ef"}
+                                 ,{type:'Literal',kind:'string'
+                                  ,value:'"xyz","XYZ"'}]}}]}
+*/
 
  switch(ast.type){
 
@@ -134,6 +134,16 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
     ,min_chars:sum(cn.map(access('min_chars')))
     ,min_width:max(cn.map(access('min_width')))
     ,compose:compose_arguments
+    };break
+
+
+ case 'ArrayExpression':
+  cn=ast.elements.map(self)
+  f={cn:cn
+    // min length is brackets + commas + sum of min length of children
+    ,min_chars:2+(cn.length?cn.length-1:0)+sum(cn.map(access('min_chars')))
+    ,min_width:max(cn.map(access('min_width')))
+    ,compose:compose_array_expression
     };break
 
 
@@ -297,7 +307,7 @@ function compose_arguments(o,f,c){var ctx,strings
 // If the operator * is left-associative, this must be parenthesized.
 // Similarly, the reflection of this tree about the vertical axis would require parentheses if the operator were right-associative.
 // When generating the sub-expression, if the left branch of a left-associative operator has the same precedence and associativity, then no parentheses are required.
-// In the right branch, a left-associative operator of the same precedence would parse incorrectly if not parenthesized, and a right-associative operator at the same level as a left-associative operator without parentheses would be a parse error, so in all cases, the precedence of the right branch must be lower than the precedence of the parent left-associative operator.
+// In the right branch, a left-associative operator of the same precedence would parse incorrectly if not parenthesized, and a right-associative operator at the same level as a left-associative operator without parentheses would be a parse error, so in all cases, the precedence of the right branch must be higher than the precedence of the parent left-associative operator.
 
 
 function compose_binary_expression(op){return function _compose_binary_expression(o,f,c){var ctx,prec,assoc,str,op_str,parenthesize,parens
@@ -310,9 +320,18 @@ function compose_binary_expression(op){return function _compose_binary_expressio
     +op_str
     +f.cn[1].compose(o,f.cn[1],extend({},c,{min_precedence:prec-0.1,associativity:"none"}))
  parenthesize = prec>c.min_precedence || prec==c.min_precedence && assoc!=c.associativity
- parens=o.spaces_around_parens?['( ',' )']:['(',')']
+ parens=o.spaces_inside_parens?['( ',' )']:['(',')']
  return parenthesize?parens[0]+str+parens[1]
                     :str}}
+
+function compose_array_expression(o,f,c){var subs,i,l,ctx
+ subs=[]
+ ctx=extend({},c,{min_precedence:17})
+ for(i=0,l=f.cn.length;i<l;i++){
+  subs[i]=f.cn[i].compose(o,f.cn[i],ctx)}
+ return '['
+      + subs.join(',')
+      + ']'}
 
 function compose_number_literal(n){return function(o,f,c){
  return n.toString(o.number_radix)}}

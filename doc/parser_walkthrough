@@ -1,3 +1,5 @@
+Note: as of the v6 codegen, this walkthrough is obsolete, as it documents the v5 (recursive, non-streaming) parsers.
+
 Line-by-line explanation of a generated parser for the arithmetic grammar.
 
 function p_arith_Expr(str){
