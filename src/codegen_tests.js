@@ -12,7 +12,12 @@ function showTree_scratch(peg,input){var code
  return showTree(showTree_scratch_code(input))}
 
 function explain_scratch(peg,input){
- return explain(peg,{},input)}
+ return explain(peg,{},input,3)}
+
+function xyz(){var x
+ x=trace_test('f')
+ return pp(x)
+      + '\n\n'+log.get()}
 
 function test_drop(peg,input){var opts
  opts={drop:['JSON'],debug:true}

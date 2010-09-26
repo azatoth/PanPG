@@ -149,6 +149,7 @@ function quote_string_double(s){
 (function(){
  function create(){
   function log(o){var x,s=''
+   if(arguments.length>1){o=[].concat(Array.prototype.slice.call(arguments))}
    if(log.timing){x=+new Date;s=x-(log.time||x)+'ms\n';log.time=x}
    log.log.push(s+(typeof o=='string'?o:pp(o)));return o}
   log.log=[]

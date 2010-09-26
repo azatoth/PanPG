@@ -7,7 +7,7 @@ function v6_dfa_table_2(opts,rules){
  return '['+opts.dfa_table.map(v6_dfa_encode(opts)).join(',')+']'}
 
 // wrap the encoded array in a function call that will map revive() over it
-// we cannot use [].map(revive) because IE (at least 7) does not support it
+// we cannot use [].map(revive) because IE (up to at least 7) does not support it
 function map_reviver(array_literal){
  return 'function(a,i,l,b){for(i=0,l=a.length,b=[];i<l;i++)b[i]=a[i]&&revive(a[i]);return b}'
       + '('+array_literal+')'}

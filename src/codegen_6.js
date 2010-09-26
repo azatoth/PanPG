@@ -51,7 +51,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
       ,'emp=0','emps=[]' // emit position and stack
       ]
  if(opts.trace) vars.push('S_map=[\''+opts.S_map.join('\',\'')+'\']')
- ft=v6_flag_test(opts) // ft takes varname, flagname → flag test expression
+ ft=v6_flag_test(opts) // ft ("flag test") takes varname, flagname → flag test expression
 
  dfa_table=v6_dfa_table(opts,rules)('D','s','pos','equiv','ds','dp')+'\n'
 
@@ -131,7 +131,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +  'if(D[S>>>'+opts.flagbits+']){'
   +   'R=D[S>>>'+opts.flagbits+'](ds||0,dp||pos);'
   +   'if(R==undefined){' // need more data from caller
-  +    'if(eof){dp=undefined;R=false}'
+  +    'if(eof){ds=dp=undefined;R=false}'
   +    'else{out(\'ready\');return}'
   +   '}' // end if need more data
   +  '}\n' // end if dfa exists

@@ -1,3 +1,6 @@
+// v6_leaf_dfas generates DFA objects for "leaf" expressions, i.e. simple expressions that we can determine to be regular.
+// It attaches DFA objects to the expr objects, they are then used later to output code that will parse according to that DFA.
+
 function v6_leaf_dfas(opts,rules){var p
  for(p in rules){
   log('v6_leaf_dfas rule: '+p)
@@ -7,12 +10,11 @@ function v6_leaf_dfas(opts,rules){var p
   if(dfa=v6_leaf_dfa(opts,expr))expr.dfa=dfa
   expr.subexprs.map(go)}}
 
+// Currently we only generate DFAs for string literals (2) and character classes (0).
 function v6_leaf_dfa(opts,expr){
  switch(expr.type){
  case 0:
   return v6_dfa_cset(expr.cset)
- case 1:
-  return 
  case 2:
   return v6_dfa_seq(expr.subexprs,{})}}
 
@@ -55,7 +57,7 @@ function v6_dfa_cset(cset,state){var sr,surrogates,bmp,i,l,srps,hi_cset,lo_cset,
   return {type:'transition'
          ,transition:[[cset,{type:'match'}]]}
  surrogates=CSET.fromIntRange(0xD800,0xDFFF)
- // here we take the position that unmatched surrogates simply can never be accepted by a PanPG parser; this is the same as the v5 codegen and the v6 codegen without DFAs.  Other alternatives exist, however, and there are cases where searching for unmatched surrogates specifically is what is desired.
+ // here we take the position that unmatched surrogates simply can never be accepted by a PanPG parser; this is the same as the v5 codegen and the v6 codegen without DFAs.  Other alternatives exist, however, and there are cases where searching for unmatched surrogates specifically is what is desired, so we might need to have some kind of optional behavior in the future.
  bmp=CSET.difference(sr.bmp,surrogates)
  srps=sr.surrogate_range_pairs
  trans=[[bmp,{type:'match'}]]
