@@ -21,8 +21,9 @@ function range ( low, high, step ) {
     if ( !isNaN( low ) && !isNaN( high ) ) {
         inival = low;
         endval = high;
-    } else if ( isNaN( low ) && isNaN( high ) ) {
+    } else if ( typeof low === 'string' && typeof high === 'string' ) {
         chars = true;
+        walker = Math.floor(walker);
         inival = low.charCodeAt( 0 );
         endval = high.charCodeAt( 0 );
     } else {
@@ -71,45 +72,53 @@ module.exports = testCase({
     tearDown: function () {
         // clean up
     },
-	testLiteral: function (test) {
-		for( var i = 0; i <= 9; ++i ){
-			test.equals(js_pp(this.options,String(i)), i+';');
-		}
+    'test format single numbers': function (test) {
+		var r = range( 0, 9 );
+        test.equals(js_pp(this.options,r.join(';')), r.join(';\n')+';');
         test.done();
     },
-	testSingleLetterIdentifier: function (test) {
+	'test all single letter identifier': function (test) {
 		var r = range( 'a', 'z' );
-		for( var i in r ){
-			if( r[i] == 'v' ) {
-				continue;
-			}
-
-			test.equals(js_pp(this.options,r[i]), r[i]+';');
-		}
+        test.equals(js_pp(this.options,r.join(';')), r.join(';\n')+';');
         test.done();
     },	
-	testAddition: function (test) {
-		test.equals(js_pp(this.options,"a+b"), 'a + b;');
+	'test addition': function (test) {
+		var r = range(0,9).concat(range( 'a', 'z' ));
+		test.equals(js_pp(this.options,r.join('+')), r.join(' + ')+';');
         test.done();
 	},
-	testSubtraction: function (test) {
-		test.equals(js_pp(this.options,"a-b"), 'a - b;');
+	'test subtraction': function (test) {
+		var r = range(0,9).concat(range( 'a', 'z' ));
+		test.equals(js_pp(this.options,r.join('-')), r.join(' - ')+';');
         test.done();
 	},
-	testMultiplication: function (test) {
-		test.equals(js_pp(this.options,"a*b"), 'a * b;');
+	'test multiplication': function (test) {
+		var r = range(0,9).concat(range( 'a', 'z' ));
+		test.equals(js_pp(this.options,r.join('*')), r.join(' * ')+';');
         test.done();
 	},
-	testDivision: function (test) {
-		test.equals(js_pp(this.options,"a/b"), 'a / b;');
+	'test division': function (test) {
+		var r = range(0,9).concat(range( 'a', 'z' ));
+		test.equals(js_pp(this.options,r.join('/')), r.join(' / ')+';');
         test.done();
 	},
-	testModulus: function (test) {
-		test.equals(js_pp(this.options,"a%b"), 'a % b;');
+	'test modulus': function (test) {
+		var r = range(0,9).concat(range( 'a', 'z' ));
+		test.equals(js_pp(this.options,r.join('%')), r.join(' % ')+';');
         test.done();
 	},
-	testArtimetics: function (test) {
-		test.equals(js_pp(this.options,"a+b-c*d/e%g"), 'a * b - c + d / e % f;');
+    'test all artimetics (+-*/%)': function (test) {
+        var r1 = range(0,9).concat(range( 'a', 'z' ));
+        var r2 = ['+','-','*','/','%'];
+        var idx1 = idx2 = 0, code = [];
+        while( idx1 < r1.length ) {
+            code.push(r1[idx1]);
+            code.push(r2[idx2]);
+            idx1++;
+            idx2 = (idx2 + 1) % r2.length;
+        }
+        code.pop();
+		test.equals(js_pp(this.options,code.join('')), code.join(' ')+';');
         test.done();
 	}
 });
