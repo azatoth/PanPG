@@ -21,14 +21,8 @@ function map_reviver(array_literal){
 //   a state id, omitted when = current + 1
 function v6_dfa_encode(opts){return function _v6_dfa_encode(dfa){var key,i,l,match={},slots=[],indices=[],index=0,keys=[],equiv_states=[],parents=[],ret=[],equiv_count=0
   // state cache maps state keys onto slots
-  //log(dfa)
   go(dfa)
-  //log(slots)
-  //log(keys)
-  //log({indices:indices})
-  //log({equiv_states:equiv_states})
   go2()
-  //log({ret:ret})
   return v6_stringify(ret)
   function go(state){var i,l,a,cset,substate,equiv_classes,tr_keys,slot,st_key,n,our_index
    // if the state already has been assigned a slot, return it

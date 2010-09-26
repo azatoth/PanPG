@@ -9,11 +9,9 @@ function v6_cset_equiv(opts,rules){var p,cgroup_set,big_arr,all_csets,cset_cache
  // collect all the csets in all_csets, and cache them in cset_cache, keyed by canonical string representation
  cset_id=0
  for(p in rules)go(rules[p])
- //log({cset_cache:cset_cache})
  opts.cset_equiv_class_array=big_arr
  // we fill the big_arr by iterating over each character in each cset
  for(p in cset_cache) populate_big_arr(cset_cache[p])
- //log(v6_rle_enc(concat(big_arr)))
  // we then iterate over the big array and calculate the quotient set and equivalence relation, character by character
  // in the big array, we replace each character's list of csets with the id of its equivalence class
  // in each cached cset object, we store the id of each equivalence class that contributes to that cset
@@ -25,12 +23,10 @@ function v6_cset_equiv(opts,rules){var p,cgroup_set,big_arr,all_csets,cset_cache
  opts.cset_cache=cset_cache
  opts.equiv_classes=equiv_classes
  opts.cset_equiv_class_array=big_arr
- //log(v6_rle_enc(big_arr))
  return rules
  function populate_big_arr(cset){var arr,i,l,subset
   subset=CSET.intersection(CSET.fromIntRange(0,char_count-1),cset.cset)
   arr=CSET.toList(subset)
-  //log({arr:arr})
   for(i=0,l=arr.length;i<l;i++){
    big_arr[arr[i]].push(cset.id)}}
  function get_equiv_class(cset_ids){var key

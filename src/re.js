@@ -113,7 +113,6 @@ function re_dependency(re){var i,l,r
   throw Error('re_dependency: unknown re type: '+re[0])}}
 
 function re_substitute(re,name,value){var i,l
- //log([re,name,value])
  switch(re[0]){
  case 0:
  case 1:

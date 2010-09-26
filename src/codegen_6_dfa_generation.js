@@ -3,7 +3,6 @@
 
 function v6_leaf_dfas(opts,rules){var p
  for(p in rules){
-  //log('v6_leaf_dfas rule: '+p)
   go(rules[p].expr)}
  return rules
  function go(expr){var dfa
@@ -68,13 +67,10 @@ function v6_dfa_cset(cset,state){var sr,surrogates,bmp,i,l,srps,hi_cset,lo_cset,
         ,transition:trans}}
 
 function v6_dfa_seq(seq,state){var d1,d2
- //log('seq '+pp(seq))
  if(!seq.length)return {type:'match'}
  d1=v6_dfa_2(seq[0],state)
  //assert(d1,'d1 from seq[0]: '+pp(seq[0]))
  d2=v6_dfa_seq(seq.slice(1),state)
- //log({seq_d1:d1})
- //log({seq_d2:d2})
  return go(d1,d2)
  function go(d1,d2){
   if(!d1 || !d2) return
@@ -92,12 +88,9 @@ function v6_dfa_transition_map(d,f){var i,l,ret=[],existing
         ,transition:ret}}
 
 function v6_dfa_ordC(exprs,state){var d1,d2,merged
- //log('ordC '+pp(exprs))
  if(!exprs.length)return {type:'fail'}
  d1=v6_dfa_2(exprs[0],state)
  d2=v6_dfa_ordC(exprs.slice(1),state)
- //log({ordc_d1:d1})
- //log({ordc_d2:d2})
  return go(d1,d2)
  function go(d1,d2){
   if(!d1 || !d2)return
@@ -112,14 +105,12 @@ function v6_dfa_ordC_(x){var i,l,cset,t1,t2,ret,res,res2,cache,j
  cache=[[],[]]
  for(i=0,l=x.length;i<l;i++){
   cset=x[i][0];t1=x[i][1];t2=x[i][2]
-  //log([t1&&t1.type,t2&&t2.type])
   if(t1.type=='fail')res=t2; else
   if(t2.type=='fail')res=t1; else
   if(t1.type=='match')res=t1; else
-  if(t2.type=='match'){log('118 return');return} // decline
+  if(t2.type=='match'){return} // decline
   else{ // both are transition states
    res=v6_dfa_ordC_(v6_dfa_merge_transitions(t1,t2))}
-  log({i:i,res:res})
   if(!res)return
   assert(res,'v6_dfa_ordC_ has a value')
   if(res.type=='fail')continue
