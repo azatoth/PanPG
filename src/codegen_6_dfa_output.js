@@ -21,20 +21,20 @@ function map_reviver(array_literal){
 //   a state id, omitted when = current + 1
 function v6_dfa_encode(opts){return function _v6_dfa_encode(dfa){var key,i,l,match={},slots=[],indices=[],index=0,keys=[],equiv_states=[],parents=[],ret=[],equiv_count=0
   // state cache maps state keys onto slots
-  log(dfa)
+  //log(dfa)
   go(dfa)
-  log(slots)
-  log(keys)
-  log({indices:indices})
-  log({equiv_states:equiv_states})
+  //log(slots)
+  //log(keys)
+  //log({indices:indices})
+  //log({equiv_states:equiv_states})
   go2()
-  log({ret:ret})
+  //log({ret:ret})
   return v6_stringify(ret)
   function go(state){var i,l,a,cset,substate,equiv_classes,tr_keys,slot,st_key,n,our_index
    // if the state already has been assigned a slot, return it
    n=parents.indexOf(state)
    slot=slots.indexOf(state)
-   if(n>-1)return log('{'+(n-parents.length)+'}')
+   if(n>-1)return '{'+(n-parents.length)+'}'
    if(slot>-1)return slot
    if(state.type=='match') key='[m]'
    if(state.type=='fail') key='[f]'
@@ -48,9 +48,7 @@ function v6_dfa_encode(opts){return function _v6_dfa_encode(dfa){var key,i,l,mat
      equiv_classes=v6_cset_equiv_lookup(opts)(cset)
      st_key=go(substate)
      tr_keys.push(equiv_classes+'→'+st_key)}
-log({our_index:our_index})
     key='['+tr_keys.join(';')+']'}
-   log({key:key})
    n=keys.indexOf(key)
    if(n>-1){
     equiv_states[slot]=n
@@ -62,7 +60,6 @@ log({our_index:our_index})
    return key}
   function go2(){var trs,i,l,j,l2,a,state,tr,index,target
    for(i=0,l=slots.length;i<l;i++){state=slots[i]
-log({i:i,state:state})
     assert(state.type='transition')
     if(equiv_states[i])continue
     index=indices[i]

@@ -1,6 +1,6 @@
-/* PanPG 0.0.8
+/* PanPG 0.0.9
  * PEG → JavaScript parser generator, with its dependencies.
- * built on Fri, 10 Sep 2010 03:30:17 GMT
+ * built on Sun, 26 Sep 2010 01:34:51 GMT
  * See http://boshi.inimino.org/3box/PanPG/about.html
  * MIT Licensed
  */
@@ -494,7 +494,7 @@ function re_dependency(re){var i,l,r
   throw Error('re_dependency: unknown re type: '+re[0])}}
 
 function re_substitute(re,name,value){var i,l
- log([re,name,value])
+ //log([re,name,value])
  switch(re[0]){
  case 0:
  case 1:
@@ -508,7 +508,7 @@ function re_substitute(re,name,value){var i,l
   re[3]=re_substitute(re[3],name,value)
   return re
  case 5:
-  if(re[1]===name)return log(value)
+  if(re[1]===name)return value
   return re
  case 6:
  case 7:
@@ -626,6 +626,9 @@ function sum(a){
 function product(a){
  return foldl(f,a,1)
  function f(a,b){return a*b}}
+
+// String → Object → a
+function access(prop){return function(o){return o[prop]}}
 
 /* [[name,value]] → Object */
 function objectFromList(a){var o={}
@@ -1116,7 +1119,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
       ,'emp=0','emps=[]' // emit position and stack
       ]
  if(opts.trace) vars.push('S_map=[\''+opts.S_map.join('\',\'')+'\']')
- ft=v6_flag_test(opts) // ft takes varname, flagname → flag test expression
+ ft=v6_flag_test(opts) // ft ("flag test") takes varname, flagname → flag test expression
 
  dfa_table=v6_dfa_table(opts,rules)('D','s','pos','equiv','ds','dp')+'\n'
 
@@ -1196,7 +1199,7 @@ function codegen_v6(opts,named_res,_x){var vars,rules,function_m_x,mainloop,ft,f
   +  'if(D[S>>>'+opts.flagbits+']){'
   +   'R=D[S>>>'+opts.flagbits+'](ds||0,dp||pos);'
   +   'if(R==undefined){' // need more data from caller
-  +    'if(eof){dp=undefined;R=false}'
+  +    'if(eof){ds=dp=undefined;R=false}'
   +    'else{out(\'ready\');return}'
   +   '}' // end if need more data
   +  '}\n' // end if dfa exists
@@ -1817,21 +1820,23 @@ function v6_tree_force_attr(n,stack){return function _v6_tree_force_attr(x){
   function err(s){
    return x._attrs.errors[n]=s+' '+stack.join(', ')}}}
 
+// v6_leaf_dfas generates DFA objects for "leaf" expressions, i.e. simple expressions that we can determine to be regular.
+// It attaches DFA objects to the expr objects, they are then used later to output code that will parse according to that DFA.
+
 function v6_leaf_dfas(opts,rules){var p
  for(p in rules){
-  log('v6_leaf_dfas rule: '+p)
+  //log('v6_leaf_dfas rule: '+p)
   go(rules[p].expr)}
  return rules
  function go(expr){var dfa
   if(dfa=v6_leaf_dfa(opts,expr))expr.dfa=dfa
   expr.subexprs.map(go)}}
 
+// Currently we only generate DFAs for string literals (2) and character classes (0).
 function v6_leaf_dfa(opts,expr){
  switch(expr.type){
  case 0:
   return v6_dfa_cset(expr.cset)
- case 1:
-  return 
  case 2:
   return v6_dfa_seq(expr.subexprs,{})}}
 
@@ -1874,7 +1879,7 @@ function v6_dfa_cset(cset,state){var sr,surrogates,bmp,i,l,srps,hi_cset,lo_cset,
   return {type:'transition'
          ,transition:[[cset,{type:'match'}]]}
  surrogates=CSET.fromIntRange(0xD800,0xDFFF)
- // here we take the position that unmatched surrogates simply can never be accepted by a PanPG parser; this is the same as the v5 codegen and the v6 codegen without DFAs.  Other alternatives exist, however, and there are cases where searching for unmatched surrogates specifically is what is desired.
+ // here we take the position that unmatched surrogates simply can never be accepted by a PanPG parser; this is the same as the v5 codegen and the v6 codegen without DFAs.  Other alternatives exist, however, and there are cases where searching for unmatched surrogates specifically is what is desired, so we might need to have some kind of optional behavior in the future.
  bmp=CSET.difference(sr.bmp,surrogates)
  srps=sr.surrogate_range_pairs
  trans=[[bmp,{type:'match'}]]
@@ -1886,14 +1891,14 @@ function v6_dfa_cset(cset,state){var sr,surrogates,bmp,i,l,srps,hi_cset,lo_cset,
         ,transition:trans}}
 
 function v6_dfa_seq(seq,state){var d1,d2
- log('seq '+pp(seq))
+ //log('seq '+pp(seq))
  if(!seq.length)return {type:'match'}
  d1=v6_dfa_2(seq[0],state)
  //assert(d1,'d1 from seq[0]: '+pp(seq[0]))
  d2=v6_dfa_seq(seq.slice(1),state)
- log({seq_d1:d1})
- log({seq_d2:d2})
- return log(go(d1,d2))
+ //log({seq_d1:d1})
+ //log({seq_d2:d2})
+ return go(d1,d2)
  function go(d1,d2){
   if(!d1 || !d2) return
   if(d1.type=='fail')return d1
@@ -1910,13 +1915,13 @@ function v6_dfa_transition_map(d,f){var i,l,ret=[],existing
         ,transition:ret}}
 
 function v6_dfa_ordC(exprs,state){var d1,d2,merged
- log('ordC '+pp(exprs))
+ //log('ordC '+pp(exprs))
  if(!exprs.length)return {type:'fail'}
  d1=v6_dfa_2(exprs[0],state)
  d2=v6_dfa_ordC(exprs.slice(1),state)
- log({ordc_d1:d1})
- log({ordc_d2:d2})
- return log(go(d1,d2))
+ //log({ordc_d1:d1})
+ //log({ordc_d2:d2})
+ return go(d1,d2)
  function go(d1,d2){
   if(!d1 || !d2)return
   if(d1.type=='fail')return d2
@@ -1930,7 +1935,7 @@ function v6_dfa_ordC_(x){var i,l,cset,t1,t2,ret,res,res2,cache,j
  cache=[[],[]]
  for(i=0,l=x.length;i<l;i++){
   cset=x[i][0];t1=x[i][1];t2=x[i][2]
-  log([t1&&t1.type,t2&&t2.type])
+  //log([t1&&t1.type,t2&&t2.type])
   if(t1.type=='fail')res=t2; else
   if(t2.type=='fail')res=t1; else
   if(t1.type=='match')res=t1; else
@@ -1972,7 +1977,7 @@ function v6_dfa_merge_transitions(d1,d2){var i,l1,l2,j1s,j2s,t1,t2,fail,low1,low
    ret.push([cset,t1_next,t2_next])}
   prev=low
   if(low1==Infinity && low2==Infinity)break}
- return log('returning '+ret),ret
+ return ret
  // find the lowest unseen values in all csets in a transition
  // these represent flips between on and off, initially off
  // there may be more than one cset that flips on the same code point, so we use an array to store the i indices of the low values
@@ -2025,7 +2030,7 @@ function v6_dfa_table_2(opts,rules){
  return '['+opts.dfa_table.map(v6_dfa_encode(opts)).join(',')+']'}
 
 // wrap the encoded array in a function call that will map revive() over it
-// we cannot use [].map(revive) because IE (at least 7) does not support it
+// we cannot use [].map(revive) because IE (up to at least 7) does not support it
 function map_reviver(array_literal){
  return 'function(a,i,l,b){for(i=0,l=a.length,b=[];i<l;i++)b[i]=a[i]&&revive(a[i]);return b}'
       + '('+array_literal+')'}
@@ -2039,20 +2044,20 @@ function map_reviver(array_literal){
 //   a state id, omitted when = current + 1
 function v6_dfa_encode(opts){return function _v6_dfa_encode(dfa){var key,i,l,match={},slots=[],indices=[],index=0,keys=[],equiv_states=[],parents=[],ret=[],equiv_count=0
   // state cache maps state keys onto slots
-  log(dfa)
+  //log(dfa)
   go(dfa)
-  log(slots)
-  log(keys)
-  log({indices:indices})
-  log({equiv_states:equiv_states})
+  //log(slots)
+  //log(keys)
+  //log({indices:indices})
+  //log({equiv_states:equiv_states})
   go2()
-  log({ret:ret})
+  //log({ret:ret})
   return v6_stringify(ret)
   function go(state){var i,l,a,cset,substate,equiv_classes,tr_keys,slot,st_key,n,our_index
    // if the state already has been assigned a slot, return it
    n=parents.indexOf(state)
    slot=slots.indexOf(state)
-   if(n>-1)return log('{'+(n-parents.length)+'}')
+   if(n>-1)return '{'+(n-parents.length)+'}'
    if(slot>-1)return slot
    if(state.type=='match') key='[m]'
    if(state.type=='fail') key='[f]'
@@ -2066,9 +2071,7 @@ function v6_dfa_encode(opts){return function _v6_dfa_encode(dfa){var key,i,l,mat
      equiv_classes=v6_cset_equiv_lookup(opts)(cset)
      st_key=go(substate)
      tr_keys.push(equiv_classes+'→'+st_key)}
-log({our_index:our_index})
     key='['+tr_keys.join(';')+']'}
-   log({key:key})
    n=keys.indexOf(key)
    if(n>-1){
     equiv_states[slot]=n
@@ -2080,7 +2083,6 @@ log({our_index:our_index})
    return key}
   function go2(){var trs,i,l,j,l2,a,state,tr,index,target
    for(i=0,l=slots.length;i<l;i++){state=slots[i]
-log({i:i,state:state})
     assert(state.type='transition')
     if(equiv_states[i])continue
     index=indices[i]

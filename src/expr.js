@@ -1,3 +1,5 @@
+// N.B. not used yet, but will replace re.js and the other expr type used in the v6_codegen.
+
 /* The expr type represents parser expressions.
  * 
  * This is a superset of regular expressions.
