@@ -127,7 +127,7 @@ build/js_ast.js: $(JS_AST_SOURCES)
 
 build/js_pp.js: $(JS_PP_SOURCES)
 	$(call build_generic,"Building $@",$@,js_pp,"Javascript PP",,format,$(JS_PP_SOURCES))
-	sed -i "s/js_ast(s)/require('js_ast').create_ast(s)/" $@
+	@sed -i "s/js_ast(s)/require('js_ast').create_ast(s)/" $@
 
 clean:
 	rm -f $(BUILT_SOURCES) $(PANPG) $(PANPG_MIN) $(PANPG_UTIL_MIN) $(PANPG_UTIL) build/js_ast.js build/js_pp.js build/parseES5.js build/parseJS.js
