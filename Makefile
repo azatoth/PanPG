@@ -1,4 +1,6 @@
 VERSION = 0.0.9
+NODEJS = $(if $(shell test -f /usr/bin/nodejs && echo "true"),nodejs,node)
+
 
 ifeq ($(V), 1)
 define doit
@@ -51,7 +53,7 @@ GEN_BUILD = build/build_generic.js
 
 # $(call build_generic, message, output, package name, description, requires, exports, includes)
 define build_generic
-	$(call doit, $(1), nodejs $(GEN_BUILD) \
+	$(call doit, $(1), $(NODEJS) $(GEN_BUILD) \
 		--output $(2) \
 		--version $(VERSION) \
 		--package $(3) \
@@ -63,7 +65,7 @@ endef
 
 # $(call build_parser, message, input, output, patches, commonjs?, fname, startrule)
 define build_parser
-	$(call doit, $(1), nodejs $(GEN_PARSER) \
+	$(call doit, $(1), $(NODEJS) $(GEN_PARSER) \
 		--input $(2) \
 		--output $(3) \
 		$(foreach i, $(4), --patch $(i)) \
@@ -99,7 +101,7 @@ build/cset.js: src/cset.js \
 	src/UNIDATA/UnicodeData.txt \
 	build/build_cset.js \
 	build/cset_unicode_properties.js
-	$(call doit, "Building $@", nodejs build/build_cset.js $@, $@)
+	$(call doit, "Building $@", $(NODEJS) build/build_cset.js $@, $@)
 
 $(PANPG): $(SOURCES) $(BUILT_SOURCES)
 	$(call build_generic,"Bootstrapping (not yet actually)", $@, PanPG, "PEG → JavaScript parser generator$(,) with its dependencies" ,,generateParser explain,$^)
