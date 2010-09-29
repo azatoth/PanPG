@@ -637,7 +637,7 @@ function js_ast(s){var dict,pending_comment
  ,StringLiteral:function(m,cn){
     return {type:"Literal"
            ,kind:"string"
-           ,value:m.text().slice(1,-1)}}
+           ,value:eval(m.text())}} // XXX cheating again
 
  ,RegularExpressionLiteral:function(m,cn){
     return {type:"Literal"

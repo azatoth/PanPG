@@ -26,12 +26,15 @@ function format(opts,s){var ast
  default_('control_statement_empty','empty-statement') // 'empty-statement', 'empty-braces' [3]
  default_('string_linebreak_style','backslash-n') // 'backslash-n', 'line-continuation', 'plus-operator'
  default_('string_charset','utf-8') // 'utf-8', 'ascii'
+ default_('string_quote_style','shorter-or-double') // 'single', 'double', 'shorter-or-single', 'shorter-or-double' [4]
+ default_('homogenize_arrays',true)
 
  // [1] 'preserve' preserves braces if they are in the input, leaving "if(x)y" without braces and "if(x){y}" with braces.
  //     'braces' always uses a block statement, even with only one statement inside.
  //     'one-statement-only' will drop braces whenever there is only one statement in the body of the if statement.
  // [2] The "control statements" include the if statement and the iteration statements: for, for-in, while, do-while.
  // [3] If a control statement has an empty body, it can be written as an empty statement e.g. "while(x());", or as an empty block e.g. "while(x()){}".
+ // [4] 'single' and 'double' always use the specied kind of quote, escaping string content as necessary, while 'shorter-or-' variants prefer one kind of quote but use the other when shorter.
 
  function default_(k,v){if(opts[k]===undefined)opts[k]=v}
 
@@ -160,8 +163,8 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
    str2=quote_string_double(ast.value)
    f={min_chars:min([str1.length,str2.length])
      ,min_width:ast.value.length?3:2 // strings can be broken across lines, but will need at least an opening quote, one character and a line continuation = 3 chars per line
-     ,string_quote_pref:str1.length<str2.length ?"'" :str2.length<str1.length ?'"' :undefined
-     ,string_quote_penalty:Math.abs(str1.length-str2.length)
+     ,quote_char_preference:str1.length<str2.length ?"'" :str2.length<str1.length ?'"' :undefined
+     ,quote_char_penalty:Math.abs(str1.length-str2.length)
      ,compose:compose_string_literal(ast.value)
      };break
   case 'regex':
@@ -324,17 +327,51 @@ function compose_binary_expression(op){return function _compose_binary_expressio
  return parenthesize?parens[0]+str+parens[1]
                     :str}}
 
-function compose_array_expression(o,f,c){var subs,i,l,ctx
+function compose_array_expression(o,f,c){var subs,i,l,ctx,dbl_penalty,sgl_penalty,quote_preference,let_strings_choose
  subs=[]
  ctx=extend({},c,{min_precedence:17})
- for(i=0,l=f.cn.length;i<l;i++){
+ l=f.cn.length
+ dbl_penalty=sgl_penalty=0
+ switch(o.string_quote_style){
+  case 'double': ctx.string_quote_char='"';break
+  case 'single': ctx.string_quote_char="'";break
+  case 'shorter-or-double': quote_preference='"';break
+  case 'shorter-or-single': quote_preference="'";break
+  default: throw new Error('bad option string_quote_style: '+o.string_quote_style)}
+ if(o.homogenize_arrays && !ctx.string_quote_char){
+  // testing some ideas by homogenizing string quote characters in arrays, see doc/overview
+  for(i=0;i<l;i++){
+   if(f.cn[i].quote_char_preference=='"') sgl_penalty+=f.cn[i].quote_char_penalty
+   if(f.cn[i].quote_char_preference=="'") dbl_penalty+=f.cn[i].quote_char_penalty}
+  ctx.string_quote_char = dbl_penalty > sgl_penalty ? "'"
+                        : sgl_penalty < dbl_penalty ? '"'
+                        : quote_preference}
+ if(!ctx.string_quote_char){
+  let_strings_choose=true}
+ for(i=0;i<l;i++){
+  if(let_strings_choose)ctx.string_quote_char=f.cn[i].quote_char_preference||quote_preference
   subs[i]=f.cn[i].compose(o,f.cn[i],ctx)}
  return '['
       + subs.join(',')
       + ']'}
 
-function compose_number_literal(n){return function(o,f,c){
- return n.toString(o.number_radix)}}
+function compose_number_literal(n){return function(o,f,c){var str,ret,sign
+ sign=n<0?'-':''
+ n=Math.abs(n)
+ str=n.toString(o.number_radix)
+ switch(o.number_radix){
+  case  8: ret='0'+str;break
+  case 10: ret=(str.slice(-6)=='000000') ? exp_notation() : str;break
+  case 16: ret='0x'+str;break
+  default: throw new Error('unhandled number radix: '+o.number_radix)}
+ ret=sign+ret
+ assert(+ret == n,"number formatting preserves value")
+ return ret}}
 
-function compose_string_literal(s){return function(o,f,c){
- }}
+function assert(x,msg){if(!x)throw new Error('assertion failed: '+msg)}
+
+function compose_string_literal(s){return function(o,f,c){var quoter,preferred_quoter
+ assert(c.string_quote_char)
+ if(c.string_quote_char=='"') quoter=quote_string_double
+ if(c.string_quote_char=="'") quoter=quote_string_single
+ return quoter(s)}}
