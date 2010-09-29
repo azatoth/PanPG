@@ -139,6 +139,21 @@ module.exports = testCase({
         test.equals(js_pp(this.options,'3 - 2 - 1'), '3 - 2 - 1;');
         test.equals(js_pp(this.options,'if(x){foo()}'), 'if(x){foo()};');
         test.done();
-    },       
+    },
+    'test number format': function (test) {
+        this.options.number_radix = 'shortest';
+        test.equals(js_pp(this.options,'10'), '10;');
+        test.equals(js_pp(this.options,'255'), '255;');
+        test.equals(js_pp(this.options,'256'), '256;');
+        test.equals(js_pp(this.options,'1000'), '1e3;');
+        test.equals(js_pp(this.options,'1001'), '1001;');
+        test.equals(js_pp(this.options,'10000'), '1e4;');
+        this.options.number_radix = 16;
+        test.equals(js_pp(this.options,'10'), '0xa;');
+        test.equals(js_pp(this.options,'255'), '0xff;');
+        test.equals(js_pp(this.options,'256'), '0x100;');
+        test.equals(js_pp(this.options,'1024'), '0x400;');
+        test.done();
+    },    
 });
 
