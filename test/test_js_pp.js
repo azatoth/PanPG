@@ -121,6 +121,20 @@ module.exports = testCase({
 		test.equals(js_pp(this.options,code.join('')), code.join(' ')+';');
         test.done();
 	},
+    'test string': function (test) {
+        test.equals(js_pp(this.options,'""'), '"";');
+        test.equals(js_pp(this.options,'"\'"'), '"\'";');
+        test.equals(js_pp(this.options,'"\\""'), "'\"';");
+        test.equals(js_pp(this.options,'"\\"\\""'), "'\"\"';");
+        test.equals(js_pp(this.options,'"\\"\\"\\""'), "'\"\"\"';");
+        test.equals(js_pp(this.options,'"\\"\\"\\"\\""'), "'\"\"\"\"';");
+        test.equals(js_pp(this.options,'"\\"\'\\"\'\\"\'\\""'), "'\"\\'\"\\'\"\\'\"';");
+        test.equals(js_pp(this.options,'"\\"\'\\"\'\\"\'\\"\'"'), '"\\"\'\\"\'\\"\'\\"\'";');
+        this.options.string_quote_style = 'double';
+        test.equals(js_pp(this.options,"'\"\"\"\"'"), '"\\"\\"\\"\\"";');
+
+        test.done();
+	},     
     'test array': function (test) {
         test.equals(js_pp(this.options,'[]'), '[];');
         test.equals(js_pp(this.options,'[a]'), '[a];');
@@ -134,6 +148,7 @@ module.exports = testCase({
     'test "intresting cases"': function (test) {
         test.equals(js_pp(this.options,'3 * (1 + 2)'), '3 * (1 + 2);');
         test.equals(js_pp(this.options,'if(x) foo();'), 'if (x) foo();');
+        this.options.string_quote_style = 'single';
         test.equals(js_pp(this.options,"['abc','d\\'ef','\"xyz\",\"XYZ\"']"), "['abc','d\\'ef','\"xyz\",\"XYZ\"'];");
         test.equals(js_pp(this.options,'if(x) moderately_long_sub_expression(argument,argument_2)'), 'if (x) moderately_long_sub_expression(argument, argument_2);');
         test.equals(js_pp(this.options,'3 - 2 - 1'), '3 - 2 - 1;');
