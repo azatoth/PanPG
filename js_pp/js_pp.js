@@ -2,7 +2,6 @@
 // 
 // Handle the other 90% of AST node types.
 // correct string quoting (in util.js)
-// the compose_* functions should probably be split up after all, into context_map and compose functions.
 // The compose functions Stringⁿ → String will then be extension points; the caller can provide their own for any node types.
 
 // format :: Options × String → String
@@ -16,7 +15,8 @@ function format(opts,s){var ast
  default_('space_after_comma',true)
  default_('space_around_operators',true) // TODO: add option to show precedence, e.g: 'x = a*b + b*c' but 'x=a+b;'
  default_('space_inside_parens',false) // where parens are used for grouping (not as syntax in control structures)
- default_('number_radix',10) // 8, 10, 16, 'shortest'
+ default_('number_radix_preference',10) // 8, 10, 16, 'shortest'
+ default_('number_use_exponential_notation','never') // 'never', 'when-shorter', ...
  default_('object_literal_comma_first',false)
  default_('blank_before_function',true)
  default_('space_inside_if_test_parens',false) // 'if ( x )' or 'if (x)'
@@ -34,7 +34,7 @@ function format(opts,s){var ast
  //     'one-statement-only' will drop braces whenever there is only one statement in the body of the if statement.
  // [2] The "control statements" include the if statement and the iteration statements: for, for-in, while, do-while.
  // [3] If a control statement has an empty body, it can be written as an empty statement e.g. "while(x());", or as an empty block e.g. "while(x()){}".
- // [4] 'single' and 'double' always use the specied kind of quote, escaping string content as necessary, while 'shorter-or-' variants prefer one kind of quote but use the other when shorter.
+ // [4] 'single' and 'double' always use the specied kind of quote, escaping string content as necessary, while 'shorter-or-' variants prefer one kind of quote but use the other if it makes the escaped string literal shorter (i.e. when the string value itself contains quotation marks).
 
  function default_(k,v){if(opts[k]===undefined)opts[k]=v}
 
@@ -47,16 +47,24 @@ function format(opts,s){var ast
 
 
 // print :: Options × AST → String
-function print(opts,ast){var formattable,context
- formattable=generate_formattable(opts)(ast)
- context={min_precedence:0,indentation:''}
- return formattable.compose(opts,formattable,context)}
+function print(opts,ast){
+ return go(create_initial_context(opts),generate_formattable(opts)(ast))
+ // go :: Context × Formattable → String
+ function go(ctx,f){var sub_contexts,sub_strings,i,l
+   sub_strings=[]
+  if(f.cn && f.cn.length){
+   sub_contexts=f.generate_sub_contexts(f,ctx)
+   for(i=0,l=f.cn.length;i<l;i++) sub_strings[i]=go(sub_contexts[i],f.cn[i])}
+  return f.compose(ctx,sub_strings)}}
 
 
 // generate_formattable :: Options → AST → Formattable
 function generate_formattable(opts){return function self(ast){var f,cn,str1,str2,str3
- //throw x // line "806" = 41
- //log(ast)
+
+ // `f` is the formattable we are constructing and will return
+ // `cn` or "children" is the child formattable objects, constructed by mapping
+ //      `self` (this function) over the AST child nodes (according to the node 
+ //      type, handled below)
 
  // Some AST nodes on which we recurse can contain some null child elements, 
  // which we handle by returning a formattable that encodes the empty string.
@@ -69,122 +77,99 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
          ,n_statements:0
          }}
 
-/*
-{type:'Program'
-,elements:[{type:'ExpressionStatement'
-           ,expression:{type:'ArrayExpression'
-                       ,elements:[{type:'Literal',kind:'string'
-                                  ,value:'abc'}
-                                 ,{type:'Literal',kind:'string'
-                                  ,value:"d\'ef"}
-                                 ,{type:'Literal',kind:'string'
-                                  ,value:'"xyz","XYZ"'}]}}]}
-*/
+
+ //if(!ast.type in generate_sub_contexts)throw new Error('AST node type '+ast.type+' generate_sub_contexts not implemented')
+ //if(!ast.type in compose)throw new Error('AST node type '+ast.type+' compose not implemented')
+
+
+ f={compose:compose[ast.type]
+   ,generate_sub_contexts:generate_sub_contexts[ast.type]
+   }
+
 
  switch(ast.type){
 
-
  case 'Program':
-  cn=ast.elements.map(self)
-  f={cn:cn
-    ,compose:compose_program_elements
-    ,min_chars:sum(cn.map(access('min_chars')))
-    ,n_statements:sum(cn.map(access('n_statements')))
-    };break
-
+  cn=ast.elements.map(self);break
 
  case 'ExpressionStatement':
-  cn=[self(ast.expression)]
-  f={cn:cn
-    ,min_chars:cn[0].min_chars
-    ,min_width:cn[0].min_width
-    ,n_statements:1
-    ,compose:compose_expression_statement
-    };break
-
+  cn=[self(ast.expression)];break
 
  case 'IfStatement':
   cn=[self(ast.test),self(ast.consequent),self(ast.alternate)]
-  f={cn:cn
-    ,min_chars:sum(cn.map(access('min_chars')))
-    ,min_width:max(cn.map(access('min_width')))
-    ,n_statements:1+sum(cn.slice(1).map(access('n_statements')))
-    ,compose:compose_if_statement
-    };break
-
+  f.n_statements=1+sum(cn.slice(1).map(access('n_statements')));break
 
  case 'BinaryExpression':
   cn=[self(ast.left),self(ast.right)]
-  f={cn:cn
-    ,min_chars:sum(cn.map(access('min_chars')))
-    ,min_width:max(cn.map(access('min_width')))
-    ,compose:compose_binary_expression(ast.operator)
-    };break
-
+  // The compose function for binary operators handles all the binary operators, so it needs 
+  // to be specialized with the actual operator and it's precedence and associativity.
+  // All ECMAScript binary operators happen to be left-associative, otherwise we'd have a 
+  // binary_op_assoc table for these as well.
+  f.assoc='left'
+  f.prec=binary_op_prec[ast.operator]
+  f.compose=f.compose(ast.operator,f.prec,f.assoc);break
 
  case 'CallExpression':
-  cn=[self(ast.callee),self(ast.arguments)]
-  f={cn:cn
-    ,min_chars:sum(cn.map(access('min_chars')))
-    ,min_width:max(cn.map(access('min_width')))
-    ,compose:compose_call_expression
-    };break
-
+  cn=[self(ast.callee),self(ast.arguments)];break
 
  case 'Arguments':
-  cn=(ast.elements||[]).map(self)
-  f={cn:cn
-    ,min_chars:sum(cn.map(access('min_chars')))
-    ,min_width:max(cn.map(access('min_width')))
-    ,compose:compose_arguments
-    };break
-
+  cn=(ast.elements||[]).map(self);break
 
  case 'ArrayExpression':
   cn=ast.elements.map(self)
-  f={cn:cn
-    // min length is brackets + commas + sum of min length of children
-    ,min_chars:2+(cn.length?cn.length-1:0)+sum(cn.map(access('min_chars')))
-    ,min_width:max(cn.map(access('min_width')))
-    ,compose:compose_array_expression
-    };break
-
+  // min length is brackets + commas + sum of min length of children
+  f.min_chars=2+(cn.length?cn.length-1:0)+sum(cn.map(access('min_chars')));break
 
  case 'Literal':
+  f.compose=f.compose(ast.kind,ast.value)
   switch(ast.kind){
   case 'number':
    str1=String(ast.value)
-   f={min_chars:str1.length
-     ,min_width:str1.length
-     ,compose:compose_number_literal(ast.value)
-     };break
+   f.min_chars=str1.length
+   f.min_width=str1.length
+   break
   case 'string':
    str1=quote_string_single(ast.value)
    str2=quote_string_double(ast.value)
-   f={min_chars:min([str1.length,str2.length])
-     ,min_width:ast.value.length?3:2 // strings can be broken across lines, but will need at least an opening quote, one character and a line continuation = 3 chars per line
-     ,quote_char_preference:str1.length<str2.length ?"'" :str2.length<str1.length ?'"' :undefined
-     ,quote_char_penalty:Math.abs(str1.length-str2.length)
-     ,compose:compose_string_literal(ast.value)
-     };break
+   f.min_chars=min([str1.length,str2.length])
+   f.min_width=ast.value.length?3:2 // strings can be broken across lines, but need at least an opening quote, one character and a line continuation = 3 chars per line
+   f.quote_char_preference=str1.length<str2.length ?'single' :str2.length<str1.length ?'double' :undefined
+   f.quote_char_penalty=Math.abs(str1.length-str2.length)
+   f.single_quoted=str1 // XXX these aren't used anywhere currently
+   f.double_quoted=str2
+   break
   case 'regex':
   default:
-  throw new Error('unhandled literal type: '+ast.kind)}
+   throw new Error('unhandled literal type: '+ast.kind)}
   break
 
-
  case 'Identifier':
-  f={min_chars:ast.name.length
-    ,min_width:ast.name.length
-    ,compose:function(){return ast.name}
-    };break
-
+  f.min_chars=ast.name.length
+  f.min_width=ast.name.length
+  f.compose=function(){return ast.name};break
 
  default:
   throw new Error('unhandled AST node type '+ast.type)}
 
 
- return f}}
+ if(cn && f.min_chars==undefined) f.min_chars=sum(cn.map(access('min_chars')))
+ if(cn && f.min_width==undefined) f.min_width=max(cn.map(access('min_width')))
+
+ if(f.n_statements==undefined){
+  f.n_statements=cn?sum(cn.map(access('n_statements')))
+                   :0
+  if(isStatement(ast))f.n_statements++}
+
+ f.cn=cn
+
+ assert(typeof f.compose=='function','formattable compose')
+ assert(typeof f.n_statements=='number','formattable n_statements')
+ /* ... */
+
+ return f
+
+ // copied from js_ast.js
+ function isStatement(x){return x&&x.type&&x.type.slice(-9)=="Statement"}}}
 
 // JavaScript operator precedence:
 
@@ -235,143 +220,4 @@ var binary_op_prec=
 ,'||':15
 }
 
-// compose_* :: (Options, Formattable, Context) → String
-function compose_program_elements(o,f,c){var i,l,ctx,strs=[],str,line_sep
- ctx=extend({},c)
- ctx.min_precedence=20
- for(i=0,l=f.cn.length;i<l;i++){
-  if(str=f.cn[i].compose(o,f.cn[i],ctx))strs.push(str)}
- line_sep='\n'+c.indentation
- if(o.semicolons=='all'){
-  return strs.map(function(s){return s+';'}).join(line_sep)}
- throw new Error('unimplemented o.semicolon option: '+o.semicolons)}
-
-
-// f.cn = [test, consequent, alternate]
-function compose_if_statement(o,f,c){var ctx,test,conseq,if_branch,alt,else_branch,s1,s2,s3,s4,s5
- ctx=extend({},c)
- ctx.min_precedence=18.5
- test=f.cn[0].compose(o,f.cn[0],ctx)
- ctx.min_precedence=20
- conseq=f.cn[1].compose(o,f.cn[1],ctx)
- if(f.cn[2]){
-  alt=f.cn[2].compose(o,f.cn[2],ctx)
-  else_branch=compose_control_statement(o,"else",f.cn[2],c)}
- s1=o.space_before_if_test?'if ':'if'
- s2=o.space_inside_if_test_parens?'( ':'('
- s3=o.space_inside_if_test_parens?' )':')'
- if_branch=compose_control_statement(o,s1+s2+test+s3,f.cn[1],c)
- return if_branch
-      + (alt ? else_branch : '')
- }
-
-function compose_control_statement(o,control,statement,c){var ctx,s1,is_block
- ctx=extend({},c)
- ctx.min_precedence=20
- s1=statement.compose(o,statement,ctx)
- is_block=statement.type=="Block"
- return control
-      + (is_block ? '' : ' ')
-      + s1
- }
-
-
-function compose_expression_statement(o,f,c){
- //log(f)
- return f.cn[0].compose(o,f.cn[0],extend({},c,{min_precedence:18}))}
-
-
-function compose_call_expression(o,f,c){var ctx,s_callee,s_args
- ctx=extend({},c)
- ctx.min_precedence=2
- s_callee=f.cn[0].compose(o,f.cn[0],ctx)
- s_args=f.cn[1].compose(o,f.cn[1],c)
- return s_callee+s_args} // TODO: add options for whitespace between callee and arguments
-
-
-function compose_arguments(o,f,c){var ctx,strings
- ctx=extend({},c)
- ctx.min_precedence=17
- strings=f.cn.map(function(arg){return arg.compose(o,arg,c)})
- return '(' // TODO: options for whitespace here
-      + strings.join(o.space_after_comma?', ':',')
-      + ')'}
-
-
-// associativity:
-//
-//       *
-//      / \
-//     b   *
-//        / \
-//       d   e
-// 
-// The tree shown is right-associated.
-// If the operator * is left-associative, this must be parenthesized.
-// Similarly, the reflection of this tree about the vertical axis would require parentheses if the operator were right-associative.
-// When generating the sub-expression, if the left branch of a left-associative operator has the same precedence and associativity, then no parentheses are required.
-// In the right branch, a left-associative operator of the same precedence would parse incorrectly if not parenthesized, and a right-associative operator at the same level as a left-associative operator without parentheses would be a parse error, so in all cases, the precedence of the right branch must be higher than the precedence of the parent left-associative operator.
-
-
-function compose_binary_expression(op){return function _compose_binary_expression(o,f,c){var ctx,prec,assoc,str,op_str,parenthesize,parens
- prec=binary_op_prec[op]
- // it so happens that all the ES5 binary operators are left-associative
- assoc="left"
- ctx=extend({},c,{min_precedence:prec,associativity:"left"})
- op_str=o.space_around_operators?' '+op+' ':op
- str=f.cn[0].compose(o,f.cn[0],extend({},c,{min_precedence:prec,associativity:"left"}))
-    +op_str
-    +f.cn[1].compose(o,f.cn[1],extend({},c,{min_precedence:prec-0.1,associativity:"none"}))
- parenthesize = prec>c.min_precedence || prec==c.min_precedence && assoc!=c.associativity
- parens=o.spaces_inside_parens?['( ',' )']:['(',')']
- return parenthesize?parens[0]+str+parens[1]
-                    :str}}
-
-function compose_array_expression(o,f,c){var subs,i,l,ctx,dbl_penalty,sgl_penalty,quote_preference,let_strings_choose
- subs=[]
- ctx=extend({},c,{min_precedence:17})
- l=f.cn.length
- dbl_penalty=sgl_penalty=0
- switch(o.string_quote_style){
-  case 'double': ctx.string_quote_char='"';break
-  case 'single': ctx.string_quote_char="'";break
-  case 'shorter-or-double': quote_preference='"';break
-  case 'shorter-or-single': quote_preference="'";break
-  default: throw new Error('bad option string_quote_style: '+o.string_quote_style)}
- if(o.homogenize_arrays && !ctx.string_quote_char){
-  // testing some ideas by homogenizing string quote characters in arrays, see doc/overview
-  for(i=0;i<l;i++){
-   if(f.cn[i].quote_char_preference=='"') sgl_penalty+=f.cn[i].quote_char_penalty
-   if(f.cn[i].quote_char_preference=="'") dbl_penalty+=f.cn[i].quote_char_penalty}
-  ctx.string_quote_char = dbl_penalty > sgl_penalty ? "'"
-                        : sgl_penalty < dbl_penalty ? '"'
-                        : quote_preference}
- if(!ctx.string_quote_char){
-  let_strings_choose=true}
- for(i=0;i<l;i++){
-  if(let_strings_choose)ctx.string_quote_char=f.cn[i].quote_char_preference||quote_preference
-  subs[i]=f.cn[i].compose(o,f.cn[i],ctx)}
- return '['
-      + subs.join(',')
-      + ']'}
-
-function compose_number_literal(n){return function(o,f,c){var str,ret,sign
- sign=n<0?'-':''
- n=Math.abs(n)
- str=n.toString(o.number_radix)
- switch(o.number_radix){
-  case  8: ret='0'+str;break
-  case 10: ret=(str.slice(-6)=='000000') ? exp_notation() : str;break
-  case 16: ret='0x'+str;break
-  default: throw new Error('unhandled number radix: '+o.number_radix)}
- ret=sign+ret
- assert(+ret == n,"number formatting preserves value")
- return ret}}
-
 function assert(x,msg){if(!x)throw new Error('assertion failed: '+msg)}
-
-function compose_string_literal(s){return function(o,f,c){var quoter,preferred_quoter
- assert(c.string_quote_char)
- if(c.string_quote_char=='"') quoter=quote_string_double
- if(c.string_quote_char=="'") quoter=quote_string_single
- return quoter(s)}}

@@ -3,7 +3,7 @@
 // - no 'loc' property on nodes (may add separate start, end integers later)
 // - Function body is always BlockStatement, never Expression (which is moz-specific)
 // - no generators (also moz-specific)
-// - no multiple catch clauses (also moz-specific)
+// - no multiple catch clauses (also moz-specific) 
 // - no 'meta' property on FunctionDeclaration or FunctionExpression
 // - no "for each ... in" support (moz-specific)
 // - formal parameters must be identifiers, not destructuring patterns (which again is moz-specific)
