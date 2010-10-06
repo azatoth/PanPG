@@ -16,8 +16,8 @@ function format(opts,s){var ast
      'space_after_comma': true,
      'space_around_operators': true, // TODO: add option to show precedence, e.g: 'x = a*b + b*c' but 'x=a+b;'
      'space_inside_parens': false, // where parens are used for grouping (not as syntax in control structures)
-     'number_radix_preference': 10, // 8, 10, 16, 'shortest'
-     'number_use_exponential_notation': 'never', // 'never', 'when-shorter', ...
+     'number_radix_preference': 10, // 8, 10, 16
+     'number_use_exponential_notation': 'never', // 'never', 0..N which is cutoff limit, 1 is essentially when shorter
      'object_literal_comma_first': false,
      'blank_before_function': true,
      'space_inside_if_test_parens': false, // 'if ( x )' or 'if (x)'

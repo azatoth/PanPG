@@ -139,14 +139,25 @@ module.exports = testCase({
 		test.done();
 	},
 	'test number format': function(test) {
-		this.options.number_radix = 'shortest';
+		this.options.number_radix_preference = 10;
+        this.options.number_use_exponential_notation = 0;
 		test.equals(js_pp(this.options, '10'), '10;');
 		test.equals(js_pp(this.options, '255'), '255;');
 		test.equals(js_pp(this.options, '256'), '256;');
 		test.equals(js_pp(this.options, '1000'), '1e3;');
 		test.equals(js_pp(this.options, '1001'), '1001;');
-		test.equals(js_pp(this.options, '10000'), '1e4;');
-		this.options.number_radix = 16;
+        test.equals(js_pp(this.options, '10000'), '1e4;');
+        test.equals(js_pp(this.options, '100000'), '1e5;');
+        this.options.number_use_exponential_notation = 3;
+		test.equals(js_pp(this.options, '10'), '10;');
+		test.equals(js_pp(this.options, '255'), '255;');
+		test.equals(js_pp(this.options, '256'), '256;');
+		test.equals(js_pp(this.options, '1000'), '1000;');
+		test.equals(js_pp(this.options, '1001'), '1001;');
+        test.equals(js_pp(this.options, '10000'), '10000;');
+        test.equals(js_pp(this.options, '100000'), '1e5;');
+        
+		this.options.number_radix_preference = 16;
 		test.equals(js_pp(this.options, '10'), '0xa;');
 		test.equals(js_pp(this.options, '255'), '0xff;');
 		test.equals(js_pp(this.options, '256'), '0x100;');

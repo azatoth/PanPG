@@ -19,6 +19,7 @@ function create_initial_context(opts){var ctx,copied
         ,'space_after_single_line_if_test'
         ,'spaces_inside_parens'
         ,'space_around_operators'
+        ,'number_use_exponential_notation'
         ]
  copied.forEach(function(p){ctx[p]=opts[p]})
  return ctx}
