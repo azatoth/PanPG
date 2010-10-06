@@ -35,11 +35,13 @@ SOURCES_UTIL = \
 			   src/API_support.js
 
 JS_AST_SOURCES = deps/util.js \
-				 js_pp/js_ast.js
+				 js_pp/src/js_ast.js
 
 JS_PP_SOURCES = deps/util.js \
 				deps/lists.js \
-				js_pp/js_pp.js
+				js_pp/src/js_compose.js \
+				js_pp/src/js_generate_sub_contexts.js \
+				js_pp/src/js_pp.js
 
 CLOSURE_COMPILER = closure-compiler
 

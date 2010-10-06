@@ -9,25 +9,28 @@ function format(opts,s){var ast
  opts=opts||{}
 
  // semicolons, indentation, newline_before_closing_brace, space_after_comma, space_around_operators, space_inside_parens, number_radix, object_literal_comma_first, blank_before_function, space_inside_if_test_parens, space_before_if_test, space_after_single_line_if_test, control_statement_braces, control_statement_empty, string_linebreak_style, string_charset
- default_('semicolons','all') // 'after-all', 'separators', 'only-required', 'before-dangerous'
- default_('indentation',2) // TODO: support tabs
- default_('newline_before_closing_brace',true)
- default_('space_after_comma',true)
- default_('space_around_operators',true) // TODO: add option to show precedence, e.g: 'x = a*b + b*c' but 'x=a+b;'
- default_('space_inside_parens',false) // where parens are used for grouping (not as syntax in control structures)
- default_('number_radix_preference',10) // 8, 10, 16, 'shortest'
- default_('number_use_exponential_notation','never') // 'never', 'when-shorter', ...
- default_('object_literal_comma_first',false)
- default_('blank_before_function',true)
- default_('space_inside_if_test_parens',false) // 'if ( x )' or 'if (x)'
- default_('space_before_if_test',true) // 'if (' or 'if('
- default_('space_after_single_line_if_test',true) // 'if(...) foo()' or 'if(...)foo()'
- default_('control_statement_braces','preserve') // 'preserve', 'braces', 'one-statement-only' [1] [2]
- default_('control_statement_empty','empty-statement') // 'empty-statement', 'empty-braces' [3]
- default_('string_linebreak_style','backslash-n') // 'backslash-n', 'line-continuation', 'plus-operator'
- default_('string_charset','utf-8') // 'utf-8', 'ascii'
- default_('string_quote_style','shorter-or-double') // 'single', 'double', 'shorter-or-single', 'shorter-or-double' [4]
- default_('homogenize_arrays',true)
+ var _opts = {
+     'semicolons': 'all', // 'after-all', 'separators', 'only-required', 'before-dangerous'
+     'indentation': 2, // TODO: support tabs
+     'newline_before_closing_brace': true,
+     'space_after_comma': true,
+     'space_around_operators': true, // TODO: add option to show precedence, e.g: 'x = a*b + b*c' but 'x=a+b;'
+     'space_inside_parens': false, // where parens are used for grouping (not as syntax in control structures)
+     'number_radix_preference': 10, // 8, 10, 16, 'shortest'
+     'number_use_exponential_notation': 'never', // 'never', 'when-shorter', ...
+     'object_literal_comma_first': false,
+     'blank_before_function': true,
+     'space_inside_if_test_parens': false, // 'if ( x )' or 'if (x)'
+     'space_before_if_test': true, // 'if (' or 'if('
+     'space_after_single_line_if_test': true, // 'if(...) foo()' or 'if(...)foo()'
+     'control_statement_braces': 'preserve', // 'preserve', 'braces', 'one-statement-only' [1] [2]
+     'control_statement_empty': 'empty-statement', // 'empty-statement', 'empty-braces' [3]
+     'string_linebreak_style': 'backslash-n', // 'backslash-n', 'line-continuation', 'plus-operator'
+     'string_charset': 'utf-8', // 'utf-8', 'ascii'
+     'string_quote_style': 'shorter-or-double', // 'single', 'double', 'shorter-or-single', 'shorter-or-double' [4]
+     'homogenize_arrays': true,
+ };
+ opts = extend(_opts,opts);
 
  // [1] 'preserve' preserves braces if they are in the input, leaving "if(x)y" without braces and "if(x){y}" with braces.
  //     'braces' always uses a block statement, even with only one statement inside.
@@ -35,8 +38,6 @@ function format(opts,s){var ast
  // [2] The "control statements" include the if statement and the iteration statements: for, for-in, while, do-while.
  // [3] If a control statement has an empty body, it can be written as an empty statement e.g. "while(x());", or as an empty block e.g. "while(x()){}".
  // [4] 'single' and 'double' always use the specied kind of quote, escaping string content as necessary, while 'shorter-or-' variants prefer one kind of quote but use the other if it makes the escaped string literal shorter (i.e. when the string value itself contains quotation marks).
-
- function default_(k,v){if(opts[k]===undefined)opts[k]=v}
 
  // parse the input
  ast=js_ast(s)
