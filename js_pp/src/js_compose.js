@@ -60,10 +60,6 @@ function compose_program_elements(c,ss){var line_sep
  if(c.semicolons=='all')return ss.map(function(s){return s+';'}).join(line_sep)
  throw new Error('XXX TODO: implement other semicolon styles')}
 
- function compose_regexp(c,val) {
-     return val;
- }
-
 function compose_string(c,val){var quote_char
  quote_char=c.string_quote_char||c.string_quote_char_preference
  assert(quote_char=='single'||quote_char=='double','known string quote preference')
@@ -96,7 +92,7 @@ function compose_number(c,n){var str,ret,sign,radix
   case 16: ret='0x'+str;break
   default: throw new Error('unhandled number radix: '+radix)}
  ret=sign+ret
- assert(Number(ret) == n,"number formatting preserves value")
+ assert(+ret == n,"number formatting preserves value")
  return ret}
 
 function compose_regexp(c,val){
