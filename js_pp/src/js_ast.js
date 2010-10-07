@@ -3,7 +3,7 @@
 // - no 'loc' property on nodes (may add separate start, end integers later)
 // - Function body is always BlockStatement, never Expression (which is moz-specific)
 // - no generators (also moz-specific)
-// - no multiple catch clauses (also moz-specific) 
+// - no multiple catch clauses (also moz-specific)
 // - no 'meta' property on FunctionDeclaration or FunctionExpression
 // - no "for each ... in" support (moz-specific)
 // - formal parameters must be identifiers, not destructuring patterns (which again is moz-specific)
@@ -213,7 +213,7 @@ function js_ast(s){var dict,pending_comment
  ,VariableStatement:function(m,cn){
     return {type:"VariableStatement"
            ,declarations:cn.map(cleanup_vardecl)}}
- 
+
  ,ThisTok:function(m,cn){
     return {type:"ThisExpression"}}
 
@@ -642,7 +642,24 @@ function js_ast(s){var dict,pending_comment
  ,RegularExpressionLiteral:function(m,cn){
     return {type:"Literal"
            ,kind:"regexp"
-           ,value:new RegExp(m.text())}} // N.B. can throw even if parser succeeded
+           ,value:{body: cn[0]
+            ,flags: cn[1]}}}
+
+ ,RegularExpressionBody:function(m,cn){
+    return m.text()}
+
+ ,RegularExpressionFlags:function(m,cn){
+    var flags = {}, text = m.text();
+    for( var i in text.split("") ) {
+        switch(text[i]) {
+            case 'g': flags['global'] = true;break;
+            case 'i': flags['ignore_case'] = true;break;
+            case 'm': flags['multiline'] = true;break;
+            //case 'y': flags['sticky'] = true;break; // FF 3.0
+            default: flags['flag-'+text[i]] = true;break;
+        }
+    }
+    return flags}
 
  // everything else we deal with functionally, passing return values up the tree, but for comments we use some mutable local state.
 

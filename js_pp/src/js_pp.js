@@ -1,5 +1,5 @@
 // TODO:
-// 
+//
 // Handle the other 90% of AST node types.
 // correct string quoting (in util.js)
 // The compose functions Stringⁿ → String will then be extension points; the caller can provide their own for any node types.
@@ -64,10 +64,10 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
 
  // `f` is the formattable we are constructing and will return
  // `cn` or "children" is the child formattable objects, constructed by mapping
- //      `self` (this function) over the AST child nodes (according to the node 
+ //      `self` (this function) over the AST child nodes (according to the node
  //      type, handled below)
 
- // Some AST nodes on which we recurse can contain some null child elements, 
+ // Some AST nodes on which we recurse can contain some null child elements,
  // which we handle by returning a formattable that encodes the empty string.
 
  if(ast===null){
@@ -102,9 +102,9 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
 
  case 'BinaryExpression':
   cn=[self(ast.left),self(ast.right)]
-  // The compose function for binary operators handles all the binary operators, so it needs 
+  // The compose function for binary operators handles all the binary operators, so it needs
   // to be specialized with the actual operator and it's precedence and associativity.
-  // All ECMAScript binary operators happen to be left-associative, otherwise we'd have a 
+  // All ECMAScript binary operators happen to be left-associative, otherwise we'd have a
   // binary_op_assoc table for these as well.
   f.assoc='left'
   f.prec=binary_op_prec[ast.operator]
@@ -139,7 +139,9 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
    f.single_quoted=str1 // XXX these aren't used anywhere currently
    f.double_quoted=str2
    break
-  case 'regex':
+  case 'regexp':
+  f.min_chars=f.min_width=String(ast.value.body).length + String(ast.value.flags) + 2;
+  break;
   default:
    throw new Error('unhandled literal type: '+ast.kind)}
   break

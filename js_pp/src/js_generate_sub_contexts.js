@@ -50,11 +50,11 @@ function create_initial_context(opts){var ctx,copied
 
 // generate_sub_contexts :: Formattable × Context → [Context]
 
-// Most of these use a helper function h(), declared below, which 
-// copies the input context and modifies the copies.  The arguments 
-// to h() are: the initial context, the number of copies to create, 
-// and up to n modification objects which will overwrite properties 
-// in the corresponding copies.  If n is greater than the number of 
+// Most of these use a helper function h(), declared below, which
+// copies the input context and modifies the copies.  The arguments
+// to h() are: the initial context, the number of copies to create,
+// and up to n modification objects which will overwrite properties
+// in the corresponding copies.  If n is greater than the number of
 // provided objects, the last object will be used repeatedly.
 
 var generate_sub_contexts=

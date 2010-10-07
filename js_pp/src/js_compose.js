@@ -1,7 +1,7 @@
 // compose :: Context, [String] → String
 
-// Each compose function takes a Context c carrying information about 
-// the surrounding context in which the node appears, and an array of 
+// Each compose function takes a Context c carrying information about
+// the surrounding context in which the node appears, and an array of
 // strings ss which it must combine and return into the final result.
 
 var compose=
@@ -48,7 +48,7 @@ var compose=
   switch(kind){
    case 'string':return compose_string(c,value)
    case 'number':return compose_number(c,value)
-   case 'regexp':
+   case 'regexp':return compose_regexp(c,value)
    default: throw new Error('unhandled literal kind: '+kind)}}}
 
 }
@@ -59,6 +59,10 @@ function compose_program_elements(c,ss){var line_sep
  // The semicolons should be added in the statements' individual compose functions.
  if(c.semicolons=='all')return ss.map(function(s){return s+';'}).join(line_sep)
  throw new Error('XXX TODO: implement other semicolon styles')}
+
+ function compose_regexp(c,val) {
+     return val;
+ }
 
 function compose_string(c,val){var quote_char
  quote_char=c.string_quote_char||c.string_quote_char_preference
@@ -96,4 +100,8 @@ function compose_number(c,n){var str,ret,sign,radix
  return ret}
 
 function compose_regexp(c,val){
+    return "/" + val.body + "/"
+    + (val.flags.global ? 'g' : '')
+    + (val.flags.ignore_case ? 'i' : '')
+    + (val.flags.multiline ? 'm' : '');
 }

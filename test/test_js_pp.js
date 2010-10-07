@@ -156,13 +156,19 @@ module.exports = testCase({
 		test.equals(js_pp(this.options, '1001'), '1001;');
         test.equals(js_pp(this.options, '10000'), '10000;');
         test.equals(js_pp(this.options, '100000'), '1e5;');
-        
+
 		this.options.number_radix_preference = 16;
 		test.equals(js_pp(this.options, '10'), '0xa;');
 		test.equals(js_pp(this.options, '255'), '0xff;');
 		test.equals(js_pp(this.options, '256'), '0x100;');
 		test.equals(js_pp(this.options, '1024'), '0x400;');
 		test.done();
-	},
+    },
+    'test regexp': function(test) {
+        test.equals(js_pp(this.options, '/a(b.*?)/'), '/a(b.*?)/;');
+        test.equals(js_pp(this.options, '/a(b.*?)/g'), '/a(b.*?)/g;');
+        test.equals(js_pp(this.options, '/a(b.*?)/mg'), '/a(b.*?)/gm;');
+        test.done();
+    },
 });
 
