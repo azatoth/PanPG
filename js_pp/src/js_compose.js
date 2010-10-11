@@ -73,26 +73,11 @@ function compose_number(c,n){var str,ret,sign,radix
  str=n.toString(radix)
  switch(radix){
   case  8: ret='0'+str;break
-  case 10:
-  if( c.number_use_exponential_notation !== 'never' ) {
-      var cutoff = Number(c.number_use_exponential_notation);
-      if(isNaN(cutoff)) {
-          throw new Error('unhandled use exponential notation: ' + c.number_use_exponential_notation);
-      }
-      var m = str.match(/0+$/);
-      if(m) {
-          var exp_str = str.slice(0,m.index) + "e" + m[0].length;
-          if( exp_str.length <= (str.length - cutoff) ) {
-              str = exp_str;
-          }
-      }
-  }
-  ret = str;
-  break;
+  case 10: ret=str;break
   case 16: ret='0x'+str;break
   default: throw new Error('unhandled number radix: '+radix)}
  ret=sign+ret
- assert(+ret == n,"number formatting preserves value")
+ assert(+ret == n,"number formatting preserves value "+ret+" : "+n)
  return ret}
 
 function compose_regexp(c,val){
