@@ -3,7 +3,6 @@
 function create_initial_context(opts){var ctx,copied
  ctx={min_prec:19
      ,indentation:''
-     ,number_radix_preference:opts.number_radix_preference
      }
  switch(opts.string_quote_style){
   case 'single': ctx.string_quote_char='single';break
@@ -19,6 +18,9 @@ function create_initial_context(opts){var ctx,copied
         ,'space_after_single_line_if_test'
         ,'spaces_inside_parens'
         ,'space_around_operators'
+        ,'number_radix_preference'
+        ,'number_use_exponential_notation'
+        ,'homogenize_arrays'
         ]
  copied.forEach(function(p){ctx[p]=opts[p]})
  return ctx}
@@ -49,18 +51,18 @@ function create_initial_context(opts){var ctx,copied
 
 // generate_sub_contexts :: Formattable × Context → [Context]
 
-// Most of these use a helper function h(), declared below, which 
-// copies the input context and modifies the copies.  The arguments 
-// to h() are: the initial context, the number of copies to create, 
-// and up to n modification objects which will overwrite properties 
-// in the corresponding copies.  If n is greater than the number of 
+// Most of these use a helper function h(), declared below, which
+// copies the input context and modifies the copies.  The arguments
+// to h() are: the initial context, the number of copies to create,
+// and up to n modification objects which will overwrite properties
+// in the corresponding copies.  If n is greater than the number of
 // provided objects, the last object will be used repeatedly.
 
 var generate_sub_contexts=
 
 {Program:gsc_program_elements
 
-,Block:gsc_program_elements
+,BlockStatement:gsc_program_elements
 
 ,IfStatement:function(f,c){
   // IfStatement children: test, consequent, (opt) alternate
@@ -72,6 +74,21 @@ var generate_sub_contexts=
 ,ExpressionStatement:function(f,c){
   return h(c,1
           ,{min_prec:18})}
+
+,FunctionDeclaration:function(f,c){
+  return h(c,3
+          ,{}
+          ,{}
+          ,{indentation:c.indentation+' '})}
+
+,VariableStatement:function(f,c){
+  return h(c,f.cn.length
+          ,{})}
+
+,VariableDeclarator:function(f,c){
+  return h(c,2
+          ,{}
+          ,{min_prec:17})}
 
 ,CallExpression:function(f,c){
   return h(c,2
@@ -88,7 +105,7 @@ var generate_sub_contexts=
           ,{min_prec:f.prec,assoc:'left'}
           ,{min_prec:f.prec })}
 
-,ArrayExpression:function(f,c){var string_quote_char,i,l,dbl_penalty,sgl_penalty,update
+,ArrayExpression:function(f,c){var string_quote_char,i,l,dbl_penalty,sgl_penalty,context_update
   dbl_penalty=sgl_penalty=0
   if(c.homogenize_arrays && !c.string_quote_char){
    // testing some ideas by homogenizing string quote characters in arrays, see doc/overview
@@ -98,13 +115,13 @@ var generate_sub_contexts=
    string_quote_char = dbl_penalty > sgl_penalty ? 'single'
                      : sgl_penalty < dbl_penalty ? 'double'
                      : c.string_quote_char_preference}
-  update={min_prec:17}
-  if(string_quote_char)update.string_quote_char=string_quote_char
-  return h(c,f.cn.length,update)}
+  context_update={min_prec:17}
+  if(string_quote_char)context_update.string_quote_char=string_quote_char
+  return h(c,f.cn.length,context_update)}
 
 }
 
-// this is intended to be in a module (like the other js_pp files), so the 'h' helper will not be in the global scope.
+// this is intended to be in a module (with the other js_pp files), so the 'h' helper will not be in the global scope.
 // h :: Context, Integer, [update_object] → [Context]
 // The provided context is copied as many times as necessary.
 // Each update or diff object provided is used to replace properties of the context at the corresponding position.

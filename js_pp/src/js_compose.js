@@ -1,13 +1,17 @@
 // compose :: Context, [String] → String
 
-// Each compose function takes a Context c carrying information about 
-// the surrounding context in which the node appears, and an array of 
+// Each compose function takes a Context c carrying information about
+// the surrounding context in which the node appears, and an array of
 // strings ss which it must combine and return into the final result.
 
 var compose=
 
 {Program:compose_program_elements
-,Block:compose_program_elements
+
+,BlockStatement:function(c,ss){
+  return '{\n'
+       + compose_program_elements(c,ss)
+       + '\n}'}
 
 ,IfStatement:function(c,ss){var ret
   return 'if'
@@ -21,9 +25,21 @@ var compose=
           ?'else'+ss[2]
           :'')}
 
-,ExpressionStatement:function(c,ss){return ss[0]}
+,ExpressionStatement:function(c,ss){return c.indentation+ss[0]}
+,VariableStatement:function(c,ss){
+  return c.indentation+'var '+ss.join()}
 
 ,CallExpression:function(c,ss){return ss[0]+ss[1]} // TODO: add options for whitespace between callee and arguments
+
+,FunctionDeclaration:function(c,ss){
+  return 'function '
+       + ss[0]
+       + ss[1]
+       + ss[2]}
+
+,VariableDeclarator:function(c,ss){
+  return ss[0]
+       + (ss[1]?'='+ss[1]:'')}
 
 ,Arguments:function(c,ss){
   return '('
@@ -44,41 +60,48 @@ var compose=
        + ss.join(',') // TODO: add options for spaces
        + ']'}
 
-,Literal:function(kind,value){return function(c,ss){
-  switch(kind){
-   case 'string':return compose_string(c,value)
-   case 'number':return compose_number(c,value)
-   case 'regexp':
-   default: throw new Error('unhandled literal kind: '+kind)}}}
-
 }
 
 function compose_program_elements(c,ss){var line_sep
  line_sep='\n'+c.indentation
- // this actually isn't correct either, because some "program elements" are function declarations, they are not all statements, and should not all have semicolons even in semicolons=all mode
+ // this isn't correct, because some "program elements" are function declarations, they are not all statements, and should not all have semicolons even in semicolons=all mode
  // The semicolons should be added in the statements' individual compose functions.
  if(c.semicolons=='all')return ss.map(function(s){return s+';'}).join(line_sep)
  throw new Error('XXX TODO: implement other semicolon styles')}
 
-function compose_string(c,val){var quote_char
- quote_char=c.string_quote_char||c.string_quote_char_preference
+function compose_string(f){return function _compose_string(c){var quote_char
+ quote_char=c.string_quote_char||f.quote_char_preference||c.string_quote_char_preference
  assert(quote_char=='single'||quote_char=='double','known string quote preference')
- // quote_string_* are declared in ../deps/util.js
- return {single:quote_string_single,double:quote_string_double}[quote_char](val)}
+ return f[quote_char+'_quoted']}}
 
-function compose_number(c,n){var str,ret,sign,radix
+function compose_number(n){return function _compose_number(c){var str,ret,sign,radix
  radix=c.number_radix||c.number_radix_preference
  sign=n<0?'-':''
  n=Math.abs(n)
  str=n.toString(radix)
  switch(radix){
   case  8: ret='0'+str;break
-  case 10: ret=(str.slice(-6)=='000000') ? exp_notation() : str;break
+  case 10:
+  if( c.number_use_exponential_notation !== 'never' ) {
+      var cutoff = Number(c.number_use_exponential_notation);
+      if(isNaN(cutoff)) {
+          throw new Error('unhandled use exponential notation: ' + c.number_use_exponential_notation);
+      }
+      var m = str.match(/0+$/);
+      if(m) {
+          var exp_str = str.slice(0,m.index) + "e" + m[0].length;
+          if( exp_str.length <= (str.length - cutoff) ) {
+              str = exp_str;
+          }
+      }
+  }
+  ret = str;
+  break;
   case 16: ret='0x'+str;break
   default: throw new Error('unhandled number radix: '+radix)}
  ret=sign+ret
- assert(+ret == n,"number formatting preserves value")
- return ret}
+ assert(Number(ret) == n,"number formatting preserves value")
+ return ret}}
 
-function compose_regexp(c,val){
- }
+function compose_regexp(source,flags){return function(c){
+  return '/'+source+'/'+flags}} // needs tests, needs AST support
