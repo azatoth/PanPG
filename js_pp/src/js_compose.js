@@ -86,7 +86,11 @@ function compose_number(n){return function _compose_number(c){var str,ret,sign,r
   default: throw new Error('unhandled number radix: '+radix)}
  ret=sign+ret
  assert(+ret == n,"number formatting preserves value "+ret+" : "+n)
- return ret}
+ return ret}}
 
-function compose_regexp(source,flags){return function(c){
-  return '/'+source+'/'+flags}} // needs tests, needs AST support
+ function compose_regexp(regexp){return function(c){
+  var flags = 
+   (regexp.global ? 'g' : '')
+   + (regexp.ignoreCase ? 'i' : '')
+   + (regexp.multiline ? 'm' : '');
+  return '/'+regexp.source+'/'+flags}}

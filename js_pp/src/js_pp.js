@@ -239,7 +239,7 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
    break
   case 'regexp':
    f.min_chars=f.min_width=String(ast.value.body).length + String(ast.value.flags) + 2
-   f.compose=compose_regexp(ast.source,ast.flags)
+   f.compose=compose_regexp(ast.value)
    break
   default:
    throw new Error('unhandled literal type: '+ast.kind)}

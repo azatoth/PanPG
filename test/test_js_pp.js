@@ -129,13 +129,15 @@ module.exports = testCase({
 		test.done();
 	},
 	'test "intresting cases"': function(test) {
-		test.equals(js_pp(this.options, '3 * (1 + 2)'), '3 * (1 + 2);');
-		test.equals(js_pp(this.options, 'if(x) foo();'), 'if(x) foo();');
-		this.options.string_quote_style = 'single';
-		test.equals(js_pp(this.options, "['abc','d\\'ef','\"xyz\",\"XYZ\"']"), "['abc','d\\'ef','\"xyz\",\"XYZ\"'];");
+		test.equals(js_pp(this.options, '3 * (1 + 2)'), '3 * (1 + 2);', 'arithmetic precedence');
+		test.equals(js_pp(this.options, 'if(x) foo();'), 'if(x) foo();', 'if statement');
+        test.equals(js_pp(this.options,'1+2%3*4-5+6/7*8'),'1 + 2 % 3 * 4 - 5 + 6 / 7 * 8;','precedence');
+        test.equals(js_pp(this.options,'(1+2)*3'),'(1 + 2) * 3;');
+        test.equals(js_pp(this.options,'1*(2+3)'),'1 * (2 + 3);');
+		test.equals(js_pp(this.options, "['abc','d\\'ef','\"xyz\",\"XYZ\"']"), '["abc","d\'ef",\'"xyz","XYZ"\'];');
 		test.equals(js_pp(this.options, 'if(x) moderately_long_sub_expression(argument,argument_2)'), 'if(x) moderately_long_sub_expression(argument,argument_2);');
 		test.equals(js_pp(this.options, '3 - 2 - 1'), '3 - 2 - 1;');
-		test.equals(js_pp(this.options, 'if(x){foo()}'), 'if(x){foo()};');
+		test.equals(js_pp(this.options, 'if(x){foo()}'), 'if(x) {\nfoo();\n};');
 		test.done();
 	},
 	'test number format': function(test) {
