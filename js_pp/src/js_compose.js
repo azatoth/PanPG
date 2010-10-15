@@ -7,7 +7,11 @@
 var compose=
 
 {Program:compose_program_elements
-,Block:compose_program_elements
+
+,BlockStatement:function(c,ss){
+  return '{\n'
+       + compose_program_elements(c,ss)
+       + '\n}'}
 
 ,IfStatement:function(c,ss){var ret
   return 'if'
@@ -21,9 +25,21 @@ var compose=
           ?'else'+ss[2]
           :'')}
 
-,ExpressionStatement:function(c,ss){return ss[0]}
+,ExpressionStatement:function(c,ss){return c.indentation+ss[0]}
+,VariableStatement:function(c,ss){
+  return c.indentation+'var '+ss.join()}
 
 ,CallExpression:function(c,ss){return ss[0]+ss[1]} // TODO: add options for whitespace between callee and arguments
+
+,FunctionDeclaration:function(c,ss){
+  return 'function '
+       + ss[0]
+       + ss[1]
+       + ss[2]}
+
+,VariableDeclarator:function(c,ss){
+  return ss[0]
+       + (ss[1]?'='+ss[1]:'')}
 
 ,Arguments:function(c,ss){
   return '('
@@ -44,29 +60,21 @@ var compose=
        + ss.join(',') // TODO: add options for spaces
        + ']'}
 
-,Literal:function(kind,value){return function(c,ss){
-  switch(kind){
-   case 'string':return compose_string(c,value)
-   case 'number':return compose_number(c,value)
-   case 'regexp':return compose_regexp(c,value)
-   default: throw new Error('unhandled literal kind: '+kind)}}}
-
 }
 
 function compose_program_elements(c,ss){var line_sep
  line_sep='\n'+c.indentation
- // this actually isn't correct either, because some "program elements" are function declarations, they are not all statements, and should not all have semicolons even in semicolons=all mode
+ // this isn't correct, because some "program elements" are function declarations, they are not all statements, and should not all have semicolons even in semicolons=all mode
  // The semicolons should be added in the statements' individual compose functions.
  if(c.semicolons=='all')return ss.map(function(s){return s+';'}).join(line_sep)
  throw new Error('XXX TODO: implement other semicolon styles')}
 
-function compose_string(c,val){var quote_char
- quote_char=c.string_quote_char||c.string_quote_char_preference
+function compose_string(f){return function _compose_string(c){var quote_char
+ quote_char=c.string_quote_char||f.quote_char_preference||c.string_quote_char_preference
  assert(quote_char=='single'||quote_char=='double','known string quote preference')
- // quote_string_* are declared in ../deps/util.js
- return {single:quote_string_single,double:quote_string_double}[quote_char](val)}
+ return f[quote_char+'_quoted']}}
 
-function compose_number(c,n){var str,ret,sign,radix
+function compose_number(n){return function _compose_number(c){var str,ret,sign,radix
  radix=c.number_radix||c.number_radix_preference
  sign=n<0?'-':''
  n=Math.abs(n)
@@ -80,9 +88,5 @@ function compose_number(c,n){var str,ret,sign,radix
  assert(+ret == n,"number formatting preserves value "+ret+" : "+n)
  return ret}
 
-function compose_regexp(c,val){
-    return "/" + val.body + "/"
-    + (val.flags.global ? 'g' : '')
-    + (val.flags.ignore_case ? 'i' : '')
-    + (val.flags.multiline ? 'm' : '');
-}
+function compose_regexp(source,flags){return function(c){
+  return '/'+source+'/'+flags}} // needs tests, needs AST support

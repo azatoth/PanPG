@@ -11,7 +11,8 @@
 // - VariableStatement is used instead of VariableDeclaration (since VariableStatement is the name of the production used in the spec)
 // - There is no VariableDeclaration nodes in the output (though they are generated as an intermediate form)
 // - VariableStatement (nee VariableDeclaration) lacks "kind" (let, var, or const)
-// - the name VariableDaclaration is used for something else in the spec, perhaps it should be changed here.
+// - the name VariableDeclaration is used for something else in the spec, perhaps it should be changed here.
+// - added 'VariableDeclarator' type, as Spidermonkey does but does not document, on individual children of VariableStatement.
 // - There is no separate object for UnaryOperator or BinaryOperator, with a "token" property carrying the actual payload, instead, the operator appears directly as a string where a UnaryOperator or BinaryOperator object would appear in the spidermonkey AST.
 // - I think it is odd that there is a separate UpdateExpression type given that there is already a UnaryExpression (and it has a prefix Boolean property)
 // - There is no 'prefix' property on the UnaryExpression, since in every case it is true.
@@ -31,7 +32,7 @@
 // It might be useful to have a 'literal' property on string literals to store the literal as it appeared in the source, which may differ from 'value' which would be the string value after unescaping
 
 // The full [incomplete] list of node types returned in parse trees:
-// (N.B. there are other node types created below but which do not end up in the final tree)
+// N.B. there are other node types created below but which do not end up in the final tree, these have names with a leading underscore.
 // Program, EmptyStatement, BlockStatement, ExpressionStatement, IfStatement, LabelledStatement, BreakStatement, ContinueStatement, WithStatement, SwitchStatement, ReturnStatement, ThrowStatement, TryStatement, DoWhileStatement, WhileStatement, ForStatement, ForInStatement, DebuggerStatement
 
 function js_ast(s){var dict,pending_comment
@@ -135,10 +136,10 @@ function js_ast(s){var dict,pending_comment
 
  ,ForStatement:function(m,cn){var init,test,update
     assert(cn[0])
-    if(cn[0].type=='ForInit')init=cn.shift().expression
-    if(cn[0].type=='ForVarInit')init=cn.shift().declaration
-    if(cn[0].type=='ForTest')test=cn.shift().expression
-    if(cn[0].type=='ForUpdate')update=cn.shift().expression
+    if(cn[0].type=='_ForInit')init=cn.shift().expression
+    if(cn[0].type=='_ForVarInit')init=cn.shift().declaration
+    if(cn[0].type=='_ForTest')test=cn.shift().expression
+    if(cn[0].type=='_ForUpdate')update=cn.shift().expression
     assert(isStatement(cn[0]))
     return {type:"ForStatement"
            ,init:init||null
@@ -148,12 +149,12 @@ function js_ast(s){var dict,pending_comment
 
  ,ForInit:function(m,cn){
     assert(!cn[0] || isExpression(cn[0]),"Expression")
-    return {type:"ForInit"
+    return {type:"_ForInit"
            ,expression:cn[0]||null}}
 
  ,ForVarInit:function(m,cn){
     assert(cn[0].type=="VariableDeclaration")
-    return {type:"ForVarInit"
+    return {type:"_ForVarInit"
            ,declaration:cn[0]}}
 
  ,VariableDeclarationListNoIn:function(m,cn){
@@ -162,17 +163,17 @@ function js_ast(s){var dict,pending_comment
 
  ,ForTest:function(m,cn){
     assert(!cn[0] || isExpression(cn[0]))
-    return {type:"ForTest"
+    return {type:"_ForTest"
            ,expression:cn[0]||null}}
 
  ,ForUpdate:function(m,cn){
     assert(!cn[0] || isExpression(cn[0]))
-    return {type:"ForUpdate"
+    return {type:"_ForUpdate"
            ,expression:cn[0]||null}}
 
  ,ForInStatement:function(m,cn){var left
-    if(cn[0].type=='ForInLeft')left=cn.shift().expression
-    if(cn[0].type=='ForInVarLeft')left=cn.shift().declaration
+    if(cn[0].type=='_ForInLeft')left=cn.shift().expression
+    if(cn[0].type=='_ForInVarLeft')left=cn.shift().declaration
     assert(isExpression(cn[0]))
     assert(isStatement(cn[1]))
     return {type:"ForInStatement"
@@ -182,12 +183,12 @@ function js_ast(s){var dict,pending_comment
 
  ,ForInLeft:function(m,cn){
     assert(isExpression(cn[0]))
-    return {type:"ForInLeft"
+    return {type:"_ForInLeft"
            ,expression:cn[0]}}
 
  ,ForInVarLeft:function(m,cn){
     assert(cn[0].type=="VariableDeclaration")
-    return {type:"ForInVarLeft"
+    return {type:"_ForInVarLeft"
            ,declaration:cn[0]}}
 
  ,DebuggerStatement:function(m,cn){
@@ -196,7 +197,7 @@ function js_ast(s){var dict,pending_comment
  ,FunctionDeclaration:function(m,cn){var id,params,body
     assert(cn[0].type=="Identifier","name")
     id=cn.shift()
-    if(cn.length==2){assert(cn[0].type=="ParameterList");params=cn.shift()}
+    if(cn.length==2){assert(cn[0].type=="_ParameterList");params=cn.shift()}
     assert(cn[0].type=="BlockStatement","body")
     return {type:"FunctionDeclaration"
            ,id:id
@@ -206,57 +207,57 @@ function js_ast(s){var dict,pending_comment
  ,VariableDeclaration:function(m,cn){
     assert(cn[0].type=="Identifier","variable identifier")
     assert(!cn[1] || isExpression(cn[1]),"variable value")
-    return {type:"VariableDeclaration"
+    return {type:"VariableDeclarator"
            ,id:cn[0]
            ,init:cn[1]||null}}
 
  ,VariableStatement:function(m,cn){
     return {type:"VariableStatement"
-           ,declarations:cn.map(cleanup_vardecl)}}
+           ,declarations:cn}}
 
  ,ThisTok:function(m,cn){
     return {type:"ThisExpression"}}
 
  ,ArrayLiteral:function(m,cn){var elements=[]
-    assert(!cn[0] || cn[0].type=='ElementList')
+    assert(!cn[0] || cn[0].type=='_ElementList')
     if(cn[0])elements=cn.shift().elements
-    assert(!cn[0] || cn[0].type=='ElementList')
+    assert(!cn[0] || cn[0].type=='_ElementList')
     if(cn[0])elements.push.apply(elements,cn[0])
     return {type:"ArrayExpression"
            ,elements:elements}}
 
  ,ElementList:function(m,cn){
-    return {type:"ElementList"
+    return {type:"_ElementList"
            ,elements:cn}}
 
  ,Elision:function(m,cn){var elements
     assert(!cn[0] || cn[0].type=='ElementList')
     if(cn[0]) elements=cn[0],elements.push(null)
     else elements=[null]
-    return {type:"ElementList"
+    return {type:"_ElementList"
            ,elements:elements}}
 
  ,ObjectLiteral:function(m,cn){
-    assert(!cn[0]||cn[0].type=='PropertyNameAndValueList')
+    assert(!cn[0]||cn[0].type=='_PropertyNameAndValueList')
     return {type:"ObjectExpression"
            ,properties:cn[0]?cn[0].properties:[]}}
 
  ,PropertyNameAndValueList:function(m,cn){
-    return {type:"PropertyNameAndValueList"
+    return {type:"_PropertyNameAndValueList"
            ,properties:cn}}
 
  ,PropertyAssignment:function(m,cn){var kind,key,value
-    if(cn[0].type=="PropertyName"){
+    if(cn[0].type=="_PropertyName"){
      kind="init"
      key=cn[0].id
      assert(isExpression(cn[1]))
      value=cn[1]}
-    if(cn[0].type=="PropertyGetter"){
+    if(cn[0].type=="_PropertyGetter"){
      kind='get'
      // XXX how is the function body represented?
      key=cn[0].name
      value=cn[0].body}
-    if(cn[0].type=="PropertySetter"){
+    if(cn[0].type=="_PropertySetter"){
      kind='set'
      key=cn[0].name
      value=cn[0].body}
@@ -267,23 +268,23 @@ function js_ast(s){var dict,pending_comment
 
  ,PropertyName:function(m,cn){
     // PropertyName ← IdentifierName / StringLiteral / NumericLiteral
-    return {type:"PropertyName"
+    return {type:"_PropertyName"
            ,id:cn[0]}}
 
  ,PropertyGetter:function(m,cn){
-    assert(cn[0]&&cn[0].type=="PropertyName")
+    assert(cn[0]&&cn[0].type=="_PropertyName")
     assert(isExpression(cn[0].id))
     assert(cn[1].type=="BlockStatement")
-    return {type:"PropertyGetter"
+    return {type:"_PropertyGetter"
            ,name:cn[0].id
            ,body:cn[1]}}
 
  ,PropertySetter:function(m,cn){
-    assert(cn[0]&&cn[0].type=="PropertyName")
+    assert(cn[0]&&cn[0].type=="_PropertyName")
     assert(isExpression(cn[0].id))
     assert(cn[1].type=="Identifier")
     assert(cn[2].type=="BlockStatement")
-    return {type:"PropertySetter"
+    return {type:"_PropertySetter"
            ,name:cn[0].id
            ,body:{type:"FunctionExpression"
                  ,id:null
@@ -299,7 +300,7 @@ function js_ast(s){var dict,pending_comment
 
  ,FunctionExpression:function(m,cn){var id,params=[]
     if(cn[0].type=="Identifier") id=cn.shift()
-    if(cn[0].type=="ParameterList") params=cn.shift().elements
+    if(cn[0].type=="_ParameterList") params=cn.shift().elements
     assert(cn[0].type=="BlockStatement")
     return {type:"FunctionExpression"
            ,id:id||null
@@ -312,7 +313,7 @@ function js_ast(s){var dict,pending_comment
            ,name:m.text()}}
 
  ,FormalParameterList:function(m,cn){
-    return {type:"ParameterList" // doesn't appear in output
+    return {type:"_ParameterList"
            ,elements:cn}}
 
  ,FunctionBody:function(m,cn){
@@ -375,31 +376,31 @@ function js_ast(s){var dict,pending_comment
            ,argument:cn[0]}}
 
  ,PostfixExpression:function(m,cn){
-    assert(!cn[1] || cn[1].type=="PostfixOp")
+    assert(!cn[1] || cn[1].type=="_PostfixOp")
     if(!cn[1]) return cn[0]
     return {type:"UpdateExpression"
            ,operator:cn[1].operator
            ,prefix:false}}
 
  ,PostIncrementOp:function(m,cn){
-    return {type:"PostfixOp"
+    return {type:"_PostfixOp"
            ,operator:"++"}}
 
  ,PostDecrementOp:function(m,cn){
-    return {type:"PostfixOp"
+    return {type:"_PostfixOp"
            ,operator:"--"}}
 
  ,AssignmentExpression:function(m,cn){
     assert(cn.length==1 || cn.length==3)
     if(!cn[1])return cn[0]
-    assert(cn[1].type=='AssignmentOperator')
+    assert(cn[1].type=='_AssignmentOperator')
     return {type:"AssignmentExpression"
            ,operator:cn[1].operator
            ,left:cn[0]
            ,right:cn[2]}}
 
  ,AssignmentOperator:function(m,cn){
-    return {type:"AssignmentOperator"
+    return {type:"_AssignmentOperator"
            ,operator:m.text()}}
 
  ,ConditionalExpression:function(m,cn){
@@ -448,40 +449,40 @@ function js_ast(s){var dict,pending_comment
  ,EqualityExpression:function(m,cn){
     assert(cn.length==1 || cn.length==3)
     if(!cn[1])return cn[0]
-    assert(cn[1].type=='EqualityOperator')
+    assert(cn[1].type=='_EqualityOperator')
     return {type:"BinaryExpression"
            ,operator:cn[1].operator
            ,left:cn[0]
            ,right:cn[2]}}
 
  ,EqualityOp:function(m,cn){
-    return {type:"EqualityOperator"
+    return {type:"_EqualityOperator"
            ,operator:m.text()}}
 
  ,RelationalExpression:function(m,cn){
     assert(cn.length==1 || cn.length==3)
     if(!cn[1])return cn[0]
-    assert(cn[1].type=='RelationalOperator')
+    assert(cn[1].type=='_RelationalOperator')
     return {type:"BinaryExpression"
            ,operator:cn[1].operator
            ,left:cn[0]
            ,right:cn[2]}}
 
  ,RelationalOp:function(m,cn){
-    return {type:"RelationalOperator"
+    return {type:"_RelationalOperator"
            ,operator:m.text()}}
 
  ,ShiftExpression:function(m,cn){
     assert(cn.length==1 || cn.length==3)
     if(!cn[1])return cn[0]
-    assert(cn[1].type=='ShiftOperator')
+    assert(cn[1].type=='_ShiftOperator')
     return {type:"BinaryExpression"
            ,operator:cn[1].operator
            ,left:cn[0]
            ,right:cn[2]}}
 
  ,ShiftOp:function(m,cn){
-    return {type:"ShiftOperator"
+    return {type:"_ShiftOperator"
            ,operator:m.text()}}
 
  ,AdditiveExpression:function loop(m,cn){var left,right,op
@@ -492,14 +493,14 @@ function js_ast(s){var dict,pending_comment
     else left=cn[0]
     right=cn[cn.length-1]
     op=cn[cn.length-2]
-    assert(cn[1].type=='AdditiveOperator')
+    assert(cn[1].type=='_AdditiveOperator')
     return {type:"BinaryExpression"
            ,operator:op.operator
            ,left:left
            ,right:right}}
 
  ,AdditiveOp:function(m,cn){
-    return {type:"AdditiveOperator"
+    return {type:"_AdditiveOperator"
            ,operator:m.text()}}
 
  ,MultiplicativeExpression:function loop(m,cn){var left,right,op
@@ -510,14 +511,14 @@ function js_ast(s){var dict,pending_comment
     else left=cn[0]
     right=cn[cn.length-1]
     op=cn[cn.length-2]
-    assert(cn[1].type=='MultiplicativeOperator')
+    assert(cn[1].type=='_MultiplicativeOperator')
     return {type:"BinaryExpression"
            ,operator:op.operator
            ,left:left
            ,right:right}}
 
  ,MultiplicativeOp:function(m,cn){
-    return {type:"MultiplicativeOperator"
+    return {type:"_MultiplicativeOperator"
            ,operator:m.text()}}
 
 // LeftHandSideExpr ← (NewTok S?)* ( PrimaryExpr / FunctionExpr ) ( S? Arguments / S? BracketAccessor / S? DotAccessor )*
@@ -532,7 +533,7 @@ function js_ast(s){var dict,pending_comment
     // We start with the core and eat outwards through the prefixes and suffixes until the entire expression is built up according the correct precedence rules.
     while(cn.length || news.length){
      // First, if there is an accessor, it is appended to create a MemberExpression
-     if(cn[0] && (cn[0].type=='DotAccessor' || cn[0].type=='BracketAccessor')){
+     if(cn[0] && (cn[0].type=='_DotAccessor' || cn[0].type=='_BracketAccessor')){
          property=cn.shift().property
          core={type:"MemberExpression"
               ,object:core
@@ -567,21 +568,21 @@ function js_ast(s){var dict,pending_comment
  ,PrimaryExpression:function(m,cn){return cn[0]}
 
  ,DotAccessor:function(m,cn){
-    return {type:"DotAccessor"
+    return {type:"_DotAccessor"
            ,property:{type:"Identifier"
                      ,name:m.text().slice(1)}}}
 
  ,BracketAccessor:function(m,cn){
-    return {type:"BracketAccessor"
+    return {type:"_BracketAccessor"
            ,property:cn[0]}}
 
  ,Arguments:function(m,cn){
-    assert(!cn[0] || cn[0].type=='ArgumentList')
+    assert(!cn[0] || cn[0].type=='_ArgumentList')
     return {type:"Arguments"
            ,elements:cn[0]?cn[0].elements:null}}
 
  ,ArgumentList:function(m,cn){
-    return {type:"ArgumentList"
+    return {type:"_ArgumentList"
            ,elements:cn}}
 
  ,CaseClause:function(m,cn){

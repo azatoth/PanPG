@@ -107,9 +107,7 @@ var test =
 
 return js_ast(test)}
 
-function js_pp_tests(){var opts1
-// list of all options:
-// semicolons, indentation, newline_before_closing_brace, space_after_comma, space_around_operators, space_inside_parens, number_radix, object_literal_comma_first, blank_before_function, space_around_if_condition, string_linebreak_style, string_charset
+function js_pp_tests(){var opts1,opts2
 opts1={semicolons:'all'
       ,indentation:2
       ,newline_before_closing_brace:false
@@ -120,16 +118,19 @@ opts1={semicolons:'all'
       ,space_after_single_line_if_test:true
       ,string_quote_style:'shorter-or-double'
       }
+opts2=copy(opts1)
+opts2.homogenize_arrays=true
 return ''+
-[[opts1,'3*(1+2)','3 * (1 + 2);']
-,[opts1,'if(x)foo()','if(x) foo();']
-,[opts1,'1+2%3*4-5+6/7*8','1 + 2 % 3 * 4 - 5 + 6 / 7 * 8;']
+[[opts1,'3*(1+2)','3 * (1 + 2);','arithmetic precedence']
+,[opts1,'if(x)foo()','if(x) foo();','if statement']
+,[opts1,'1+2%3*4-5+6/7*8','1 + 2 % 3 * 4 - 5 + 6 / 7 * 8;','precedence']
 ,[opts1,'(1+2)*3','(1 + 2) * 3;']
 ,[opts1,'1*(2+3)','1 * (2 + 3);']
 ,[opts1,'\'""\'','\'""\';']
-,[opts1,'[\'""\',"\'\'",\'abc\']','[\'""\',"\'\'","abc"];']
+,[opts1,'[\'""\',"\'\'",\'abc\']','[\'""\',"\'\'","abc"];','shorter-or-double string quoting']
+,[opts2,'[\'"\',"\'"]','["\\"","\'"];','homogenize quotes in array literal']
 ].map(function(a){var x
   return (x=format(a[0],a[1]))==a[2]
     ? 'PASS'
-    : 'FAIL: '+a[2]+'  (expected)\n  !=  '+ x+'  (actual)'})
+    : 'FAIL: '+(a[3]||'')+'\n      expected: '+a[2]+'\n      actual:   '+x})
  .join('\n')}
