@@ -160,5 +160,22 @@ module.exports = testCase({
         test.equals(js_pp(this.options, '/a(b.*?)/mg'), '/a(b.*?)/gm;');
         test.done();
     },
+    'test if-statement': function(test) {
+        test.equals(js_pp(this.options, 'if(true);'), 'if(true) ;');
+        test.equals(js_pp(this.options, 'if(true){};'), 'if(true) {\n\n};\n;');
+        test.equals(js_pp(this.options, 'if(true){return};'), 'if(true) {\nreturn;\n};\n;');
+        test.done();
+    },
+    'test for-statement': function(test) {
+        test.equals(js_pp(this.options, 'for(;;){};'), 'for (;;) {\n\n};\n;');
+        test.equals(js_pp(this.options, 'for(i=0;;){};'), 'for (i = 0;;) {\n\n};\n;');
+        test.equals(js_pp(this.options, 'for(var i=0;;){};'), 'for (var i=0;;) {\n\n};\n;');
+        test.equals(js_pp(this.options, 'for(var i=0;i<10;++i){};'), 'for (var i=0; i < 10; ++i) {\n\n};\n;');
+        //test.equals(js_pp(this.options, 'for(i=0;;){};'), ';');
+        //test.equals(js_pp(this.options, 'for(var i=0;;){};'), ';');
+        //test.equals(js_pp(this.options, 'for(var i in {}){};'), ';');
+        test.done();
+    },    
+    
 });
 

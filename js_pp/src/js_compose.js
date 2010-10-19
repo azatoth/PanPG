@@ -12,6 +12,8 @@ var compose=
   return '{\n'
        + compose_program_elements(c,ss)
        + '\n}'}
+,EmptyStatement:function(){
+  return ''}
 
 ,IfStatement:function(c,ss){var ret
   return 'if'
@@ -25,9 +27,35 @@ var compose=
           ?'else'+ss[2]
           :'')}
 
+,ForStatement:function(c,ss){var ret
+  return 'for'
+       + (c.space_before_for_paren?' ':'')
+       + (c.space_inside_for_parens?'( ':'(')
+       + ss[0]
+       + (c.space_before_for_semicolon && ss[0] ?' ':'')
+       + ';'
+       + (c.space_after_for_semicolon && ss[0] && ss[1] ?' ':'')
+       + ss[1]
+       + (c.space_before_for_semicolon && ss[1] && ss[2] ?' ':'')
+       + ';'
+       + (c.space_after_for_semicolon && ss[2] ?' ':'')
+       + ss[2]
+       + (c.space_inside_for_parens?' )':')')
+       + ' ' // TODO: handle blocks and single statements here
+       + ss[3]}
+
+
+
 ,ExpressionStatement:function(c,ss){return c.indentation+ss[0]}
+
+,ReturnStatement:function(c,ss){
+    return c.indentation+ 'return' + ( ss[0] ? ' ' : '' ) + ss[0]}
+
 ,VariableStatement:function(c,ss){
   return c.indentation+'var '+ss.join()}
+
+,VariableDeclaration:function(c,ss){
+    return c.indentation+'var '+ss.join()}
 
 ,CallExpression:function(c,ss){return ss[0]+ss[1]} // TODO: add options for whitespace between callee and arguments
 
@@ -45,7 +73,19 @@ var compose=
   return '('
        + ss.join(c.space_after_comma?', ':',')
        + ')'}
+,AssignmentExpression:function(c,ss){
+    return c.indentation 
+    + ss[0] 
+    + (c.space_around_assign ? ' = ' : '=' )
+    + ss[1];}
 
+,UpdateExpression:function(operator,prefix,prec){return function(c,ss){
+    if( prefix ) {
+        return operator + ss[0];
+    } else {
+        return ss[0] + operator;
+    }
+}}
 ,BinaryExpression:function(op,prec,assoc){return function(c,ss){var parenthesize,parens
   parenthesize=prec>c.min_prec || prec==c.min_prec && assoc!=c.assoc
   parens=c.spaces_inside_parens?['( ',' )']:['(',')']
@@ -94,3 +134,6 @@ function compose_number(n){return function _compose_number(c){var str,ret,sign,r
    + (regexp.ignoreCase ? 'i' : '')
    + (regexp.multiline ? 'm' : '');
   return '/'+regexp.source+'/'+flags}}
+
+ function compose_boolean(bool){return function(c){
+ return bool ? 'true' : 'false'}}

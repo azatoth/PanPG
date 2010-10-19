@@ -712,7 +712,7 @@ function js_ast(s){var dict,pending_comment
 
  function isStatement(x){return x&&x.type&&x.type.slice(-9)=="Statement"}
 
- function cleanup_vardecl(decl){return {id:decl.id,init:decl.init}}
+ function cleanup_vardecl(decl){return {type:'VariableDeclarator',id:decl.id,init:decl.init}}
 
  var warnings=[]
  dict.warn=function(x){warnings.push(x)}
