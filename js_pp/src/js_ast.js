@@ -380,17 +380,16 @@ function js_ast(s){var dict,pending_comment
     if(!cn[1]) return cn[0]
     return {type:"UpdateExpression"
            ,operator:cn[1].operator
+           ,argument:cn[0]
            ,prefix:false}}
 
  ,PostIncrementOp:function(m,cn){
     return {type:"_PostfixOp"
-           ,operator:"++"
-           ,argument:cn[0]}}
+           ,operator:"++"}}
 
  ,PostDecrementOp:function(m,cn){
     return {type:"_PostfixOp"
-           ,operator:"--"
-           ,argument:cn[0]}}
+           ,operator:"--"}}
 
  ,AssignmentExpression:function(m,cn){
     assert(cn.length==1 || cn.length==3)
