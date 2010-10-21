@@ -55,6 +55,10 @@ var compose=
        + ' ' // TODO: handle blocks and single statements here
        + ss[2]}
 
+,ThrowStatement:function(c,ss){
+  return 'throw ' // TODO: minimization, as elsewhere
+       + ss[0]}
+
 ,ExpressionStatement:function(c,ss){return c.indentation+ss[0]}
 
 ,ReturnStatement:function(c,ss){
@@ -70,9 +74,17 @@ var compose=
   return 'function '
        + ss[0]
        + '('  // TODO: add space options
-       + ss[1]
+       + ss.slice(1,-1).join(',')
        + ')'
-       + ss[2]}
+       + ss[ss.length-1]}
+
+,FunctionExpression:function(c,ss){
+  return 'function ' // TODO: space options
+       + (ss[0]||'')
+       + '('
+       + ss.slice(1,-1).join(',')
+       + ')'
+       + ss[ss.length-1]}
 
 ,VariableDeclarator:function(c,ss){
   return ss[0]
@@ -107,6 +119,22 @@ var compose=
        + ss.join(',') // TODO: add options for spaces
        + ']'}
 
+,ObjectExpression:function(c,ss){
+  return '{'
+       + ss.join(',') // TODO: whitespace options
+       + '}'}
+
+,PropertyAssignment:function(kind){return function(c,ss){
+  if(kind!='init')throw new Error('TODO getter or setter unhandled')
+  return ss[0]
+       + ':' // TODO: space and newline options here
+       + ss[1]}}
+
+,UnaryExpression:function(operator){return function(c,ss){
+  return operator
+       + (operator.match(/[a-z]+/)?' ':'') // space required for e.g. 'delete' and 'typeof' but not '!' or '~'
+       + ss[0]}}
+
 ,MemberExpression:function(computed){return function(c,ss){
   if(computed) return ss[0]+'['+ss[1]+']'
   return ss[0]+'.'+ss[1]}}
@@ -120,9 +148,12 @@ var compose=
   return 'new ' // TODO: option for minimization to lose this space when possible (e.g. "new(f().g)")
        + ss[0]
        + (c.space_before_function_call_arguments?' ':'') // TODO: these options should probably be different from the function call options
+       + ss[1]}
+/*
        + (c.space_inside_function_call_parens?'( ':'(') // TODO: when arguments are empty, and context allows it, add an option to drop parens for minimization
        + ss[1]
        + (c.space_inside_function_call_parens?' )':')')}
+*/
 
 }
 

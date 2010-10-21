@@ -241,6 +241,10 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
   f.prec=binary_op_prec[ast.operator]
   f.compose=f.compose(ast.operator,f.prec,f.assoc);break
 
+ case 'UnaryExpression':
+  f.min_chars=ast.argument.min_chars+1
+  f.compose=f.compose(ast.operator);break
+
  case 'Literal':
   switch(ast.kind){
   case 'number':
@@ -280,6 +284,9 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
  case 'ArrayExpression':
   // min length is brackets + commas + sum of min length of children
   f.min_chars=2+(cn.length?cn.length-1:0)+sum(cn.map(access('min_chars')));break
+
+ case 'PropertyAssignment':
+  f.compose=f.compose(ast.kind);break
 
  case 'MemberExpression':
   f.compose=f.compose(ast.computed)

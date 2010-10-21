@@ -24,6 +24,7 @@
 // - no guard on CatchClause; param is Identifier, not Pattern
 // - it is odd that all literals map to the Literal type which has no 'kind' or other property to indicate type, necessitates type checking of the value
 // - added a 'kind' : 'number' | 'string' | 'Boolean' | 'regexp' property to Literal
+// - in CallExpression and MemberExpression, rather than [Expression], the arguments property is a Arguments node type with an elements property which is the list of Expressions (this just makes recursion into the AST easier, it's arguable whether it's actually worth it)
 
 // Comments can come anywhere in the grammar, and if a comment appears, it is attached literally as a 'comment' property on the AST node that follows it (actually somewhere "nearby"); on the Program node there can additionally be a commentAfter property
 
@@ -550,7 +551,7 @@ function js_ast(s){var dict,pending_comment
          args=cn.shift()
          core={type:"NewExpression"
               ,constructor:core
-              ,arguments:args?args.elements:null}
+              ,arguments:args?args:null}
          // eating Arguments may have exposed a new accessor, so we need to go back to the top of the loop
          continue}
      // Here news.length==0, and if there is a cn[0], it is an Arguments.

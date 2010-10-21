@@ -150,6 +150,12 @@ return ''+
        ,'for (i = 0; i < 10; i++) print(i);','for loop']
 ,[opts1,'for(p in o)print(o[p]);'
        ,'for (p in o) print(o[p]);','for..in']
+,[opts1,'!x'
+       ,'!x;','unary expression']
+,[opts1,'typeof x'
+       ,'typeof x;','unary expression with required space']
+,[opts1,'new new FactoryFactory()(x);'
+       ,'new new FactoryFactory()(x);','nested new']
 ].map(function(a){var x
   try{x=format(a[0],a[1])}
   catch(e){return 'FAIL: '+a[3]+'\n      '+e}

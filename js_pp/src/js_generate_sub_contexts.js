@@ -91,6 +91,10 @@ var generate_sub_contexts=
           ,{min_prec:18}
           ,{min_prec:19})}
 
+,ThrowStatement:function(f,c){
+  return h(c,1
+          ,{min_prec:17})}
+
 ,ExpressionStatement:function(f,c){
   return h(c,1
   ,{min_prec:18})}
@@ -99,23 +103,25 @@ var generate_sub_contexts=
   return h(c,1
   ,{min_prec:18})}
 
-,FunctionDeclaration:function(f,c){
-  return h(c,3
-          ,{}
-          ,{}
-          ,{indentation:c.indentation+' '})}
+,FunctionDeclaration:function(f,c){var ret
+  ret=h(c,f.cn.length)
+  ret[ret.length-1].indentation=c.indentation+' '
+  return ret}
+
+,FunctionExpression:function(f,c){var ret
+  ret=h(c,f.cn.length)
+  ret[ret.length-1].indentation=c.indentation+' '
+  return ret}
 
 ,VariableStatement:function(f,c){
-  return h(c,f.cn.length
-          ,{})}
+  return h(c,f.cn.length)}
 
 ,VariableDeclaration:function(f,c){
-  return h(c,f.cn.length
-          ,{})}
+  return h(c,f.cn.length)}
 
 ,VariableDeclarator:function(f,c){
   return h(c,2
-          ,{}
+          ,undefined
           ,{min_prec:17})}
 
 ,Arguments:function(f,c){
@@ -129,9 +135,13 @@ var generate_sub_contexts=
 
 ,BinaryExpression:function(f,c){
   assert(f.assoc=='left','all binary ops left-associative')
-  return h(c,f.cn.length
+  return h(c,2
           ,{min_prec:f.prec,assoc:'left'}
           ,{min_prec:f.prec})}
+
+,UnaryExpression:function(f,c){
+  return h(c,1
+          ,{min_prec:5})}
 
 ,UpdateExpression:function(f,c){
   return h(c,1
@@ -151,10 +161,24 @@ var generate_sub_contexts=
   if(string_quote_char)context_update.string_quote_char=string_quote_char
   return h(c,f.cn.length,context_update)}
 
+,ObjectExpression:function(f,c){
+  return h(c,f.cn.length
+          ,{min_prec:18})} // actually set by PropertyAssignment, so shouldn't matter
+
+,PropertyAssignment:function(f,c){
+  return h(c,2
+          ,{min_prec:0} // only bare property names and string literals allowed
+          ,{min_prec:18})}
+
 ,CallExpression:function(f,c){
   return h(c,2
           ,{min_prec:2}
           ,{min_prec:17})}
+
+,NewExpression:function(f,c){
+  return h(c,2
+          ,{min_prec:2} // XXX can contain new with arguments, but can't contain function call
+          ,{min_prec:17})} // shouldn't matter (Arguments will set this)
 
 ,MemberExpression:function(computed){return function(f,c){
   return h(c,2
