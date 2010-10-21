@@ -21,6 +21,10 @@ function create_initial_context(opts){var ctx,copied
         ,'number_radix_preference'
         ,'number_use_exponential_notation'
         ,'homogenize_arrays'
+        ,'space_before_for_semicolon'
+        ,'space_after_for_semicolon'
+        ,'space_before_for_paren'
+        ,'space_around_assign'
         ]
  copied.forEach(function(p){ctx[p]=opts[p]})
  return ctx}
@@ -71,9 +75,21 @@ var generate_sub_contexts=
           ,{min_prec:20}
           ,{min_prec:20})}
 
+,ForStatement:function(f,c){
+  // ForStatement children: init, test, update, body
+  return h(c,f.cn.length
+          ,{min_prec:18}
+          ,{min_prec:18}
+          ,{min_prec:18}
+          ,{min_prec:20})}
+
 ,ExpressionStatement:function(f,c){
   return h(c,1
-          ,{min_prec:18})}
+  ,{min_prec:18})}
+
+,ReturnStatement:function(f,c){
+  return h(c,1
+  ,{min_prec:18})}
 
 ,FunctionDeclaration:function(f,c){
   return h(c,3
@@ -82,6 +98,10 @@ var generate_sub_contexts=
           ,{indentation:c.indentation+' '})}
 
 ,VariableStatement:function(f,c){
+  return h(c,f.cn.length
+          ,{})}
+
+,VariableDeclaration:function(f,c){
   return h(c,f.cn.length
           ,{})}
 
@@ -97,13 +117,22 @@ var generate_sub_contexts=
 
 ,Arguments:function(f,c){
   return h(c,f.cn.length
-          ,{min_prec:17})}
+  ,{min_prec:17})}
+
+,AssignmentExpression:function(f,c){
+  return h(c,2
+          ,{min_prec:17}
+          ,{min_prec:17,assoc:'right'})}
 
 ,BinaryExpression:function(f,c){
   assert(f.assoc=='left','all binary ops left-associative')
   return h(c,f.cn.length
           ,{min_prec:f.prec,assoc:'left'}
-          ,{min_prec:f.prec })}
+          ,{min_prec:f.prec})}
+
+,UpdateExpression:function(f,c){
+  return h(c,1
+          ,{min_prec:f.prec})}
 
 ,ArrayExpression:function(f,c){var string_quote_char,i,l,dbl_penalty,sgl_penalty,context_update
   dbl_penalty=sgl_penalty=0

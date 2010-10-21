@@ -13,6 +13,11 @@ function format(opts,s){var ast,defaults
   {semicolons: 'all'                          // 'after-all', 'separators', 'only-required', 'before-dangerous'
   ,indentation: 2                             // TODO: support tabs
   ,newline_before_closing_brace: true
+  ,space_before_for_semicolon: false
+  ,space_after_for_semicolon: true
+  ,space_before_for_paren: true
+  ,space_inside_for_parens: true
+  ,space_around_assign: true
   ,space_after_comma: true
   ,space_around_operators: true               // TODO: add option to show precedence, e.g: 'x = a*b + b*c' but 'x=a+b;'
   ,space_inside_parens: false                 // where parens are used for grouping (not as syntax in control structures)
@@ -42,6 +47,7 @@ function format(opts,s){var ast,defaults
 
  // parse the input
  ast=js_ast(s)
+ orig_ast=ast;
 
  if(ast.type=="ParseError") return ast.error
 
@@ -142,6 +148,7 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
  case 'Literal':
  case 'Identifier':
  case 'ThisExpression':
+ case 'EmptyStatement':
   break
 
  case 'FunctionDeclaration':
@@ -198,12 +205,20 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
  case 'CatchClause':
   cn=[ast.param,ast.body];break
 
+
  default:
-  throw new Error('unhandled AST node type '+ast.type+' ('+pp(ast)+')')}
+  throw new Error('unhandled AST node type '+ast.type+' ('+pp(ast)+')' + '\n full ast:\n' + pp(orig_ast))}
 
  if(cn)cn=cn.map(self)
 
  switch(ast.type){
+ case 'UpdateExpression':
+     f.prefix = ast.prefix;
+     f.operator = ast.operator;
+     // XXX check this ↓
+     f.prec = ast.operator == '++' || ast.operator == '--' ? 4 : 5;
+     f.compose=f.compose(ast.operator,f.prefix,f.prec);break
+     break;
 
  case 'IfStatement':
   f.n_statements=1+sum(cn.slice(1).map(access('n_statements')));break
@@ -239,8 +254,11 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
    break
   case 'regexp':
    f.min_chars=f.min_width=String(ast.value.body).length + String(ast.value.flags) + 2
-   f.compose=compose_regexp(ast.source,ast.flags)
+   f.compose=compose_regexp(ast.value)
    break
+  case 'Boolean':
+   f.min_chars=f.min_width=ast.value?4:5; // "true" or "false"
+   f.compose=compose_boolean(f);break;
   default:
    throw new Error('unhandled literal type: '+ast.kind)}
   break

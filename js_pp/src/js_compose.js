@@ -12,6 +12,8 @@ var compose=
   return '{\n'
        + compose_program_elements(c,ss)
        + '\n}'}
+,EmptyStatement:function(){
+  return ''}
 
 ,IfStatement:function(c,ss){var ret
   return 'if'
@@ -25,9 +27,35 @@ var compose=
           ?'else'+ss[2]
           :'')}
 
+,ForStatement:function(c,ss){var ret
+  return 'for'
+       + (c.space_before_for_paren?' ':'')
+       + (c.space_inside_for_parens?'( ':'(')
+       + ss[0]
+       + (c.space_before_for_semicolon && ss[0] ?' ':'')
+       + ';'
+       + (c.space_after_for_semicolon && ss[0] && ss[1] ?' ':'')
+       + ss[1]
+       + (c.space_before_for_semicolon && ss[1] && ss[2] ?' ':'')
+       + ';'
+       + (c.space_after_for_semicolon && ss[2] ?' ':'')
+       + ss[2]
+       + (c.space_inside_for_parens?' )':')')
+       + ' ' // TODO: handle blocks and single statements here
+       + ss[3]}
+
+
+
 ,ExpressionStatement:function(c,ss){return c.indentation+ss[0]}
+
+,ReturnStatement:function(c,ss){
+    return c.indentation+ 'return' + ( ss[0] ? ' ' : '' ) + ss[0]}
+
 ,VariableStatement:function(c,ss){
   return c.indentation+'var '+ss.join()}
+
+,VariableDeclaration:function(c,ss){
+    return c.indentation+'var '+ss.join()}
 
 ,CallExpression:function(c,ss){return ss[0]+ss[1]} // TODO: add options for whitespace between callee and arguments
 
@@ -45,6 +73,16 @@ var compose=
   return '('
        + ss.join(c.space_after_comma?', ':',')
        + ')'}
+
+,AssignmentExpression:function(c,ss){
+  return c.indentation 
+       + ss[0] 
+       + (c.space_around_assign ? ' = ' : '=' )
+       + ss[1]}
+
+,UpdateExpression:function(operator,prefix,prec){return function(c,ss){
+  if(prefix) return operator + ss[0]
+  return ss[0] + operator}}
 
 ,BinaryExpression:function(op,prec,assoc){return function(c,ss){var parenthesize,parens
   parenthesize=prec>c.min_prec || prec==c.min_prec && assoc!=c.assoc
@@ -81,27 +119,19 @@ function compose_number(n){return function _compose_number(c){var str,ret,sign,r
  str=n.toString(radix)
  switch(radix){
   case  8: ret='0'+str;break
-  case 10:
-  if( c.number_use_exponential_notation !== 'never' ) {
-      var cutoff = Number(c.number_use_exponential_notation);
-      if(isNaN(cutoff)) {
-          throw new Error('unhandled use exponential notation: ' + c.number_use_exponential_notation);
-      }
-      var m = str.match(/0+$/);
-      if(m) {
-          var exp_str = str.slice(0,m.index) + "e" + m[0].length;
-          if( exp_str.length <= (str.length - cutoff) ) {
-              str = exp_str;
-          }
-      }
-  }
-  ret = str;
-  break;
+  case 10: ret=str;break
   case 16: ret='0x'+str;break
   default: throw new Error('unhandled number radix: '+radix)}
  ret=sign+ret
- assert(Number(ret) == n,"number formatting preserves value")
+ assert(+ret == n,"number formatting preserves value "+ret+" : "+n)
  return ret}}
 
-function compose_regexp(source,flags){return function(c){
-  return '/'+source+'/'+flags}} // needs tests, needs AST support
+function compose_regexp(regexp){return function(c){
+  var flags = 
+   (regexp.global ? 'g' : '')
+   + (regexp.ignoreCase ? 'i' : '')
+   + (regexp.multiline ? 'm' : '')
+  return '/'+regexp.source+'/'+flags}}
+
+function compose_boolean(bool){return function(c){
+  return bool ? 'true' : 'false'}}

@@ -641,26 +641,16 @@ function js_ast(s){var dict,pending_comment
            ,value:eval(m.text())}} // XXX cheating again
 
  ,RegularExpressionLiteral:function(m,cn){
+     var regexp = RegExp(cn[0],cn[1]);
     return {type:"Literal"
            ,kind:"regexp"
-           ,value:{body: cn[0]
-            ,flags: cn[1]}}}
+           ,value:regexp}}
 
  ,RegularExpressionBody:function(m,cn){
     return m.text()}
 
  ,RegularExpressionFlags:function(m,cn){
-    var flags = {}, text = m.text();
-    for( var i in text.split("") ) {
-        switch(text[i]) {
-            case 'g': flags['global'] = true;break;
-            case 'i': flags['ignore_case'] = true;break;
-            case 'm': flags['multiline'] = true;break;
-            //case 'y': flags['sticky'] = true;break; // FF 3.0
-            default: flags['flag-'+text[i]] = true;break;
-        }
-    }
-    return flags}
+    return m.text().replace(/[^gmi]/g, '')}
 
  // everything else we deal with functionally, passing return values up the tree, but for comments we use some mutable local state.
 
@@ -722,7 +712,7 @@ function js_ast(s){var dict,pending_comment
 
  function isStatement(x){return x&&x.type&&x.type.slice(-9)=="Statement"}
 
- function cleanup_vardecl(decl){return {id:decl.id,init:decl.init}}
+ function cleanup_vardecl(decl){return {type:'VariableDeclarator',id:decl.id,init:decl.init}}
 
  var warnings=[]
  dict.warn=function(x){warnings.push(x)}
