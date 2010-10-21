@@ -25,6 +25,8 @@ function create_initial_context(opts){var ctx,copied
         ,'space_after_for_semicolon'
         ,'space_before_for_paren'
         ,'space_around_assign'
+        ,'space_before_function_call_arguments'
+        ,'space_inside_function_call_parens'
         ]
  copied.forEach(function(p){ctx[p]=opts[p]})
  return ctx}
@@ -116,11 +118,6 @@ var generate_sub_contexts=
           ,{}
           ,{min_prec:17})}
 
-,CallExpression:function(f,c){
-  return h(c,2
-          ,{min_prec:2}
-          ,{min_prec:17})}
-
 ,Arguments:function(f,c){
   return h(c,f.cn.length
   ,{min_prec:17})}
@@ -153,6 +150,17 @@ var generate_sub_contexts=
   context_update={min_prec:17}
   if(string_quote_char)context_update.string_quote_char=string_quote_char
   return h(c,f.cn.length,context_update)}
+
+,CallExpression:function(f,c){
+  return h(c,2
+          ,{min_prec:2}
+          ,{min_prec:17})}
+
+,MemberExpression:function(computed){return function(f,c){
+  return h(c,2
+          ,{min_prec:1}
+          ,computed?{min_prec:18} // everything up to comma operator can appear in bracket accessor
+                   :{min_prec:1})}}
 
 }
 

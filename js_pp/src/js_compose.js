@@ -66,12 +66,12 @@ var compose=
 ,VariableDeclaration:function(c,ss){
     return c.indentation+'var '+ss.join()}
 
-,CallExpression:function(c,ss){return ss[0]+ss[1]} // TODO: add options for whitespace between callee and arguments
-
 ,FunctionDeclaration:function(c,ss){
   return 'function '
        + ss[0]
+       + '('  // TODO: add space options
        + ss[1]
+       + ')'
        + ss[2]}
 
 ,VariableDeclarator:function(c,ss){
@@ -79,9 +79,9 @@ var compose=
        + (ss[1]?'='+ss[1]:'')}
 
 ,Arguments:function(c,ss){
-  return '('
+  return (c.space_inside_function_call_parens?'( ':'(')
        + ss.join(c.space_after_comma?', ':',')
-       + ')'}
+       + (c.space_inside_function_call_parens?' )':')')}
 
 ,AssignmentExpression:function(c,ss){
   return c.indentation 
@@ -107,14 +107,52 @@ var compose=
        + ss.join(',') // TODO: add options for spaces
        + ']'}
 
+,MemberExpression:function(computed){return function(c,ss){
+  if(computed) return ss[0]+'['+ss[1]+']'
+  return ss[0]+'.'+ss[1]}}
+
+,CallExpression:function(c,ss){
+  return ss[0]
+       + (c.space_before_function_call_arguments?' ':'')
+       + ss[1]}
+
+,NewExpression:function(c,ss){
+  return 'new ' // TODO: option for minimization to lose this space when possible (e.g. "new(f().g)")
+       + ss[0]
+       + (c.space_before_function_call_arguments?' ':'') // TODO: these options should probably be different from the function call options
+       + (c.space_inside_function_call_parens?'( ':'(') // TODO: when arguments are empty, and context allows it, add an option to drop parens for minimization
+       + ss[1]
+       + (c.space_inside_function_call_parens?' )':')')}
+
 }
+
+// To deal with line termination with semicolons, rather than add the same code to each statement's compose method, we replace each method here with a new function that calls the original function, then appends a semicolon if necessary.
+
+// Some statements do not need a terminating semicolon, e.g. because the statement with which they end will already have a semicolon.
+// This includes the iteration statements, `if` statements and a few others.
+// Other than these, all *Statement nodes are handled the same.
+
+var statements_not_followed_by_semicolon=
+['ForStatement','ForInStatement'
+,'WhileStatement','DoWhileStatement'
+,'IfStatement'
+,'WithStatement','LabelledStatement'
+,'SwitchStatement','TryStatement'
+,'BlockStatement']
+
+for(var p in compose){
+ if(statements_not_followed_by_semicolon.indexOf(p)>-1)continue
+ if(p=='EmptyStatement')compose[p]=function(){return ';'}
+ else if(p.slice(-9)=='Statement')compose[p]=add_semi_rules(compose[p])}
+
+function add_semi_rules(f){
+ return function(c,ss){
+  if(c.semicolons=='all')return f(c,ss)+';'
+  throw new Error('XXX TODO: implement other semicolon styles')}}
 
 function compose_program_elements(c,ss){var line_sep
  line_sep='\n'+c.indentation
- // this isn't correct, because some "program elements" are function declarations, they are not all statements, and should not all have semicolons even in semicolons=all mode
- // The semicolons should be added in the statements' individual compose functions.
- if(c.semicolons=='all')return ss.map(function(s){return s+';'}).join(line_sep)
- throw new Error('XXX TODO: implement other semicolon styles')}
+ return ss.join(line_sep)}
 
 function compose_string(f){return function _compose_string(c){var quote_char
  quote_char=c.string_quote_char||f.quote_char_preference||c.string_quote_char_preference

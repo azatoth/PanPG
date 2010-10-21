@@ -10,8 +10,8 @@ function format(opts,s){var ast,defaults
 
  // semicolons, indentation, newline_before_closing_brace, space_after_comma, space_around_operators, space_inside_parens, number_radix, object_literal_comma_first, blank_before_function, space_inside_if_test_parens, space_before_if_test, space_after_single_line_if_test, control_statement_braces, control_statement_empty, string_linebreak_style, string_charset
  defaults=
-  {semicolons: 'all'                          // 'after-all', 'separators', 'only-required', 'before-dangerous'
-  ,indentation: 2                             // TODO: support tabs
+  {semicolons: 'all'                           // 'after-all', 'separators', 'only-required', 'before-dangerous'
+  ,indentation: 2                              // TODO: support tabs
   ,newline_before_closing_brace: true
   ,space_before_for_semicolon: false
   ,space_after_for_semicolon: true
@@ -19,21 +19,23 @@ function format(opts,s){var ast,defaults
   ,space_inside_for_parens: true
   ,space_around_assign: true
   ,space_after_comma: true
-  ,space_around_operators: true               // TODO: add option to show precedence, e.g: 'x = a*b + b*c' but 'x=a+b;'
-  ,space_inside_parens: false                 // where parens are used for grouping (not as syntax in control structures)
-  ,number_radix_preference: 10                // 8, 10, 16
-  ,number_use_exponential_notation: 'never'   // 'never', 0..N which is cutoff limit, 1 is essentially when shorter
+  ,space_around_operators: true                // TODO: add option to show precedence, e.g: 'x = a*b + b*c' but 'x=a+b;'
+  ,space_inside_parens: false                  // where parens are used for grouping (not as syntax in control structures)
+  ,number_radix_preference: 10                 // 8, 10, 16
+  ,number_use_exponential_notation: 'never'    // 'never', 0..N which is cutoff limit, 1 is essentially when shorter
   ,object_literal_comma_first: false
   ,blank_before_function: true
-  ,space_inside_if_test_parens: false         // 'if ( x )' or 'if (x)'
-  ,space_before_if_test: true                 // 'if (' or 'if('
-  ,space_after_single_line_if_test: true      // 'if(...) foo()' or 'if(...)foo()'
-  ,control_statement_braces: 'preserve'       // 'preserve', 'braces', 'one-statement-only' [1] [2]
-  ,control_statement_empty: 'empty-statement' // 'empty-statement', 'empty-braces' [3]
-  ,string_linebreak_style: 'backslash-n'      // 'backslash-n', 'line-continuation', 'plus-operator'
-  ,string_charset: 'unicode'                  // 'unicode', 'ascii' [4]
-  ,string_quote_style: 'shorter-or-double'    // 'single', 'double', 'shorter-or-single', 'shorter-or-double' [5]
-  ,homogenize_arrays: false
+  ,space_inside_if_test_parens: false          // 'if ( x )' or 'if (x)'
+  ,space_before_if_test: true                  // 'if (' or 'if('
+  ,space_after_single_line_if_test: true       // 'if(...) foo()' or 'if(...)foo()'
+  ,control_statement_braces: 'preserve'        // 'preserve', 'braces', 'one-statement-only' [1] [2]
+  ,control_statement_empty: 'empty-statement'  // 'empty-statement', 'empty-braces' [3]
+  ,string_linebreak_style: 'backslash-n'       // 'backslash-n', 'line-continuation', 'plus-operator'
+  ,string_charset: 'unicode'                   // 'unicode', 'ascii' [4]
+  ,string_quote_style: 'shorter-or-double'     // 'single', 'double', 'shorter-or-single', 'shorter-or-double' [5]
+  ,homogenize_arrays: false                    // mainly for testing, can be replaced by some more flexible notion of consistency
+  ,space_inside_function_call_parens: false    // 'f( x )' or 'f(x)'
+  ,space_before_function_call_arguments: false // 'f (' or 'f(' [6]
   }
  opts=extend(defaults,opts)
 
@@ -44,6 +46,10 @@ function format(opts,s){var ast,defaults
  // [3] If a control statement has an empty body, it can be written as an empty statement e.g. "while(x());", or as an empty block e.g. "while(x()){}".
  // [4] 'ascii' uses \uHHHH escapes for all non-ASCII characters, while 'unicode' allows all Unicode characters directly, using escapes only for newlines, quotation marks, etc.
  // [5] 'single' and 'double' always use the specied kind of quote, escaping string content as necessary, while 'shorter-or-' variants prefer one kind of quote but use the other if it makes the escaped string literal shorter (i.e. when the string value itself contains quotation marks).
+ // [6] There's a fearful symmetry in these space_* options, which suggests they could be combined sensibly.
+ //     One way to do this would be to have a consistent set of options such as 'before_open_paren', 'after_open_paren', 'after_comma', 'before_close_paren', etc.
+ //     This set of options would then be reproduced on each structure where it applies, such as function calls, array literals, `new` operator constructor calls, function declarations, etc.
+ //     This could be done by having nested objects, e.g. "function_call_spaces:{before_open_paren:true,...}" or by having names that follow a pattern, like 'function_call_space_before_open_paren' and then parsing these into consistent structures here instead of handling them all individually.
 
  // parse the input
  ast=js_ast(s)
@@ -211,6 +217,9 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
 
  if(cn)cn=cn.map(self)
 
+
+ // Next we have the special cases for node types where the compose or generate_sub_contexts function needs to be partially applied to some parts of the AST node (which is not made available when those functions are called), or where the other formattable properties need to be calculated specially.
+
  switch(ast.type){
  case 'UpdateExpression':
      f.prefix = ast.prefix;
@@ -270,7 +279,13 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
 
  case 'ArrayExpression':
   // min length is brackets + commas + sum of min length of children
-  f.min_chars=2+(cn.length?cn.length-1:0)+sum(cn.map(access('min_chars')));break}
+  f.min_chars=2+(cn.length?cn.length-1:0)+sum(cn.map(access('min_chars')));break
+
+ case 'MemberExpression':
+  f.compose=f.compose(ast.computed)
+  f.generate_sub_contexts=f.generate_sub_contexts(ast.computed);break
+
+ }
 
 
 
@@ -292,6 +307,7 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
  return f
 
  // copied from js_ast.js
+ // XXX should be elsewhere, used in several places
  function isStatement(x){return x&&x.type&&x.type.slice(-9)=="Statement"}}}
 
 // JavaScript operator precedence:

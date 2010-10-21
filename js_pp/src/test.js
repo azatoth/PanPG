@@ -121,16 +121,42 @@ opts1={semicolons:'all'
 opts2=copy(opts1)
 opts2.homogenize_arrays=true
 return ''+
-[[opts1,'3*(1+2)','3 * (1 + 2);','arithmetic precedence']
-,[opts1,'if(x)foo()','if(x) foo();','if statement']
-,[opts1,'1+2%3*4-5+6/7*8','1 + 2 % 3 * 4 - 5 + 6 / 7 * 8;','precedence']
-,[opts1,'(1+2)*3','(1 + 2) * 3;']
-,[opts1,'1*(2+3)','1 * (2 + 3);']
-,[opts1,'\'""\'','\'""\';']
-,[opts1,'[\'""\',"\'\'",\'abc\']','[\'""\',"\'\'","abc"];','shorter-or-double string quoting']
-,[opts2,'[\'"\',"\'"]','["\\"","\'"];','homogenize quotes in array literal']
+/*
+ [optsX,input
+       ,expected,name] */
+[[opts1,'3*(1+2)'
+       ,'3 * (1 + 2);','arithmetic precedence']
+,[opts1,'if(x)foo()'
+       ,'if(x) foo();','if statement']
+,[opts1,'1+2%3*4-5+6/7*8'
+       ,'1 + 2 % 3 * 4 - 5 + 6 / 7 * 8;','precedence']
+,[opts1,'(1+2)*3'
+       ,'(1 + 2) * 3;']
+,[opts1,'1*(2+3)'
+       ,'1 * (2 + 3);']
+,[opts1,'\'""\''
+       ,'\'""\';']
+,[opts1,'[\'""\',"\'\'",\'abc\']'
+       ,'[\'""\',"\'\'","abc"];','shorter-or-double string quoting']
+,[opts2,'[\'"\',"\'"]'
+       ,'["\\"","\'"];','homogenize quotes in array literal']
+,[opts1,'"have a string"'
+       ,'"have a string";','trivial string']
+,[opts1,'var x'
+       ,'var x;','variable declaration']
+,[opts1,'function f(x){return x*x}'
+       ,'function f(x){\n return x * x;\n}','simple function']
+,[opts1,'for(i=0;i<10;i++)print(i);'
+       ,'for (i = 0; i < 10; i++) print(i);','for loop']
+,[opts1,'for(p in o)print(o[p]);'
+       ,'for (p in o) print(o[p]);','for..in']
 ].map(function(a){var x
-  return (x=format(a[0],a[1]))==a[2]
+  try{x=format(a[0],a[1])}
+  catch(e){return 'FAIL: '+a[3]+'\n      '+e}
+  return x==a[2]
     ? 'PASS'
-    : 'FAIL: '+(a[3]||'')+'\n      expected: '+a[2]+'\n      actual:   '+x})
+    : 'FAIL: '+(a[3]||'')
+     +'\n      input:    '+a[1].replace(/\n/g,'\n                ')
+     +'\n      expected: '+a[2].replace(/\n/g,'\n                ')
+     +'\n      actual:   '+x   .replace(/\n/g,'\n                ')})
  .join('\n')}

@@ -535,15 +535,15 @@ function js_ast(s){var dict,pending_comment
     while(cn.length || news.length){
      // First, if there is an accessor, it is appended to create a MemberExpression
      if(cn[0] && (cn[0].type=='_DotAccessor' || cn[0].type=='_BracketAccessor')){
-         property=cn.shift().property
+         property=cn.shift()
          core={type:"MemberExpression"
               ,object:core
-              ,property:property
-              ,computed:property.type!='Identifier'}
-         // if there was an accessor there might be another one so we need to loop
+              ,property:property.property
+              ,computed:property.type=='_BracketAccessor'}
+         // if there was an accessor then there might be another one so we need to loop
          continue}
      // Now, if there is any of the tail left, the first element is an Arguments node (parenthesized expression list)
-     // If there is an unconsumed prefix new token, then this is a NewExpression, with arguments if cn[0].
+     // If there is an unconsumed prefixed `new` token, then this is a NewExpression, with arguments if cn[0].
      assert(!cn[0] || cn[0].type=='Arguments')
      if(news.length){
          news.pop()
