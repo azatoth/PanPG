@@ -72,16 +72,22 @@ var generate_sub_contexts=
   // IfStatement children: test, consequent, (opt) alternate
   return h(c,f.cn.length
           ,{min_prec:18}
-          ,{min_prec:20}
-          ,{min_prec:20})}
+          ,{min_prec:19}
+          ,{min_prec:19})}
 
 ,ForStatement:function(f,c){
   // ForStatement children: init, test, update, body
-  return h(c,f.cn.length
+  return h(c,4
           ,{min_prec:18}
           ,{min_prec:18}
           ,{min_prec:18}
-          ,{min_prec:20})}
+          ,{min_prec:19})}
+
+,ForInStatement:function(f,c){
+  return h(c,3
+          ,{min_prec:0} // this doesn't quite capture what is intended here, which is that only an identifier, with optional "var" prefix, is allowed here.
+          ,{min_prec:18}
+          ,{min_prec:19})}
 
 ,ExpressionStatement:function(f,c){
   return h(c,1

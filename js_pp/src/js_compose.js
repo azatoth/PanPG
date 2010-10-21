@@ -27,7 +27,7 @@ var compose=
           ?'else'+ss[2]
           :'')}
 
-,ForStatement:function(c,ss){var ret
+,ForStatement:function(c,ss){
   return 'for'
        + (c.space_before_for_paren?' ':'')
        + (c.space_inside_for_parens?'( ':'(')
@@ -44,7 +44,16 @@ var compose=
        + ' ' // TODO: handle blocks and single statements here
        + ss[3]}
 
-
+,ForInStatement:function(c,ss){
+  return 'for'
+       + (c.space_before_for_paren?' ':'')
+       + (c.space_inside_for_parens?'( ':'(')
+       + ss[0]
+       + ' in ' // needs an option (for minimization) to drop the second space when possible
+       + ss[1]
+       + (c.space_inside_for_parens?' )':')')
+       + ' ' // TODO: handle blocks and single statements here
+       + ss[2]}
 
 ,ExpressionStatement:function(c,ss){return c.indentation+ss[0]}
 

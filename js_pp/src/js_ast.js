@@ -187,7 +187,7 @@ function js_ast(s){var dict,pending_comment
            ,expression:cn[0]}}
 
  ,ForInVarLeft:function(m,cn){
-    assert(cn[0].type=="VariableDeclaration")
+    assert(cn[0].type=="VariableDeclarator")
     return {type:"_ForInVarLeft"
            ,declaration:cn[0]}}
 
@@ -384,11 +384,13 @@ function js_ast(s){var dict,pending_comment
 
  ,PostIncrementOp:function(m,cn){
     return {type:"_PostfixOp"
-           ,operator:"++"}}
+           ,operator:"++"
+           ,argument:cn[0]}}
 
  ,PostDecrementOp:function(m,cn){
     return {type:"_PostfixOp"
-           ,operator:"--"}}
+           ,operator:"--"
+           ,argument:cn[0]}}
 
  ,AssignmentExpression:function(m,cn){
     assert(cn.length==1 || cn.length==3)
