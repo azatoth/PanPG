@@ -111,13 +111,24 @@ function js_ast(s){var dict,pending_comment
     assert(cn[0].type=="BlockStatement")
     block=cn.shift()
     assert(!cn[0] || cn[0].type=='CatchClause'
-                  || cn[0].type=='FinallyClause')
+                  || cn[0].type=='_FinallyClause')
     if(cn[0] && cn[0].type=='CatchClause') handler=cn.shift()
-    if(cn[0] && cn[0].type=='BlockStatement') finalizer=cn[0]
+    if(cn[0] && cn[0].type=='_FinallyClause') finalizer=cn[0].body
     return {type:"TryStatement"
            ,block:block
            ,handler:handler||null
            ,finalizer:finalizer||null}}
+
+ ,Catch:function(m,cn){
+    assert(cn[0].type=="Identifier")
+    assert(cn[1].type=='BlockStatement')
+    return {type:"CatchClause"
+           ,param:cn[0]
+           ,body:cn[1]}}
+
+ ,Finally:function(m,cn){
+    return {type:"_FinallyClause"
+           ,body:cn[0]}}
 
  ,IterationStatement:function(m,cn){return cn[0]}
 
@@ -598,17 +609,6 @@ function js_ast(s){var dict,pending_comment
            ,test:null
            ,consequent:cn}}
 
- ,Catch:function(m,cn){
-    assert(cn[0].type=="Identifier")
-    assert(cn[1].type=='BlockStatement')
-    return {type:"CatchClause"
-           ,param:cn[0]
-           ,body:cn[1]}}
-
- ,Finally:function(m,cn){
-    return {type:"BlockStatement"
-           ,body:cn}}
-
  ,Identifier:function(m,cn){
     return {type:"Identifier"
            ,name:m.text()}}
@@ -643,10 +643,9 @@ function js_ast(s){var dict,pending_comment
            ,value:eval(m.text())}} // XXX cheating again
 
  ,RegularExpressionLiteral:function(m,cn){
-     var regexp = RegExp(cn[0],cn[1]);
     return {type:"Literal"
            ,kind:"regexp"
-           ,value:regexp}}
+           ,value:new RegExp(cn[0],cn[1])}}
 
  ,RegularExpressionBody:function(m,cn){
     return m.text()}
@@ -702,7 +701,7 @@ function js_ast(s){var dict,pending_comment
  function handle_comment(f){
   return function(m,cn){var retval
      retval=f(m,cn)
-     if(pending_comment && retval){retval.comment=pending_comment;pending_comment=undefined}
+     //if(pending_comment && retval){retval.comment=pending_comment;pending_comment=undefined}
      return retval}}
 
  function isExpression(x){
@@ -725,6 +724,48 @@ function js_ast(s){var dict,pending_comment
                              ,error:PanPG_util.showTree(parse_result)}
 
  var result = PanPG_util.treeWalker(dict,parse_result)
- if(pending_comment) result.commentAfter=pending_comment // XXX won't ever happen (Program node will always be visited after any Comment it contains)
+ //if(pending_comment) result.commentAfter=pending_comment // XXX won't ever happen (Program node will always be visited after any Comment it contains)
  if(warnings.length)return warnings.join('\n')
  return result}
+
+// Equality on AST nodes
+// js_ast_eq :: (AST,AST) → Boolean
+function js_ast_eq(a,b){var i,l,p
+ if(a==null && b==null)return true
+ if(typeof a != typeof b)return false
+ if(a==b)return true
+ if(typeof a == 'number' && isNaN(a) && isNaN(b))return true
+ if(a instanceof RegExp){
+  if(!(b instanceof RegExp))return false
+  return a.toString() == b.toString()} // regex equivalence (hopefully)
+ if(typeof a != 'object')return false
+ if(a instanceof Array){
+  if(!(b instanceof Array))return false
+  if(a.length!=b.length)return false
+  for(i=0,l=a.length;i<l;i++)if(!js_ast_eq(a[i],b[i]))return false
+  return true}
+ for(p in a)if(!js_ast_eq(a[p],b[p]))return false
+ for(p in b)if(!p in a)return false
+ return true}
+
+// AST diff
+// js_ast_diff(a,b) returns false when a and b do not differ.
+// Otherwise it returns an AST diff object which is sufficient to recreate either of `a` or `b` given the other.
+// A diff object is either a simple diff or a path.
+// A diff between two primitives, or between a primitive and an object, is a simple diff.
+// A simple diff is represented as an array with `a` and `b` as the array elements.
+// A diff between two objects which differ in some properties but not others can be a path.
+// A path is an object containing properties corresponding to each property which differs between `a` and `b`.
+// If a property name P exists in both `a` and `b` but differs in value, then the diff contains a property with that name containing the diff between a[P] and b[P].
+// If a property name P exists in one of `a` or `b` but not the other, the property in the diff will be an array with the value that exists and the special value js_ast_diff.NONEXIST in the other position.
+function js_ast_diff(a,b){
+ if(a===b)return false
+ }
+
+// To apply a diff D to an input object In:
+// If D is a simple diff, return the second element of D.
+//   (If a diff is being applied in reverse, then return the first element instead.)
+// Otherwise D is a path, and In must be an object, otherwise it is an error.
+// Let Out be a new empty object.
+// For each property of In with a corresponding property in D, apply the diff in D to the value in In and set the corresponding property of Out to the result.
+// All other properties are copied directly.

@@ -206,7 +206,7 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
   cn=ast.elements;break
 
  case 'SwitchCase':
-  cn=[ast.test,ast.consequent];break
+  cn=[ast.test].concat(ast.consequent);break
 
  case 'CatchClause':
   cn=[ast.param,ast.body];break
@@ -270,8 +270,11 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
    f.compose=compose_regexp(ast.value)
    break
   case 'Boolean':
-   f.min_chars=f.min_width=ast.value?4:5; // "true" or "false"
-   f.compose=compose_boolean(f);break;
+   f.min_chars=f.min_width=ast.value?4:5 // "true" or "false"
+   f.compose=compose_boolean(f);break
+  case 'null':
+   f.min_chars=f.min_width=4
+   f.compose=function(){return 'null'};break
   default:
    throw new Error('unhandled literal type: '+ast.kind)}
   break

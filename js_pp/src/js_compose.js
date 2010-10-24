@@ -9,13 +9,15 @@ var compose=
 {Program:compose_program_elements
 
 ,BlockStatement:function(c,ss){
-  return '{\n'
+  return '{'
+       + '\n'+c.inner_indentation
        + compose_program_elements(c,ss)
-       + '\n}'}
-,EmptyStatement:function(){
-  return ''}
+       + '\n'+c.indentation
+       + '}'}
 
-,IfStatement:function(c,ss){var ret
+,EmptyStatement:function(){return ';'}
+
+,IfStatement:function(c,ss){
   return 'if'
        + (c.space_before_if_test?' ':'')
        + (c.space_inside_if_test_parens?'( ':'(')
@@ -59,16 +61,48 @@ var compose=
   return 'throw ' // TODO: minimization, as elsewhere
        + ss[0]}
 
-,ExpressionStatement:function(c,ss){return c.indentation+ss[0]}
+,TryStatement:function(c,ss){var nl
+  nl='\n'+c.indentation
+  return 'try'
+       + ss[0]
+       + (ss[1]?nl+ss[1]:'')
+       + (ss[2]?nl+'finally'+ss[2]:'')}
 
-,ReturnStatement:function(c,ss){
-    return c.indentation+ 'return' + ( ss[0] ? ' ' : '' ) + ss[0]}
+,CatchClause:function(c,ss){
+  return 'catch('
+       + ss[0]
+       + ')'
+       + ss[1]}
+
+,ExpressionStatement:function(c,ss){return ss[0]}
+
+,ReturnStatement:function(c,ss){return 'return' + (ss[0]?' '+ss[0]:'')}
+
+,BreakStatement:function(c,ss){return 'break' + (ss[0]?' '+s[0]:'')}
+
+,ContinueStatement:function(c,ss){return 'continue' + (ss[0]?' '+ss[0]:'')}
+
+,SwitchStatement:function(c,ss){
+  return 'switch'
+       + '('
+       + ss[0]
+       + ')'
+       + '{'
+       + '\n'+c.indentation
+       + compose_program_elements(c,ss.slice(1))
+       + '}'}
+
+,SwitchCase:function(c,ss){
+  return (ss[0]?'case '+ss[0]+':'
+               :'default:')
+       + '\n'+c.indentation
+       + compose_program_elements(c,ss.slice(1))}
 
 ,VariableStatement:function(c,ss){
-  return c.indentation+'var '+ss.join()}
+  return 'var '+ss.join()}
 
 ,VariableDeclaration:function(c,ss){
-    return c.indentation+'var '+ss.join()}
+    return 'var '+ss.join()}
 
 ,FunctionDeclaration:function(c,ss){
   return 'function '
@@ -96,8 +130,7 @@ var compose=
        + (c.space_inside_function_call_parens?' )':')')}
 
 ,AssignmentExpression:function(c,ss){
-  return c.indentation 
-       + ss[0] 
+  return ss[0] 
        + (c.space_around_assign ? ' = ' : '=' )
        + ss[1]}
 
@@ -135,6 +168,13 @@ var compose=
        + (operator.match(/[a-z]+/)?' ':'') // space required for e.g. 'delete' and 'typeof' but not '!' or '~'
        + ss[0]}}
 
+,ConditionalExpression:function(c,ss){
+  return ss[0]
+       + (c.space_around_operators?' ? ':'?')
+       + ss[1]
+       + (c.space_around_operators?' : ':':')
+       + ss[2]}
+
 ,MemberExpression:function(computed){return function(c,ss){
   if(computed) return ss[0]+'['+ss[1]+']'
   return ss[0]+'.'+ss[1]}}
@@ -148,14 +188,39 @@ var compose=
   return 'new ' // TODO: option for minimization to lose this space when possible (e.g. "new(f().g)")
        + ss[0]
        + (c.space_before_function_call_arguments?' ':'') // TODO: these options should probably be different from the function call options
-       + ss[1]}
-/*
-       + (c.space_inside_function_call_parens?'( ':'(') // TODO: when arguments are empty, and context allows it, add an option to drop parens for minimization
-       + ss[1]
-       + (c.space_inside_function_call_parens?' )':')')}
-*/
+         // TODO: add minimization option to drop empty parens "()" when possible.
+       + (ss[1]||'()')} // input such as "new X;" becomes a NewExpression output as "new X()"
 
 }
+
+// Several kinds of expressions can have their precedence raised by being surrounded by parentheses.
+// The lowest precedence allowed without ambiguity is passed down in the context.
+// Here we handle adding parentheses for all such cases.
+
+var paren_exprs=
+[['NewExpression',2]
+,['CallExpression',3]
+// TODO ...
+,['LogicalOrExpression',15]
+,['ConditionalExpression',16]
+]
+
+paren_exprs.forEach(function(a){var expr=a[0],prec=a[1],existing
+ existing=compose[expr]
+ compose[expr]=function(c,ss){var sub,parens
+  sub=existing(c,ss)
+  if(prec>c.min_prec){
+   return (c.spaces_inside_parens?'( ':'(')
+        + sub
+        + (c.spaces_inside_parens?' )':')')}
+  return sub}})
+
+/*
+// Basic indentation is handled here for all Statement and FunctionDeclaration nodes
+for(var p in compose){
+ if(p.slice(-9)=='Statement')compose[p]=fix(compose[p])
+ function fix(f){return function(c,ss){return c.indentation+f(c,ss)}}}
+*/
 
 // To deal with line termination with semicolons, rather than add the same code to each statement's compose method, we replace each method here with a new function that calls the original function, then appends a semicolon if necessary.
 
@@ -169,11 +234,10 @@ var statements_not_followed_by_semicolon=
 ,'IfStatement'
 ,'WithStatement','LabelledStatement'
 ,'SwitchStatement','TryStatement'
-,'BlockStatement']
+,'BlockStatement','EmptyStatement']
 
 for(var p in compose){
  if(statements_not_followed_by_semicolon.indexOf(p)>-1)continue
- if(p=='EmptyStatement')compose[p]=function(){return ';'}
  else if(p.slice(-9)=='Statement')compose[p]=add_semi_rules(compose[p])}
 
 function add_semi_rules(f){

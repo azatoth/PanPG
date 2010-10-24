@@ -1,3 +1,92 @@
+function js_pp_tests(){var opts1,opts2
+opts1={semicolons:'all'
+      ,indentation:2
+      ,newline_before_closing_brace:false
+      ,space_around_operators:true
+      ,space_inside_parens:false
+      ,space_inside_if_test_parens:false
+      ,space_before_if_test:false
+      ,space_after_single_line_if_test:true
+      ,string_quote_style:'shorter-or-double'
+      }
+opts2=copy(opts1)
+opts2.homogenize_arrays=true
+return ''+
+/*
+ [optsN,input
+       ,expected,name] */
+[[opts1,'3*(1+2)'
+       ,'3 * (1 + 2);','arithmetic precedence']
+,[opts1,'if(x)foo()'
+       ,'if(x) foo();','if statement']
+,[opts1,'1+2%3*4-5+6/7*8'
+       ,'1 + 2 % 3 * 4 - 5 + 6 / 7 * 8;','precedence']
+,[opts1,'(1+2)*3'
+       ,'(1 + 2) * 3;']
+,[opts1,'1*(2+3)'
+       ,'1 * (2 + 3);']
+,[opts1,'\'""\''
+       ,'\'""\';']
+,[opts1,'[\'""\',"\'\'",\'abc\']'
+       ,'[\'""\',"\'\'","abc"];','shorter-or-double string quoting']
+,[opts2,'[\'"\',"\'"]'
+       ,'["\\"","\'"];','homogenize quotes in array literal']
+,[opts1,'"have a string"'
+       ,'"have a string";','trivial string']
+,[opts1,'var x'
+       ,'var x;','variable declaration']
+,[opts1,'function f(x){return x*x}'
+       ,'function f(x){\n return x * x;\n}','simple function']
+,[opts1,'for(i=0;i<10;i++)print(i);'
+       ,'for (i = 0; i < 10; i++) print(i);','for loop']
+,[opts1,'for(p in o)print(o[p]);'
+       ,'for (p in o) print(o[p]);','for..in']
+,[opts1,'!x'
+       ,'!x;','unary expression']
+,[opts1,'typeof x'
+       ,'typeof x;','unary expression with required space']
+,[opts1,'new new FactoryFactory()(x);'
+       ,'new new FactoryFactory()(x);','nested new']
+,[opts1,'new (new FactoryFactory)(x);'
+      //'new (new FactoryFactory)(x);' would be acceptable also
+       ,'new new FactoryFactory()(x);','tricky nested new']
+,[opts1,'new (FactoryFactory())(x);'
+       ,'new (FactoryFactory())(x);','tricky new with CallExpr']
+,[opts1,'function f(){function g(){x}}'
+       ,'function f(){\n function g(){\n  x;\n }\n}','nested function indentation']
+,[opts1,'a+(b?c:d)+e;a+b?c:d+e'
+       ,'a + (b ? c : d) + e;\na + b ? c : d + e;','precedence']
+,[opts1,'a=0?0:0;1||1?1:1;'
+       ,'a = 0 ? 0 : 0;\n1 || 1 ? 1 : 1;','ternary precedence']
+,[opts1,'2||(2?2:2)'
+       ,'2 || (2 ? 2 : 2);','ternary precedence']
+,[opts1,'try{throw x}catch(e){e}'
+       ,'try{\n throw x;\n}\ncatch(e){\n e;\n}','try/catch']
+,[opts1,'try{x}catch(e){e}finally{x}'
+       ,'try{\n x;\n}\ncatch(e){\n e;\n}\nfinally{\n x;\n}','try/catch/finally']
+,[opts1,'try{x}finally{x}'
+       ,'try{\n x;\n}\nfinally{\n x;\n}','try/finally']
+,[opts1,'null;'
+       ,'null;','null;']
+].map(function(a){var x
+  try{x=format(a[0],a[1])}
+  catch(e){return 'FAIL: '+a[3]+'\n      '+e}
+  return x==a[2]
+    ? 'PASS'
+    : 'FAIL: '+(a[3]||'')
+     +'\n      input:    '+a[1].replace(/\n/g,'\n                ')
+     +'\n      expected: '+a[2].replace(/\n/g,'\n                ')
+     +'\n      actual:   '+x   .replace(/\n/g,'\n                ')})
+ .join('\n')}
+
+function js_pp_ast_preservation(s){var ast1,ast2
+ ast1=js_ast(s)
+ //return ast1
+ //return format({},s)
+ ast2=js_ast(format({},s))
+ //return ast2
+ return js_ast_eq(ast1,ast2)}
+
 function test(){
 
 var test = 
@@ -106,63 +195,3 @@ var test =
 ""
 
 return js_ast(test)}
-
-function js_pp_tests(){var opts1,opts2
-opts1={semicolons:'all'
-      ,indentation:2
-      ,newline_before_closing_brace:false
-      ,space_around_operators:true
-      ,space_inside_parens:false
-      ,space_inside_if_test_parens:false
-      ,space_before_if_test:false
-      ,space_after_single_line_if_test:true
-      ,string_quote_style:'shorter-or-double'
-      }
-opts2=copy(opts1)
-opts2.homogenize_arrays=true
-return ''+
-/*
- [optsX,input
-       ,expected,name] */
-[[opts1,'3*(1+2)'
-       ,'3 * (1 + 2);','arithmetic precedence']
-,[opts1,'if(x)foo()'
-       ,'if(x) foo();','if statement']
-,[opts1,'1+2%3*4-5+6/7*8'
-       ,'1 + 2 % 3 * 4 - 5 + 6 / 7 * 8;','precedence']
-,[opts1,'(1+2)*3'
-       ,'(1 + 2) * 3;']
-,[opts1,'1*(2+3)'
-       ,'1 * (2 + 3);']
-,[opts1,'\'""\''
-       ,'\'""\';']
-,[opts1,'[\'""\',"\'\'",\'abc\']'
-       ,'[\'""\',"\'\'","abc"];','shorter-or-double string quoting']
-,[opts2,'[\'"\',"\'"]'
-       ,'["\\"","\'"];','homogenize quotes in array literal']
-,[opts1,'"have a string"'
-       ,'"have a string";','trivial string']
-,[opts1,'var x'
-       ,'var x;','variable declaration']
-,[opts1,'function f(x){return x*x}'
-       ,'function f(x){\n return x * x;\n}','simple function']
-,[opts1,'for(i=0;i<10;i++)print(i);'
-       ,'for (i = 0; i < 10; i++) print(i);','for loop']
-,[opts1,'for(p in o)print(o[p]);'
-       ,'for (p in o) print(o[p]);','for..in']
-,[opts1,'!x'
-       ,'!x;','unary expression']
-,[opts1,'typeof x'
-       ,'typeof x;','unary expression with required space']
-,[opts1,'new new FactoryFactory()(x);'
-       ,'new new FactoryFactory()(x);','nested new']
-].map(function(a){var x
-  try{x=format(a[0],a[1])}
-  catch(e){return 'FAIL: '+a[3]+'\n      '+e}
-  return x==a[2]
-    ? 'PASS'
-    : 'FAIL: '+(a[3]||'')
-     +'\n      input:    '+a[1].replace(/\n/g,'\n                ')
-     +'\n      expected: '+a[2].replace(/\n/g,'\n                ')
-     +'\n      actual:   '+x   .replace(/\n/g,'\n                ')})
- .join('\n')}
