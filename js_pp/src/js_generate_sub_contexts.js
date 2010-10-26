@@ -27,6 +27,8 @@ function create_initial_context(opts){var ctx,copied
         ,'space_around_assign'
         ,'space_before_function_call_arguments'
         ,'space_inside_function_call_parens'
+        ,'space_after_comma'
+        ,'array_use_elisions'
         ]
  copied.forEach(function(p){ctx[p]=opts[p]})
  return ctx}
@@ -74,8 +76,8 @@ var generate_sub_contexts=
   // IfStatement children: test, consequent, (opt) alternate
   return h(c,f.cn.length
           ,{min_prec:18}
-          ,{min_prec:19}
-          ,{min_prec:19})}
+          ,{min_prec:19,inner_indentation:c.indentation+' '}
+          ,{min_prec:19,inner_indentation:c.indentation+' '})}
 
 ,ForStatement:function(f,c){
   // ForStatement children: init, test, update, body
@@ -89,7 +91,17 @@ var generate_sub_contexts=
   return h(c,3
           ,{min_prec:0} // this doesn't quite capture what is intended here, which is that only an identifier, with optional "var" prefix, is allowed here.
           ,{min_prec:18}
+          ,{min_prec:19,inner_indentation:c.indentation+' '})} // will be used if it is a BlockStatement
+
+,WhileStatement:function(f,c){
+  return h(c,2
+          ,{min_prec:18}
           ,{min_prec:19})}
+
+,DoWhileStatement:function(f,c){
+  return h(c,2
+          ,{min_prec:19}
+          ,{min_prec:18})}
 
 ,ThrowStatement:function(f,c){
   return h(c,1
@@ -108,7 +120,8 @@ var generate_sub_contexts=
 
 ,ExpressionStatement:function(f,c){
   return h(c,1
-          ,{min_prec:18})}
+          ,{min_prec:18
+           ,in_statement_context:true})}
 
 ,ReturnStatement:function(f,c){
   return h(c,1
@@ -154,6 +167,11 @@ var generate_sub_contexts=
 
 ,Arguments:function(f,c){
   return h(c,f.cn.length
+          ,{min_prec:17})}
+
+,SequenceExpression:function(f,c){
+  return h(c,f.cn.length
+          ,{min_prec:18,assoc:'left'}
           ,{min_prec:17})}
 
 ,AssignmentExpression:function(f,c){

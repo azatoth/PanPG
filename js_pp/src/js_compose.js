@@ -8,26 +8,28 @@ var compose=
 
 {Program:compose_program_elements
 
-,BlockStatement:function(c,ss){
+,BlockStatement:function(c,ss){var indent
+  indent=c.inner_indentation||c.indentation||''
   return '{'
-       + '\n'+c.inner_indentation
-       + compose_program_elements(c,ss)
+       + ss.map(function(s){return '\n'+indent+s}).join('')
        + '\n'+c.indentation
        + '}'}
 
 ,EmptyStatement:function(){return ';'}
 
-,IfStatement:function(c,ss){
+,IfStatement:function(f){return function(c,ss){
   return 'if'
        + (c.space_before_if_test?' ':'')
        + (c.space_inside_if_test_parens?'( ':'(')
        + ss[0]
        + (c.space_inside_if_test_parens?' )':')')
-       + ' ' // TODO: handle blocks and single statements here
+       + (f.consequent_is_block?'':' ') // TODO: options
        + ss[1]
        + (ss[2] // is there an alternative branch?
-          ?'else'+ss[2]
-          :'')}
+          ? 'else'
+          + (f.alternate_is_block?'':' ')
+          + ss[2]
+          : '')}}
 
 ,ForStatement:function(c,ss){
   return 'for'
@@ -46,7 +48,7 @@ var compose=
        + ' ' // TODO: handle blocks and single statements here
        + ss[3]}
 
-,ForInStatement:function(c,ss){
+,ForInStatement:function(f){return function(c,ss){
   return 'for'
        + (c.space_before_for_paren?' ':'')
        + (c.space_inside_for_parens?'( ':'(')
@@ -54,8 +56,20 @@ var compose=
        + ' in ' // needs an option (for minimization) to drop the second space when possible
        + ss[1]
        + (c.space_inside_for_parens?' )':')')
-       + ' ' // TODO: handle blocks and single statements here
-       + ss[2]}
+       + (f.sub_statement_is_block?'':' ')
+       + ss[2]}}
+
+,WhileStatement:function(c,ss){
+  return 'while('
+       + ss[0]
+       + ')'
+       + ss[1]}
+
+,DoWhileStatement:function(c,ss){
+  return 'do'
+       + ss[0]
+       + '\n'+c.indentation+'while'
+       + ss[1]}
 
 ,ThrowStatement:function(c,ss){
   return 'throw ' // TODO: minimization, as elsewhere
@@ -113,12 +127,14 @@ var compose=
        + ss[ss.length-1]}
 
 ,FunctionExpression:function(c,ss){
-  return 'function ' // TODO: space options
+  return (c.in_statement_context?'(':'')
+       + 'function ' // TODO: space options
        + (ss[0]||'')
        + '('
        + ss.slice(1,-1).join(',')
        + ')'
-       + ss[ss.length-1]}
+       + ss[ss.length-1]
+       + (c.in_statement_context?')':'')}
 
 ,VariableDeclarator:function(c,ss){
   return ss[0]
@@ -129,10 +145,15 @@ var compose=
        + ss.join(c.space_after_comma?', ':',')
        + (c.space_inside_function_call_parens?' )':')')}
 
-,AssignmentExpression:function(c,ss){
+,SequenceExpression:function(c,ss){
+  return ss.join(c.space_after_comma?', ':',')}
+
+,AssignmentExpression:function(op){return function(c,ss){
   return ss[0] 
-       + (c.space_around_assign ? ' = ' : '=' )
-       + ss[1]}
+       + (c.space_around_assign?' ':'')
+       + op
+       + (c.space_around_assign?' ':'')
+       + ss[1]}}
 
 ,UpdateExpression:function(operator,prefix,prec){return function(c,ss){
   if(prefix) return operator + ss[0]
@@ -148,14 +169,18 @@ var compose=
        + (parenthesize?parens[1]:'')}}
 
 ,ArrayExpression:function(c,ss){
+  if(!c.array_use_elisions)ss=ss.map(function(s){return s||'void 0'})
   return '['
        + ss.join(',') // TODO: add options for spaces
+       + (ss[ss.length-1]==''?',':'')
        + ']'}
 
 ,ObjectExpression:function(c,ss){
-  return '{'
+  return (c.in_statement_context?'(':'')
+       + '{'
        + ss.join(',') // TODO: whitespace options
-       + '}'}
+       + '}'
+       + (c.in_statement_context?')':'')}
 
 ,PropertyAssignment:function(kind){return function(c,ss){
   if(kind!='init')throw new Error('TODO getter or setter unhandled')
@@ -268,12 +293,8 @@ function compose_number(n){return function _compose_number(c){var str,ret,sign,r
  assert(+ret == n,"number formatting preserves value "+ret+" : "+n)
  return ret}}
 
-function compose_regexp(regexp){return function(c){
-  var flags = 
-   (regexp.global ? 'g' : '')
-   + (regexp.ignoreCase ? 'i' : '')
-   + (regexp.multiline ? 'm' : '')
-  return '/'+regexp.source+'/'+flags}}
+function compose_regexp(source,flags){return function(c){
+  return '/'+source+'/'+flags}}
 
 function compose_boolean(bool){return function(c){
   return bool ? 'true' : 'false'}}

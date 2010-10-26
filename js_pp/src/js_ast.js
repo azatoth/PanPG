@@ -4,11 +4,11 @@
 // - Function body is always BlockStatement, never Expression (which is moz-specific)
 // - no generators (also moz-specific)
 // - no multiple catch clauses (also moz-specific)
-// - no 'meta' property on FunctionDeclaration or FunctionExpression
+// - no 'meta' property on FunctionDeclaration or FunctionExpression 
 // - no "for each ... in" support (moz-specific)
-// - formal parameters must be identifiers, not destructuring patterns (which again is moz-specific)
+// - formal parameters must be identifiers, not destructuring patterns (which again is moz-specific) 
 // - wherever Pattern would appear, Identifier is used instead
-// - VariableStatement is used instead of VariableDeclaration (since VariableStatement is the name of the production used in the spec)
+// - VariableStatement is used instead of VariableDeclaration (since VariableStatement is the name of the production used in the spec) -- XXX this is a bad name also because now we have a VariableStatement inside a ForInStatement as "for(var p in o)" ... though maybe that is semantically not so inaccurate after all...
 // - There is no VariableDeclaration nodes in the output (though they are generated as an intermediate form)
 // - VariableStatement (nee VariableDeclaration) lacks "kind" (let, var, or const)
 // - the name VariableDeclaration is used for something else in the spec, perhaps it should be changed here.
@@ -149,7 +149,7 @@ function js_ast(s){var dict,pending_comment
  ,ForStatement:function(m,cn){var init,test,update
     assert(cn[0])
     if(cn[0].type=='_ForInit')init=cn.shift().expression
-    if(cn[0].type=='_ForVarInit')init=cn.shift().declaration
+    if(cn[0].type=='VariableDeclaration')init=cn.shift()
     if(cn[0].type=='_ForTest')test=cn.shift().expression
     if(cn[0].type=='_ForUpdate')update=cn.shift().expression
     assert(isStatement(cn[0]))
@@ -166,8 +166,7 @@ function js_ast(s){var dict,pending_comment
 
  ,ForVarInit:function(m,cn){
     assert(cn[0].type=="VariableDeclaration")
-    return {type:"_ForVarInit"
-           ,declaration:cn[0]}}
+    return cn[0]}
 
  ,VariableDeclarationListNoIn:function(m,cn){
     return {type:"VariableDeclaration"
@@ -185,7 +184,7 @@ function js_ast(s){var dict,pending_comment
 
  ,ForInStatement:function(m,cn){var left
     if(cn[0].type=='_ForInLeft')left=cn.shift().expression
-    if(cn[0].type=='_ForInVarLeft')left=cn.shift().declaration
+    if(cn[0].type=='VariableDeclaration')left=cn.shift()
     assert(isExpression(cn[0]))
     assert(isStatement(cn[1]))
     return {type:"ForInStatement"
@@ -200,8 +199,8 @@ function js_ast(s){var dict,pending_comment
 
  ,ForInVarLeft:function(m,cn){
     assert(cn[0].type=="VariableDeclarator")
-    return {type:"_ForInVarLeft"
-           ,declaration:cn[0]}}
+    return {type:"VariableDeclaration"
+           ,declarations:[cn[0]]}}
 
  ,DebuggerStatement:function(m,cn){
     return {type:"DebuggerStatement"}}
@@ -232,19 +231,23 @@ function js_ast(s){var dict,pending_comment
 
  ,ArrayLiteral:function(m,cn){var elements=[]
     assert(!cn[0] || cn[0].type=='_ElementList')
-    if(cn[0])elements=cn.shift().elements
-    assert(!cn[0] || cn[0].type=='_ElementList')
-    if(cn[0])elements.push.apply(elements,cn[0])
+    if(cn[0])elements=cn[0].elements
+    assert(!cn[1] || cn[1].type=='_ElementList')
+    if(cn[1])elements=elements.concat(cn[1].elements)
     return {type:"ArrayExpression"
            ,elements:elements}}
 
- ,ElementList:function(m,cn){
+ ,ElementList:function(m,cn){var elements,x
+    elements=[]
+    while(x=cn.shift()){
+     if(x.type=='_ElementList') elements=elements.concat(x.elements)
+     else elements.push(x)}
     return {type:"_ElementList"
-           ,elements:cn}}
+           ,elements:elements}}
 
  ,Elision:function(m,cn){var elements
-    assert(!cn[0] || cn[0].type=='ElementList')
-    if(cn[0]) elements=cn[0],elements.push(null)
+    assert(!cn[0] || cn[0].type=='_ElementList')
+    if(cn[0]) elements=cn[0].elements,elements.unshift(null)
     else elements=[null]
     return {type:"_ElementList"
            ,elements:elements}}
@@ -645,13 +648,15 @@ function js_ast(s){var dict,pending_comment
  ,RegularExpressionLiteral:function(m,cn){
     return {type:"Literal"
            ,kind:"regexp"
+           ,source:cn[0]
+           ,flags:cn[1]
            ,value:new RegExp(cn[0],cn[1])}}
 
  ,RegularExpressionBody:function(m,cn){
     return m.text()}
 
  ,RegularExpressionFlags:function(m,cn){
-    return m.text().replace(/[^gmi]/g, '')}
+    return m.text()}
 
  // everything else we deal with functionally, passing return values up the tree, but for comments we use some mutable local state.
 
@@ -749,7 +754,7 @@ function js_ast_eq(a,b){var i,l,p
  return true}
 
 // AST diff
-// js_ast_diff(a,b) returns false when a and b do not differ.
+// js_ast_diff(a,b) returns null when a and b do not differ.
 // Otherwise it returns an AST diff object which is sufficient to recreate either of `a` or `b` given the other.
 // A diff object is either a simple diff or a path.
 // A diff between two primitives, or between a primitive and an object, is a simple diff.
@@ -757,10 +762,30 @@ function js_ast_eq(a,b){var i,l,p
 // A diff between two objects which differ in some properties but not others can be a path.
 // A path is an object containing properties corresponding to each property which differs between `a` and `b`.
 // If a property name P exists in both `a` and `b` but differs in value, then the diff contains a property with that name containing the diff between a[P] and b[P].
-// If a property name P exists in one of `a` or `b` but not the other, the property in the diff will be an array with the value that exists and the special value js_ast_diff.NONEXIST in the other position.
-function js_ast_diff(a,b){
- if(a===b)return false
- }
+// If a property name P exists in one of `a` or `b` but not the other, the property in the diff will be an array with the value that exists and the special value js_ast_diff.NONE in the other position.
+js_ast_diff.NONE={}
+function js_ast_diff(a,b){var p,diff,subdiff,differs
+ if(a==null && b==null)return null
+ if(a===b)return null
+ if(typeof a != typeof b)return[a,b]
+ if(a==null || b==null)return[a,b] // 
+ if(a==js_ast_diff.NONE || b==js_ast_diff.NONE)return[a,b]
+ if(typeof a == 'number' && isNaN(a) && isNaN(b))return null
+ if(a instanceof RegExp){
+  if(a.toString() != b.toString())return[a,b]
+  return null}
+ diff={}
+ differs=false
+ for(p in a) if(subdiff=js_ast_diff(lookup(a,p),lookup(b,p))){
+  differs=true
+  diff[p]=subdiff}
+ for(p in b) if(!(p in a)){
+  differs=true
+  diff[p]=[a[p],js_ast_diff.NONE]}
+ return differs?diff:null
+ function lookup(o,p){
+  if(Object.prototype.hasOwnProperty.call(o,p))return o[p]
+  return js_ast_diff.NONE}}
 
 // To apply a diff D to an input object In:
 // If D is a simple diff, return the second element of D.

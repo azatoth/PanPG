@@ -1,16 +1,32 @@
+function js_pp_ast_preservation(s){var ast1,s2,ast2
+ ast1=js_ast(s)
+ //return ast1
+ //return format({},s)
+ ast2=js_ast(format({},s))
+ //return ast2
+ return js_ast_diff(ast1,ast2)||'ASTs are equal'}
+
 function js_pp_tests(){var opts1,opts2
 opts1={semicolons:'all'
       ,indentation:2
       ,newline_before_closing_brace:false
+      ,newline_after_closing_brace:false
       ,space_around_operators:true
+      ,space_around_assign:true
       ,space_inside_parens:false
       ,space_inside_if_test_parens:false
       ,space_before_if_test:false
       ,space_after_single_line_if_test:true
       ,string_quote_style:'shorter-or-double'
+      ,space_after_comma:false
+      ,array_use_elisions:true
       }
 opts2=copy(opts1)
 opts2.homogenize_arrays=true
+opts2.array_use_elisions=false
+opts3=copy(opts1)
+opts3.space_around_operators=false
+opts3.space_around_assign=false
 return ''+
 /*
  [optsN,input
@@ -68,6 +84,54 @@ return ''+
        ,'try{\n x;\n}\nfinally{\n x;\n}','try/finally']
 ,[opts1,'null;'
        ,'null;','null;']
+,[opts1,'while(0)0;'
+       ,'while(0)0;','while']
+,[opts1,'a,b;'
+       ,'a,b;','sequence expression']
+,[opts1,'typeof x'
+       ,'typeof x;','typeof']
+,[opts1,'x instanceof y'
+       ,'x instanceof y;','instanceof']
+,[opts1,'[1,1.0,.1,1e2]'
+       ,'[1,1,0.1,100];','numbers']
+,[opts1,'[!1,-1,+1,~1,delete 1,typeof 1];'
+       ,'[!1,-1,+1,~1,delete 1,typeof 1];','unary operators']
+,[opts3,'1-1,1+1,1*1,1/1,1%1,1^1,1&1,1<<1,1>>1,1<1,1>1,1|1,1||1,1&&1;'
+       ,'1-1,1+1,1*1,1/1,1%1,1^1,1&1,1<<1,1>>1,1<1,1>1,1|1,1||1,1&&1;','binary ops']
+,[opts1,'/a/i,/a/g,/a/m'
+       ,'/a/i,/a/g,/a/m;','regexp with flags']
+,[opts1,'true,false'
+       ,'true,false;','Boolean literals']
+,[opts1,'function f(){function g(){x;x;x;}}'
+       ,'function f(){\n function g(){\n  x;\n  x;\n  x;\n }\n}','function indentation']
+,[opts1,'for(p in o){x;y;z}'
+       ,'for (p in o){\n x;\n y;\n z;\n}','for..in indentation']
+,[opts1,'for(var p in o){}'
+       ,'for (var p in o){\n}','for var in']
+,[opts1,'if(x){y}else if(z){a}else{b}'
+       ,'if(x){\n y;\n}else if(z){\n a;\n}else{\n b;\n}','if else if else']
+,[opts1,'{}'
+       ,'{\n}','empty Block statement']
+,[opts1,'(function(){})'
+       ,'(function (){\n});','anonymous function expression statement']
+,[opts1,'({});'
+       ,'({});','object literal expression statement']
+,[opts3,'s+=""'
+       ,'s+="";','+=']
+,[opts3,'s-=""'
+       ,'s-="";','-=']
+,[opts1,'[,]'
+       ,'[,];','array, elision, otherwise empty']
+,[opts1,'[0,]'
+       ,'[0];','array trailing comma']
+,[opts1,'[0,,]'
+       ,'[0,,];','array with element, elision, trailing comma']
+,[opts1,'[,,]'
+       ,'[,,];','array elision']
+,[opts1,'[0,,1,,]'
+       ,'[0,,1,,];','array with element, elision, element, comma, elision']
+,[opts2,'[,]'
+       ,'[void 0];','array elision replacement']
 ].map(function(a){var x
   try{x=format(a[0],a[1])}
   catch(e){return 'FAIL: '+a[3]+'\n      '+e}
@@ -77,15 +141,7 @@ return ''+
      +'\n      input:    '+a[1].replace(/\n/g,'\n                ')
      +'\n      expected: '+a[2].replace(/\n/g,'\n                ')
      +'\n      actual:   '+x   .replace(/\n/g,'\n                ')})
- .join('\n')}
-
-function js_pp_ast_preservation(s){var ast1,ast2
- ast1=js_ast(s)
- //return ast1
- //return format({},s)
- ast2=js_ast(format({},s))
- //return ast2
- return js_ast_eq(ast1,ast2)}
+ .join('\n')+log.get()}
 
 function test(){
 
@@ -95,30 +151,7 @@ var test =
 //"/*block comment test*/\n"+//PROBLEM? (not listed?)
 //"/*block comment newline test\n*/\n"+
 //"/*block comment /*nest test*/\n"+
-"typeof 'x'//typeof test\n"+
-"'x' instanceof String//instanceof test\n"+
-"1//number literal test\n"+
-"1e1//number literal test\n"+
-"1.0//number literal test\n"+
-".1//number literal test\n"+
-"'x'//string literal test\n"+
-"\"x\"//string literal test\n"+
-"-1//unary operator test\n"+
-"~1//unary operator test\n"+
-"!1//unary operator test\n"+
-"1-1//binary operator test\n"+
-"1+1//binary operator test\n"+
-"1*1//binary operator test\n"+
-"1/1//binary operator test\n"+
-"1%1//binary operator test\n"+
-"1^1//binary operator test\n"+
-"1&1//binary operator test\n"+
-"1<<1//binary operator test\n"+
-"1>>1//binary operator test\n"+
-"1|1//binary operator test\n"+
-"1||1//binary operator test\n"+
-"1&&1//binary operator test\n"+
-"1 in {1:1}//binary operator test\n"+
+",1 in {1:1}//binary operator test\n"+
 "1==2//binary operator test\n"+
 "1===2//binary operator test\n"+
 "1!=1//binary operator test\n"+
@@ -126,8 +159,6 @@ var test =
 "1<=1//binary operator test\n"+
 "1<1//binary operator test\n"+
 "1>1//binary operator test\n"+
-"x+=1//binary operator test\n"+
-"x-=1//binary operator test\n"+
 "x*=1//binary operator test\n"+
 "x/=1//binary operator test\n"+
 "x%=1//binary operator test\n"+

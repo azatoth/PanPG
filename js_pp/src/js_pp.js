@@ -13,6 +13,7 @@ function format(opts,s){var ast,defaults
   {semicolons: 'all'                           // 'after-all', 'separators', 'only-required', 'before-dangerous'
   ,indentation: 2                              // TODO: support tabs
   ,newline_before_closing_brace: true
+  ,newline_after_closing_brace: true
   ,space_before_for_semicolon: false
   ,space_after_for_semicolon: true
   ,space_before_for_paren: true
@@ -36,6 +37,7 @@ function format(opts,s){var ast,defaults
   ,homogenize_arrays: false                    // mainly for testing, can be replaced by some more flexible notion of consistency
   ,space_inside_function_call_parens: false    // 'f( x )' or 'f(x)'
   ,space_before_function_call_arguments: false // 'f (' or 'f(' [6]
+  ,array_use_elisions: true                    // '[a,,b,,]' or '[a,undefined,b,undefined]'
   }
  opts=extend(defaults,opts)
 
@@ -230,7 +232,14 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
      break;
 
  case 'IfStatement':
-  f.n_statements=1+sum(cn.slice(1).map(access('n_statements')));break
+  f.n_statements=1+sum(cn.slice(1).map(access('n_statements')))
+  f.consequent_is_block=ast.consequent&&ast.consequent.type=='BlockStatement'
+  f.alternate_is_block=ast.alternate&&ast.alternate.type=='BlockStatement'
+  f.compose=f.compose(f);break
+
+ case 'ForInStatement':
+  f.sub_statement_is_block=ast.body.type=='BlockStatement'
+  f.compose=f.compose(f);break
 
  case 'BinaryExpression':
   // The compose function for binary operators handles all the binary operators, so it needs
@@ -240,6 +249,9 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
   f.assoc='left'
   f.prec=binary_op_prec[ast.operator]
   f.compose=f.compose(ast.operator,f.prec,f.assoc);break
+
+ case 'AssignmentExpression':
+  f.compose=f.compose(ast.operator);break
 
  case 'UnaryExpression':
   f.min_chars=ast.argument.min_chars+1
@@ -267,11 +279,11 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
    break
   case 'regexp':
    f.min_chars=f.min_width=String(ast.value.body).length + String(ast.value.flags) + 2
-   f.compose=compose_regexp(ast.value)
+   f.compose=compose_regexp(ast.source,ast.flags)
    break
   case 'Boolean':
    f.min_chars=f.min_width=ast.value?4:5 // "true" or "false"
-   f.compose=compose_boolean(f);break
+   f.compose=compose_boolean(ast.value);break
   case 'null':
    f.min_chars=f.min_width=4
    f.compose=function(){return 'null'};break
