@@ -25,6 +25,10 @@ function create_initial_context(opts){var ctx,copied
         ,'space_after_for_semicolon'
         ,'space_before_for_paren'
         ,'space_around_assign'
+        ,'space_before_function_call_arguments'
+        ,'space_inside_function_call_parens'
+        ,'space_after_comma'
+        ,'array_use_elisions'
         ]
  copied.forEach(function(p){ctx[p]=opts[p]})
  return ctx}
@@ -47,7 +51,7 @@ function create_initial_context(opts){var ctx,copied
 // 13 BitwiseOr
 // 14 LogicalAnd
 // 15 LogicalOr
-// 16 ternary ≔ OrExpr ? AssignExpr : AssignExpr
+// 16 ternary ≔ LogicalOrExpr ? AssignExpr : AssignExpr
 // 17 assignment operators
 // 18 comma operator
 //    Other
@@ -72,49 +76,103 @@ var generate_sub_contexts=
   // IfStatement children: test, consequent, (opt) alternate
   return h(c,f.cn.length
           ,{min_prec:18}
-          ,{min_prec:20}
-          ,{min_prec:20})}
+          ,{min_prec:19,inner_indentation:c.indentation+' '}
+          ,{min_prec:19,inner_indentation:c.indentation+' '})}
 
 ,ForStatement:function(f,c){
   // ForStatement children: init, test, update, body
-  return h(c,f.cn.length
+  return h(c,4
           ,{min_prec:18}
           ,{min_prec:18}
           ,{min_prec:18}
-          ,{min_prec:20})}
+          ,{min_prec:19})}
+
+,ForInStatement:function(f,c){
+  return h(c,3
+          ,{min_prec:0} // this doesn't quite capture what is intended here, which is that only an identifier, with optional "var" prefix, is allowed here.
+          ,{min_prec:18}
+          ,{min_prec:19,inner_indentation:c.indentation+' '})} // will be used if it is a BlockStatement
+
+,WhileStatement:function(f,c){
+  return h(c,2
+          ,{min_prec:18}
+          ,{min_prec:19})}
+
+,DoWhileStatement:function(f,c){
+  return h(c,2
+          ,{min_prec:19}
+          ,{min_prec:18})}
+
+,ThrowStatement:function(f,c){
+  return h(c,1
+          ,{min_prec:17})}
+
+,TryStatement:function(f,c){
+  return h(c,3
+          ,{min_prec:19,inner_indentation:c.indentation+' '}
+          ,{min_prec:19,inner_indentation:c.indentation+' '}
+          ,{min_prec:19,inner_indentation:c.indentation+' '})}
+
+,CatchClause:function(f,c){
+  return h(c,2
+          ,{min_prec:0}
+          ,{min_prec:19})}
+
 ,ExpressionStatement:function(f,c){
   return h(c,1
-  ,{min_prec:18})}
+          ,{min_prec:18
+           ,in_statement_context:true})}
 
 ,ReturnStatement:function(f,c){
   return h(c,1
-  ,{min_prec:18})}
+          ,{min_prec:18})}
 
-,FunctionDeclaration:function(f,c){
-  return h(c,3
-          ,{}
-          ,{}
-          ,{indentation:c.indentation+' '})}
+,BreakStatement:function(f,c){return h(c,1)}
+
+,ContinueStatement:function(f,c){return h(c,1)}
+
+,SwitchStatement:function(f,c){
+  return h(c,f.cn.length
+          ,{min_prec:18}
+          ,{min_prec:19
+           ,indentation:c.indentation+' '})}
+
+,SwitchCase:function(f,c){
+  return h(c,f.cn.length
+          ,{min_prec:18}
+          ,{min_prec:19})}
+
+,FunctionDeclaration:function(f,c){var ret
+  ret=h(c,f.cn.length)
+  // Here the BlockStatement is the child, we actually want to indent the children of the BlockStatement, but not the BlockStatement itself (the difference is visible only on the opening and closing braces of the BlockStatement if the options are such that they appear on their own lines.
+  // inner_indentation is handled by BlockStatement instead of doing it's own normal indentation
+  ret[ret.length-1].inner_indentation=c.indentation+' ' // TODO: options
+  return ret}
+
+,FunctionExpression:function(f,c){var ret
+  ret=h(c,f.cn.length)
+  ret[ret.length-1].inner_indentation=c.indentation+' '
+  return ret}
 
 ,VariableStatement:function(f,c){
-  return h(c,f.cn.length
-          ,{})}
+  return h(c,f.cn.length)}
+
 ,VariableDeclaration:function(f,c){
-  return h(c,f.cn.length
-          ,{})}
+  return h(c,f.cn.length)}
+
 ,VariableDeclarator:function(f,c){
   return h(c,2
-          ,{}
-          ,{min_prec:17})}
-
-,CallExpression:function(f,c){
-  return h(c,2
-          ,{min_prec:2}
+          ,undefined
           ,{min_prec:17})}
 
 ,Arguments:function(f,c){
   return h(c,f.cn.length
-  ,{min_prec:17})}
+          ,{min_prec:17})}
+
+,SequenceExpression:function(f,c){
+  return h(c,f.cn.length
+          ,{min_prec:18,assoc:'left'}
+          ,{min_prec:17})}
 
 ,AssignmentExpression:function(f,c){
   return h(c,2
@@ -123,13 +181,24 @@ var generate_sub_contexts=
 
 ,BinaryExpression:function(f,c){
   assert(f.assoc=='left','all binary ops left-associative')
-  return h(c,f.cn.length
+  return h(c,2
           ,{min_prec:f.prec,assoc:'left'}
-          ,{min_prec:f.prec })}
+          ,{min_prec:f.prec})}
+
+,UnaryExpression:function(f,c){
+  return h(c,1
+          ,{min_prec:5})}
 
 ,UpdateExpression:function(f,c){
   return h(c,1
-          ,{min_prec: f.prec})}
+          ,{min_prec:f.prec})}
+
+,ConditionalExpression:function(f,c){
+  return h(c,3
+          ,{min_prec:15,assoc:'left'}
+          ,{min_prec:17}
+          ,{min_prec:17})}
+
 ,ArrayExpression:function(f,c){var string_quote_char,i,l,dbl_penalty,sgl_penalty,context_update
   dbl_penalty=sgl_penalty=0
   if(c.homogenize_arrays && !c.string_quote_char){
@@ -143,6 +212,31 @@ var generate_sub_contexts=
   context_update={min_prec:17}
   if(string_quote_char)context_update.string_quote_char=string_quote_char
   return h(c,f.cn.length,context_update)}
+
+,ObjectExpression:function(f,c){
+  return h(c,f.cn.length
+          ,{min_prec:18})} // actually set by PropertyAssignment, so shouldn't matter
+
+,PropertyAssignment:function(f,c){
+  return h(c,2
+          ,{min_prec:0} // only bare property names and string literals allowed
+          ,{min_prec:18})}
+
+,CallExpression:function(f,c){
+  return h(c,2
+          ,{min_prec:2}
+          ,{min_prec:17})}
+
+,NewExpression:function(f,c){
+  return h(c,2
+          ,{min_prec:2} // XXX can contain new with arguments, but can't contain function call
+          ,{min_prec:17})} // shouldn't matter (Arguments will set this)
+
+,MemberExpression:function(computed){return function(f,c){
+  return h(c,2
+          ,{min_prec:1}
+          ,computed?{min_prec:18} // everything up to and including comma operator can appear in bracket accessor
+                   :{min_prec:1})}}
 
 }
 
@@ -169,9 +263,7 @@ function copy(o){var r={},p;for(p in o)r[p]=o[p];return r}
 
 // handles programs, blocks, function bodies
 // all are sequences of statements and/or function declarations
-function gsc_program_elements(f,c){var c1,i,l,ret
- ret=[]
- c1=copy(c)
- c1.min_prec=20
- for(i=0,l=f.cn.length;i<l;i++) ret.push(c1)
- return ret}
+function gsc_program_elements(f,c){
+ return h(c,f.cn.length
+         ,{min_prec:20
+          ,indentation:c.inner_indentation||c.indentation})}

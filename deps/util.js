@@ -4,7 +4,7 @@ function dir(o){var a=[],p;for(p in o){a.push(p)}return a.sort().join('\n')}
 
 function test_pp(){
  var a=[],f=function(x){a.push(x)},circular=[],o
- circular[0]=circular
+ circular[0]=circular 
  f(pp(['foo','bar',42]))
  o=[{str:'foo',x:'bar\n"baz"\nquux'},{str:'baz',y:['xyzzy','quux','foo'],z:undefined,zz:null,f:f,foo:[true,false],circular:circular}]
  o[1].self=o[1]
