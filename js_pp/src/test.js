@@ -1,10 +1,12 @@
-function js_pp_ast_preservation(s){var ast1,s2,ast2
+function js_pp_ast_preservation(s){var ast1,s2,ast2,diff
  ast1=js_ast(s)
  //return ast1
- //return format({},s)
- ast2=js_ast(format({},s))
+ s2=print({},ast1)
+ //return s2
+ ast2=js_ast(s2)
  //return ast2
- return js_ast_diff(ast1,ast2)||'ASTs are equal'}
+ if(diff=js_ast_diff(ast1,ast2)) return pp(diff)+'\n\n'+s2
+ return 'ASTs are equal'}
 
 function js_pp_tests(){var opts1,opts2
 opts1={semicolons:'all'
@@ -38,9 +40,9 @@ return ''+
 ,[opts1,'1+2%3*4-5+6/7*8'
        ,'1 + 2 % 3 * 4 - 5 + 6 / 7 * 8;','precedence']
 ,[opts1,'(1+2)*3'
-       ,'(1 + 2) * 3;']
+       ,'(1 + 2) * 3;','precedence']
 ,[opts1,'1*(2+3)'
-       ,'1 * (2 + 3);']
+       ,'1 * (2 + 3);','precedence']
 ,[opts1,'\'""\''
        ,'\'""\';']
 ,[opts1,'[\'""\',"\'\'",\'abc\']'
@@ -64,10 +66,11 @@ return ''+
 ,[opts1,'new new FactoryFactory()(x);'
        ,'new new FactoryFactory()(x);','nested new']
 ,[opts1,'new (new FactoryFactory)(x);'
-      //'new (new FactoryFactory)(x);' would be acceptable also
-       ,'new new FactoryFactory()(x);','tricky nested new']
+       ,'new (new FactoryFactory)(x);','tricky nested new']
 ,[opts1,'new (FactoryFactory())(x);'
        ,'new (FactoryFactory())(x);','tricky new with CallExpr']
+,[opts1,'+new Date'
+       ,'+new Date;','+new Date'] // "+new Date()" would be a different AST.
 ,[opts1,'function f(){function g(){x}}'
        ,'function f(){\n function g(){\n  x;\n }\n}','nested function indentation']
 ,[opts1,'a+(b?c:d)+e;a+b?c:d+e'
@@ -96,8 +99,8 @@ return ''+
        ,'[1,1,0.1,100];','numbers']
 ,[opts1,'[!1,-1,+1,~1,delete 1,typeof 1];'
        ,'[!1,-1,+1,~1,delete 1,typeof 1];','unary operators']
-,[opts3,'1-1,1+1,1*1,1/1,1%1,1^1,1&1,1<<1,1>>1,1<1,1>1,1|1,1||1,1&&1;'
-       ,'1-1,1+1,1*1,1/1,1%1,1^1,1&1,1<<1,1>>1,1<1,1>1,1|1,1||1,1&&1;','binary ops']
+,[opts3,'1-1,1+1,1*1,1/1,1%1,1^1,1&1,1<<1,1>>1,1<1,1>1,1<=1,1>=1,1|1,1||1,1&&1;'
+       ,'1-1,1+1,1*1,1/1,1%1,1^1,1&1,1<<1,1>>1,1<1,1>1,1<=1,1>=1,1|1,1||1,1&&1;','binary ops']
 ,[opts1,'/a/i,/a/g,/a/m'
        ,'/a/i,/a/g,/a/m;','regexp with flags']
 ,[opts1,'true,false'
@@ -132,6 +135,16 @@ return ''+
        ,'[0,,1,,];','array with element, elision, element, comma, elision']
 ,[opts2,'[,]'
        ,'[void 0];','array elision replacement']
+,[opts3,'(x=y)>z'
+       ,'(x=y)>z;','precedence']
+,[opts3,'+i++;'
+       ,'+i++;','precedence']
+,[opts1,'x:y'
+       ,'x:y;','labelled statement']
+,[opts1,'with(o){p}'
+       ,'with(o){\n p;\n}','with statement']
+,[opts1,'i++;i--;++i;--i;'
+       ,'i++;\ni--;\n++i;\n--i;','increment/decrement']
 ].map(function(a){var x
   try{x=format(a[0],a[1])}
   catch(e){return 'FAIL: '+a[3]+'\n      '+e}
@@ -139,7 +152,7 @@ return ''+
     ? 'PASS'
     : 'FAIL: '+(a[3]||'')
      +'\n      input:    '+a[1].replace(/\n/g,'\n                ')
-     +'\n      expected: '+a[2].replace(/\n/g,'\n                ')
+     +'\n      expect:   '+a[2].replace(/\n/g,'\n                ')
      +'\n      actual:   '+x   .replace(/\n/g,'\n                ')})
  .join('\n')+log.get()}
 
@@ -167,7 +180,6 @@ var test =
 "1<<=1//binary operator test\n"+
 "1>>=1//binary operator test\n"+
 "x?0:1//conditional expression test\n"+
-"labeltest:\n"+
 "var vartest\n"+
 ", varcontinuedtest\n"+
 ", vardeclarationtest=1\n"+
@@ -226,34 +238,3 @@ var test =
 ""
 
 return js_ast(test)}
-<<<<<<< HEAD
-
-function js_pp_tests(){var opts1,opts2
-opts1={semicolons:'all'
-      ,indentation:2
-      ,newline_before_closing_brace:false
-      ,space_around_operators:true
-      ,space_inside_parens:false
-      ,space_inside_if_test_parens:false
-      ,space_before_if_test:false
-      ,space_after_single_line_if_test:true
-      ,string_quote_style:'shorter-or-double'
-      }
-opts2=copy(opts1)
-opts2.homogenize_arrays=true
-return ''+
-[[opts1,'3*(1+2)','3 * (1 + 2);','arithmetic precedence']
-,[opts1,'if(x)foo()','if(x) foo();','if statement']
-,[opts1,'1+2%3*4-5+6/7*8','1 + 2 % 3 * 4 - 5 + 6 / 7 * 8;','precedence']
-,[opts1,'(1+2)*3','(1 + 2) * 3;']
-,[opts1,'1*(2+3)','1 * (2 + 3);']
-,[opts1,'\'""\'','\'""\';']
-,[opts1,'[\'""\',"\'\'",\'abc\']','[\'""\',"\'\'","abc"];','shorter-or-double string quoting']
-,[opts2,'[\'"\',"\'"]','["\\"","\'"];','homogenize quotes in array literal']
-].map(function(a){var x
-  return (x=format(a[0],a[1]))==a[2]
-    ? 'PASS'
-    : 'FAIL: '+(a[3]||'')+'\n      expected: '+a[2]+'\n      actual:   '+x})
- .join('\n')}
-=======
->>>>>>> fc29d1d56034f027f7d353f00720c24704abb473

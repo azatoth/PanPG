@@ -131,6 +131,16 @@ var generate_sub_contexts=
 
 ,ContinueStatement:function(f,c){return h(c,1)}
 
+,WithStatement:function(f,c){
+  return h(c,2
+          ,{min_prec:18}
+          ,{min_prec:19,inner_indentation:c.indentation+' '})}
+
+,LabelledStatement:function(f,c){
+  return h(c,2
+          ,{min_prec:0}
+          ,{min_prec:19})}
+
 ,SwitchStatement:function(f,c){
   return h(c,f.cn.length
           ,{min_prec:18}
@@ -227,9 +237,10 @@ var generate_sub_contexts=
           ,{min_prec:2}
           ,{min_prec:17})}
 
-,NewExpression:function(f,c){
+,NewExpression:function(f,c){//var callee_min_prec
+  //callee_min_prec=f.new_has_arguments?
   return h(c,2
-          ,{min_prec:2} // XXX can contain new with arguments, but can't contain function call
+          ,{min_prec:2,assoc:'right'}
           ,{min_prec:17})} // shouldn't matter (Arguments will set this)
 
 ,MemberExpression:function(computed){return function(f,c){

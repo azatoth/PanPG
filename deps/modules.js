@@ -4,7 +4,7 @@ function build_module(name,requires,exports,body){var ret=[]
  ret.push('\n')
  ret.push(body.replace(/\n+$/,''))
  ret.push('\n\n')
- exports.forEach(function(export){ret.push('exports.'+export+'='+export+'\n')})
+ exports.forEach(function(e){ret.push('exports.'+e+'='+e+'\n')}) // N.B. 'export' is reserved
  ret.push('\n')
  ret.push('})(typeof exports==\'object\'?exports:'+name+'={});\n')
  return ret.join('')}

@@ -2,7 +2,7 @@
 // differences:
 // - no 'loc' property on nodes (may add separate start, end integers later)
 // - Function body is always BlockStatement, never Expression (which is moz-specific)
-// - no generators (also moz-specific)
+// - no generators (also moz-specific) 
 // - no multiple catch clauses (also moz-specific)
 // - no 'meta' property on FunctionDeclaration or FunctionExpression 
 // - no "for each ... in" support (moz-specific)
@@ -771,6 +771,7 @@ function js_ast_diff(a,b){var p,diff,subdiff,differs
  if(a==null || b==null)return[a,b] // 
  if(a==js_ast_diff.NONE || b==js_ast_diff.NONE)return[a,b]
  if(typeof a == 'number' && isNaN(a) && isNaN(b))return null
+ if(typeof a == 'string')return[a,b]
  if(a instanceof RegExp){
   if(a.toString() != b.toString())return[a,b]
   return null}
