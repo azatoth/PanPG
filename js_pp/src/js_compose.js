@@ -56,7 +56,7 @@ var compose=
        + ' in ' // needs an option (for minimization) to drop the second space when possible
        + ss[1]
        + (c.space_inside_for_parens?' )':')')
-       + (f.sub_statement_is_block?'':' ')
+       + (f.substatement_is_block?'':' ')
        + ss[2]}}
 
 ,WhileStatement:function(c,ss){
@@ -95,6 +95,19 @@ var compose=
 ,BreakStatement:function(c,ss){return 'break' + (ss[0]?' '+s[0]:'')}
 
 ,ContinueStatement:function(c,ss){return 'continue' + (ss[0]?' '+ss[0]:'')}
+
+,WithStatement:function(f){return function(c,ss){
+  return 'with'
+       + '('
+       + ss[0]
+       + ')'
+       + (f.substatement_is_block?'':' ')
+       + ss[1]}}
+
+,LabelledStatement:function(c,ss){
+  return ss[0]
+       + ':' // TODO: options
+       + ss[1]}
 
 ,SwitchStatement:function(c,ss){
   return 'switch'
@@ -148,25 +161,25 @@ var compose=
 ,SequenceExpression:function(c,ss){
   return ss.join(c.space_after_comma?', ':',')}
 
-,AssignmentExpression:function(op){return function(c,ss){
-  return ss[0] 
-       + (c.space_around_assign?' ':'')
-       + op
-       + (c.space_around_assign?' ':'')
-       + ss[1]}}
+,AssignmentExpression:function(op){
+  return add_parenthesization(base,17,'right')
+  function base(c,ss){
+   return ss[0] 
+        + (c.space_around_assign?' ':'')
+        + op
+        + (c.space_around_assign?' ':'')
+        + ss[1]}}
 
 ,UpdateExpression:function(operator,prefix,prec){return function(c,ss){
   if(prefix) return operator + ss[0]
   return ss[0] + operator}}
 
-,BinaryExpression:function(op,prec,assoc){return function(c,ss){var parenthesize,parens
-  parenthesize=prec>c.min_prec || prec==c.min_prec && assoc!=c.assoc
-  parens=c.spaces_inside_parens?['( ',' )']:['(',')']
-  return (parenthesize?parens[0]:'')
-       + ss[0]
-       + (c.space_around_operators?(' '+op+' '):op)
-       + ss[1]
-       + (parenthesize?parens[1]:'')}}
+,BinaryExpression:function(op,prec,assoc){
+  return add_parenthesization(base,prec,assoc)
+  function base(c,ss){var parenthesize,parens
+   return ss[0]
+        + (c.space_around_operators?(' '+op+' '):op)
+        + ss[1]}}
 
 ,ArrayExpression:function(c,ss){
   if(!c.array_use_elisions)ss=ss.map(function(s){return s||'void 0'})
@@ -209,12 +222,15 @@ var compose=
        + (c.space_before_function_call_arguments?' ':'')
        + ss[1]}
 
-,NewExpression:function(c,ss){
-  return 'new ' // TODO: option for minimization to lose this space when possible (e.g. "new(f().g)")
-       + ss[0]
-       + (c.space_before_function_call_arguments?' ':'') // TODO: these options should probably be different from the function call options
-         // TODO: add minimization option to drop empty parens "()" when possible.
-       + (ss[1]||'()')} // input such as "new X;" becomes a NewExpression output as "new X()"
+,NewExpression:function(c,ss){var prec,res
+  prec=ss[1]?2:3 // new with arguments has higher precedence than new without arguments.
+  res = 'new ' // TODO: option for minimization to lose this space when possible (e.g. "new(f().g)")
+      + ss[0]
+      + (c.space_before_function_call_arguments?' ':'') // TODO: these options should probably be different from the function call options
+        // TODO: add minimization option to drop empty parens "()" when possible.
+      + ss[1]
+  if(prec>c.min_prec || prec==c.min_prec && c.assoc!='right')return parenthesize(c,res)
+  return res}
 
 }
 
@@ -222,23 +238,51 @@ var compose=
 // The lowest precedence allowed without ambiguity is passed down in the context.
 // Here we handle adding parentheses for all such cases.
 
+// 1  bracket accessors, dot accessors
+// 2  new with arguments, function call
+// 3  new without arguments
+// 4  postincrement, postdecrement
+// 5  delete, void, typeof, preincrement, predecrement, unary plus, unary minus, bitwise not, logical not
+//    Binary operators:
+// 6  Multiplicative
+// 7  Additive (e + e, e - e)
+// 8  Shift
+// 9  Relational (<, >, <=, >=, instanceof, in)
+// 10 Equality
+// 11 BitwiseAnd
+// 12 BitwiseXOr
+// 13 BitwiseOr
+// 14 LogicalAnd
+// 15 LogicalOr
+// 16 ternary ≔ OrExpr ? AssignExpr : AssignExpr
+// 17 assignment operators
+// 18 comma operator
+//    Other
+// 19 statement separators (newlines, semicolons)
+
 var paren_exprs=
-[['NewExpression',2]
-,['CallExpression',3]
-// TODO ...
-,['LogicalOrExpression',15]
+// Rule, precedence
+// If precedence of the operator is lower than the minimum precedence allowed per the context, then parentheses will be added.
+[['CallExpression',3]
+,['UpdateExpression',4] // two of these (pre and post) with different precedence ...
+,['UnaryExpression',5]
 ,['ConditionalExpression',16]
 ]
 
-paren_exprs.forEach(function(a){var expr=a[0],prec=a[1],existing
- existing=compose[expr]
- compose[expr]=function(c,ss){var sub,parens
+paren_exprs.forEach(function(a){var expr=a[0],prec=a[1],assoc=a[2]
+ compose[expr]=add_parenthesization(compose[expr],prec,assoc)})
+
+function add_parenthesization(existing,prec,assoc){
+ return function(c,ss){var sub,parens
   sub=existing(c,ss)
-  if(prec>c.min_prec){
-   return (c.spaces_inside_parens?'( ':'(')
-        + sub
-        + (c.spaces_inside_parens?' )':')')}
-  return sub}})
+  if(prec>c.min_prec || prec==c.min_prec && assoc!=c.assoc){
+   return parenthesize(c,sub)}
+  return sub}}
+
+function parenthesize(c,str){
+ return (c.spaces_inside_parens?'( ':'(')
+      + str
+      + (c.spaces_inside_parens?' )':')')}
 
 /*
 // Basic indentation is handled here for all Statement and FunctionDeclaration nodes
@@ -297,4 +341,4 @@ function compose_regexp(source,flags){return function(c){
   return '/'+source+'/'+flags}}
 
 function compose_boolean(bool){return function(c){
-  return bool ? 'true' : 'false'}}
+  return bool?'true':'false'}}

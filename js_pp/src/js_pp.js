@@ -4,66 +4,60 @@
 // correct string quoting (in util.js)
 // The compose functions Stringⁿ → String will then be extension points; the caller can provide their own for any node types.
 
+var default_options=
+{semicolons: 'all'                           // 'after-all', 'separators', 'only-required', 'before-dangerous'
+,indentation: 2                              // TODO: support tabs
+,newline_before_closing_brace: true
+,newline_after_closing_brace: true
+,space_before_for_semicolon: false
+,space_after_for_semicolon: true
+,space_before_for_paren: true
+,space_inside_for_parens: true
+,space_around_assign: true
+,space_after_comma: true
+,space_around_operators: true                // TODO: add option to show precedence, e.g: 'x = a*b + b*c' but 'x=a+b;'
+,space_inside_parens: false                  // where parens are used for grouping (not as syntax in control structures)
+,number_radix_preference: 10                 // 8, 10, 16
+,number_use_exponential_notation: 'never'    // 'never', 0..N which is cutoff limit, 1 is essentially when shorter
+,object_literal_comma_first: false
+,blank_before_function: true
+,space_inside_if_test_parens: false          // 'if ( x )' or 'if (x)'
+,space_before_if_test: true                  // 'if (' or 'if('
+,space_after_single_line_if_test: true       // 'if(...) foo()' or 'if(...)foo()'
+,control_statement_braces: 'preserve'        // 'preserve', 'braces', 'one-statement-only' [1] [2]
+,control_statement_empty: 'empty-statement'  // 'empty-statement', 'empty-braces' [3]
+,string_linebreak_style: 'backslash-n'       // 'backslash-n', 'line-continuation', 'plus-operator'
+,string_charset: 'unicode'                   // 'unicode', 'ascii' [4]
+,string_quote_style: 'shorter-or-double'     // 'single', 'double', 'shorter-or-single', 'shorter-or-double' [5]
+,homogenize_arrays: false                    // mainly for testing, can be replaced by some more flexible notion of consistency
+,space_inside_function_call_parens: false    // 'f( x )' or 'f(x)'
+,space_before_function_call_arguments: false // 'f (' or 'f(' [6]
+,array_use_elisions: true                    // '[a,,b,,]' or '[a,undefined,b,undefined]'
+}
+
+// [1] 'preserve' preserves braces if they are in the input, leaving "if(x)y" without braces and "if(x){y}" with braces.
+//     'braces' always uses a block statement, even with only one statement inside.
+//     'one-statement-only' will drop braces whenever there is only one statement in the body of the if statement.
+// [2] The "control statements" include the if statement and the iteration statements: for, for-in, while, do-while.
+// [3] If a control statement has an empty body, it can be written as an empty statement e.g. "while(x());", or as an empty block e.g. "while(x()){}".
+// [4] 'ascii' uses \uHHHH escapes for all non-ASCII characters, while 'unicode' allows all Unicode characters directly, using escapes only for newlines, quotation marks, etc.
+// [5] 'single' and 'double' always use the specied kind of quote, escaping string content as necessary, while 'shorter-or-' variants prefer one kind of quote but use the other if it makes the escaped string literal shorter (i.e. when the string value itself contains quotation marks).
+// [6] There's a fearful symmetry in these space_* options, which suggests they could be combined sensibly.
+//     One way to do this would be to have a consistent set of options such as 'before_open_paren', 'after_open_paren', 'after_comma', 'before_close_paren', etc.
+//     This set of options would then be reproduced on each structure where it applies, such as function calls, array literals, `new` operator constructor calls, function declarations, etc.
+//     This could be done by having nested objects, e.g. "function_call_spaces:{before_open_paren:true,...}" or by having names that follow a pattern, like 'function_call_space_before_open_paren' and then parsing these into consistent structures here instead of handling them all individually.
+
 // format :: Options × String → String
-function format(opts,s){var ast,defaults
- opts=opts||{}
-
- // semicolons, indentation, newline_before_closing_brace, space_after_comma, space_around_operators, space_inside_parens, number_radix, object_literal_comma_first, blank_before_function, space_inside_if_test_parens, space_before_if_test, space_after_single_line_if_test, control_statement_braces, control_statement_empty, string_linebreak_style, string_charset
- defaults=
-  {semicolons: 'all'                           // 'after-all', 'separators', 'only-required', 'before-dangerous'
-  ,indentation: 2                              // TODO: support tabs
-  ,newline_before_closing_brace: true
-  ,newline_after_closing_brace: true
-  ,space_before_for_semicolon: false
-  ,space_after_for_semicolon: true
-  ,space_before_for_paren: true
-  ,space_inside_for_parens: true
-  ,space_around_assign: true
-  ,space_after_comma: true
-  ,space_around_operators: true                // TODO: add option to show precedence, e.g: 'x = a*b + b*c' but 'x=a+b;'
-  ,space_inside_parens: false                  // where parens are used for grouping (not as syntax in control structures)
-  ,number_radix_preference: 10                 // 8, 10, 16
-  ,number_use_exponential_notation: 'never'    // 'never', 0..N which is cutoff limit, 1 is essentially when shorter
-  ,object_literal_comma_first: false
-  ,blank_before_function: true
-  ,space_inside_if_test_parens: false          // 'if ( x )' or 'if (x)'
-  ,space_before_if_test: true                  // 'if (' or 'if('
-  ,space_after_single_line_if_test: true       // 'if(...) foo()' or 'if(...)foo()'
-  ,control_statement_braces: 'preserve'        // 'preserve', 'braces', 'one-statement-only' [1] [2]
-  ,control_statement_empty: 'empty-statement'  // 'empty-statement', 'empty-braces' [3]
-  ,string_linebreak_style: 'backslash-n'       // 'backslash-n', 'line-continuation', 'plus-operator'
-  ,string_charset: 'unicode'                   // 'unicode', 'ascii' [4]
-  ,string_quote_style: 'shorter-or-double'     // 'single', 'double', 'shorter-or-single', 'shorter-or-double' [5]
-  ,homogenize_arrays: false                    // mainly for testing, can be replaced by some more flexible notion of consistency
-  ,space_inside_function_call_parens: false    // 'f( x )' or 'f(x)'
-  ,space_before_function_call_arguments: false // 'f (' or 'f(' [6]
-  ,array_use_elisions: true                    // '[a,,b,,]' or '[a,undefined,b,undefined]'
-  }
- opts=extend(defaults,opts)
-
- // [1] 'preserve' preserves braces if they are in the input, leaving "if(x)y" without braces and "if(x){y}" with braces.
- //     'braces' always uses a block statement, even with only one statement inside.
- //     'one-statement-only' will drop braces whenever there is only one statement in the body of the if statement.
- // [2] The "control statements" include the if statement and the iteration statements: for, for-in, while, do-while.
- // [3] If a control statement has an empty body, it can be written as an empty statement e.g. "while(x());", or as an empty block e.g. "while(x()){}".
- // [4] 'ascii' uses \uHHHH escapes for all non-ASCII characters, while 'unicode' allows all Unicode characters directly, using escapes only for newlines, quotation marks, etc.
- // [5] 'single' and 'double' always use the specied kind of quote, escaping string content as necessary, while 'shorter-or-' variants prefer one kind of quote but use the other if it makes the escaped string literal shorter (i.e. when the string value itself contains quotation marks).
- // [6] There's a fearful symmetry in these space_* options, which suggests they could be combined sensibly.
- //     One way to do this would be to have a consistent set of options such as 'before_open_paren', 'after_open_paren', 'after_comma', 'before_close_paren', etc.
- //     This set of options would then be reproduced on each structure where it applies, such as function calls, array literals, `new` operator constructor calls, function declarations, etc.
- //     This could be done by having nested objects, e.g. "function_call_spaces:{before_open_paren:true,...}" or by having names that follow a pattern, like 'function_call_space_before_open_paren' and then parsing these into consistent structures here instead of handling them all individually.
-
+function format(opts,s){var ast
  // parse the input
  ast=js_ast(s)
- orig_ast=ast;
-
  if(ast.type=="ParseError") return ast.error
-
- return print(opts,ast)}
+ return print(opts||{},ast)}
 
 
 // print :: Options × AST → String
 function print(opts,ast){
+ opts=extend(default_options,opts)
  return go(create_initial_context(opts),generate_formattable(opts)(ast))
  // go :: Context × Formattable → String
  function go(ctx,f){var sub_contexts,sub_strings,i,l
@@ -215,7 +209,7 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
 
 
  default:
-  throw new Error('unhandled AST node type '+ast.type+' ('+pp(ast)+')' + '\n full ast:\n' + pp(orig_ast))}
+  throw new Error('unhandled AST node type '+ast.type+' ('+pp(ast)+')')}
 
  if(cn)cn=cn.map(self)
 
@@ -238,7 +232,8 @@ function generate_formattable(opts){return function self(ast){var f,cn,str1,str2
   f.compose=f.compose(f);break
 
  case 'ForInStatement':
-  f.sub_statement_is_block=ast.body.type=='BlockStatement'
+ case 'WithStatement':
+  f.substatement_is_block=ast.body.type=='BlockStatement'
   f.compose=f.compose(f);break
 
  case 'BinaryExpression':
