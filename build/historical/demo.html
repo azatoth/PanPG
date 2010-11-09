@@ -61,6 +61,8 @@ You can edit the grammar, the parser generator options, the input text, and the 
 
 <pre id=status></pre>
 
+<p><a href=# id=permalink>permalink</a> (captures current state of input fields below)</p>
+
 <!--
 <fieldset id=choose_grammar>
 <label>Choose a grammar to load:<select>
@@ -101,6 +103,7 @@ var grammar_el=document.getElementById('PEG')
   , opts_el=document.getElementById('opts')
   , output_type_explain_el=document.getElementById('output_type_explain')
   , output_type_show_el=document.getElementById('output_type_show')
+  , permalink_el=document.getElementById('permalink')
   , ms
   , the_grammar
   , the_opts
@@ -131,10 +134,29 @@ function xhr(method,uri,body,callback){var headers,p
  if(headers) for(p in headers){x.setRequestHeader(p,headers[p])}
  x.send(body)}
 
-start('fetching grammar file')
-xhr('GET','../grammars/arith.peg',null,function(x){done();grammar_el.value=x.responseText;updateOpts()})
+// If the state was packed into the fragid in the URI, then unpack it
+if(location.hash.length > 2){var obj,hash,parts,p
+ obj={}
+ hash=location.hash[0]=='#'?location.hash.substr(1):location.hash
+ parts=hash.split('&')
+ parts.forEach(function(part){var k,v
+  k=part.split('=')[0],v=decodeURIComponent(part.split('=')[1])
+  obj[k]=v})
+ for(p in obj){
+  switch(p){
+   case 'grammar': grammar_el.value=obj[p];break
+   case 'opts': opts_el.value=obj[p];break
+   case 'input': inputText_el.value=obj[p];break
+   case 'callbacks': inputWalker_el.value=obj[p];break
+   case 'mode': if(obj[p]=='showTree')output_type_show_el.checked=true; if(obj[p]=='explain')output_type_explain_el.checked=true;break}}}
 
-opts_el.value='{drop:[\'S\']}'
+opts_el.value=opts_el.value||'{drop:[\'S\']}'
+
+if(grammar_el.value){
+ updateOpts()}
+else{
+ start('fetching grammar file')
+ xhr('GET','../grammars/arith.peg',null,function(x){done();grammar_el.value=x.responseText;updateOpts()})}
 
 function updateParser(peg){var result,opts,parser,_state
  the_grammar=grammar_el.value
@@ -171,8 +193,8 @@ function updateParseTree(){var explain
  start('rendering the parser output')
  parseTree_el.textContent=PanPG_util.showTree(the_result)
  done()
- if(!the_walker_code){
-  start('fetching the tree walker')
+ if(!inputWalker_el.value){
+  start('fetching the tree walker callbacks')
   xhr('GET',sample_walker,null,function(x){
    inputWalker_el.value=x.responseText
    done()
@@ -231,15 +253,17 @@ function setError(el,s){var el2,i,l,el_c
  el2.appendChild(document.createTextNode(s))
  el2.className='error'}
 
+function updatePermalink(){permalink_el.href='demo.html#grammar='+encodeURIComponent(the_grammar)+'&opts='+encodeURIComponent(opts_el.value)+'&input='+encodeURIComponent(the_input)+'&mode='+the_output_mode+'&callbacks='+encodeURIComponent(the_walker_code)}
+
 function updateTreeIfChanged(){if(the_input!=inputText_el.value) updateParseTree()}
 
 function updateTreeIfOutputModeChanged(){var mode
  mode=output_type_explain_el.checked?'explain':'show'
- if(the_output_mode!=mode){the_output_mode=mode;updateParseTree()}}
+ if(the_output_mode!=mode){the_output_mode=mode;updateParseTree();updatePermalink()}}
 
-function updateParserIfChanged(){if(the_grammar!=grammar_el.value) updateParser()}
+function updateParserIfChanged(){if(the_grammar!=grammar_el.value){updateParser();updatePermalink()}}
 
-function updateWalkerIfChanged(){if(the_walker_code!=inputWalker_el.value) updateWalker()}
+function updateWalkerIfChanged(){if(the_walker_code!=inputWalker_el.value){updateWalker();updatePermalink()}}
 
 function delay(f,ms){return function(){
  if(f.pending) clearTimeout(f.pending)
