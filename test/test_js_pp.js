@@ -135,9 +135,9 @@ module.exports = testCase({
         test.equals(js_pp(this.options,'(1+2)*3'),'(1 + 2) * 3;');
         test.equals(js_pp(this.options,'1*(2+3)'),'1 * (2 + 3);');
 		test.equals(js_pp(this.options, "['abc','d\\'ef','\"xyz\",\"XYZ\"']"), '["abc","d\'ef",\'"xyz","XYZ"\'];');
-		test.equals(js_pp(this.options, 'if(x) moderately_long_sub_expression(argument,argument_2)'), 'if(x) moderately_long_sub_expression(argument,argument_2);');
+		test.equals(js_pp(this.options, 'if(x) moderately_long_sub_expression(argument,argument_2)'), 'if(x) moderately_long_sub_expression(argument, argument_2);');
 		test.equals(js_pp(this.options, '3 - 2 - 1'), '3 - 2 - 1;');
-		test.equals(js_pp(this.options, 'if(x){foo()}'), 'if(x) {\nfoo();\n};');
+		test.equals(js_pp(this.options, 'if(x){foo()}'), 'if(x){\n foo();\n}');
 		test.done();
 	},
 	'test number format': function(test) {
@@ -157,20 +157,21 @@ module.exports = testCase({
     'test regexp': function(test) {
         test.equals(js_pp(this.options, '/a(b.*?)/'), '/a(b.*?)/;');
         test.equals(js_pp(this.options, '/a(b.*?)/g'), '/a(b.*?)/g;');
-        test.equals(js_pp(this.options, '/a(b.*?)/mg'), '/a(b.*?)/gm;');
+        test.equals(js_pp(this.options, '/a(b.*?)/mg'), '/a(b.*?)/mg;');
         test.done();
     },
     'test if-statement': function(test) {
         test.equals(js_pp(this.options, 'if(true);'), 'if(true) ;');
-        test.equals(js_pp(this.options, 'if(true){};'), 'if(true) {\n\n};\n;');
-        test.equals(js_pp(this.options, 'if(true){return};'), 'if(true) {\nreturn;\n};\n;');
+        test.equals(js_pp(this.options, 'if(true){};'), 'if(true){\n}\n;');
+        test.equals(js_pp(this.options, 'if(true){return};'), 'if(true){\n return;\n}\n;');
         test.done();
     },
     'test for-statement': function(test) {
-        test.equals(js_pp(this.options, 'for(;;){};'), 'for (;;) {\n\n};\n;');
-        test.equals(js_pp(this.options, 'for(i=0;;){};'), 'for (i = 0;;) {\n\n};\n;');
-        test.equals(js_pp(this.options, 'for(var i=0;;){};'), 'for (var i=0;;) {\n\n};\n;');
-        test.equals(js_pp(this.options, 'for(var i=0;i<10;++i){};'), 'for (var i=0; i < 10; ++i) {\n\n};\n;');
+		this.options.number_radix_preference = 10;
+        test.equals(js_pp(this.options, 'for(;;){};'), 'for (;;) {\n}\n;');
+        test.equals(js_pp(this.options, 'for(i=0;;){};'), 'for (i = 0;;) {\n}\n;');
+        test.equals(js_pp(this.options, 'for(var i=0;;){};'), 'for (var i=0;;) {\n}\n;');
+        test.equals(js_pp(this.options, 'for(var i=0;i<10;++i){};'), 'for (var i=0; i < 10; ++i) {\n}\n;');
         //test.equals(js_pp(this.options, 'for(i=0;;){};'), ';');
         //test.equals(js_pp(this.options, 'for(var i=0;;){};'), ';');
         //test.equals(js_pp(this.options, 'for(var i in {}){};'), ';');
